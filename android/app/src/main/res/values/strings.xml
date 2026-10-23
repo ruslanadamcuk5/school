@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Учусь</string>
+
+    <string name="login_title">Вход в «Учусь»</string>
+    <string name="login_server">Адрес сервера</string>
+    <string name="login_login">Логин</string>
+    <string name="login_password">Пароль</string>
+    <string name="login_action">Войти</string>
+    <string name="login_family">Профили детей</string>
+    <string name="login_create_child">Создать профиль ребёнка</string>
+    <string name="login_child_name">Имя ребёнка</string>
+    <string name="login_grade">Класс</string>
+    <string name="login_pin">PIN (необязательно, 4 цифры)</string>
+    <string name="create">Создать</string>
+    <string name="cancel">Отмена</string>
+    <string name="retry">Повторить</string>
+    <string name="logout">Выйти</string>
+    <string name="loading">Загрузка…</string>
+    <string name="error_network">Нет связи с сервером. Проверьте адрес и интернет.</string>
+    <string name="error_auth">Неверный логин или пароль.</string>
+
+    <string name="nav_home">Главная</string>
+    <string name="nav_map">Карта тем</string>
+    <string name="nav_assignments">Работы</string>
+    <string name="nav_library">Библиотека</string>
+    <string name="nav_profile">Профиль</string>
+    <string name="nav_students">Ученики</string>
+    <string name="nav_children">Дети</string>
+    <string name="nav_stats">Статистика</string>
+    <string name="nav_users">Пользователи</string>
+    <string name="nav_orgs">Организации</string>
+    <string name="nav_ai">ИИ</string>
+    <string name="nav_audit">Журнал</string>
+    <string name="nav_about">О приложении</string>
+
+    <string name="action_play">Тренироваться</string>
+    <string name="action_quiz">Тест по теме</string>
+    <string name="action_ai">Объяснить с ИИ</string>
+    <string name="action_ask_ai">Помощник</string>
+    <string name="action_read">Отметить прочитанным</string>
+    <string name="action_open_book">Открыть книгу</string>
+    <string name="action_send">Отправить</string>
+
+    <string name="map_title">Карта тем</string>
+    <string name="map_empty">Тем пока нет</string>
+    <string name="topic_methods">Способы объяснения</string>
+    <string name="task_title">Задание</string>
+    <string name="task_answer_hint">Введите ответ</string>
+    <string name="task_check">Проверить</string>
+    <string name="task_hint">Подсказка</string>
+    <string name="task_correct">Верно!</string>
+    <string name="task_wrong">Пока неверно</string>
+    <string name="round_result">Итог тренировки</string>
+
+    <string name="assignments_title">Мои работы</string>
+    <string name="assignments_empty">Работ пока нет</string>
+    <string name="library_title">Библиотека</string>
+    <string name="library_empty">Книг пока нет</string>
+    <string name="recommendations_title">Рекомендации учителя</string>
+
+    <string name="profile_title">Профиль</string>
+    <string name="profile_level">Уровень</string>
+    <string name="profile_xp">Опыт</string>
+    <string name="profile_coins">Монеты</string>
+    <string name="profile_stars">Звёзды</string>
+    <string name="profile_badges">Значки</string>
+
+    <string name="ai_title">ИИ-помощник</string>
+    <string name="ai_question_hint">Ваш вопрос о приложении…</string>
+    <string name="ai_disabled">ИИ не настроен на сервере</string>
+    <string name="ai_explain_title">Объяснение темы</string>
+    <string name="ai_refresh">Обновить объяснение</string>
+</resources>

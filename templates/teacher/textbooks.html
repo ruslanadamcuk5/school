@@ -1,0 +1,72 @@
+{% extends "cabinet.html" %}
+{% block cabinet_title %}Учебные пособия{% endblock %}
+
+{% block cabinet_nav %}
+  <a href="{{ url_for('teacher.dashboard') }}">📊 Главная</a>
+  <a href="{{ url_for('teacher.students') }}">👦 Ученики</a>
+  <a href="{{ url_for('teacher.courses') }}">📚 Курсы</a>
+  <a href="{{ url_for('teacher.works') }}">📝 Работы</a>
+  <a href="{{ url_for('teacher.textbooks_page') }}" class="is-active">📖 Пособия</a>
+{% endblock %}
+
+{% block cabinet_content %}
+<div class="page-head">
+  <div>
+    <h1>📖 Учебные пособия</h1>
+    <p>Пособия загружает администратор. Учитель видит материалы своего класса и предметов.</p>
+  </div>
+</div>
+
+<form method="get" class="card mb-3">
+  <div class="grid-2">
+    <div class="field">
+      <label for="grade">Класс</label>
+      <select id="grade" name="grade" onchange="this.form.submit()">
+        <option value="">— все —</option>
+        {% for g in grades %}
+          <option value="{{ g }}" {% if selected_grade == g %}selected{% endif %}>{{ g }} класс</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="subject_id">Предмет</label>
+      <select id="subject_id" name="subject_id" onchange="this.form.submit()">
+        <option value="">— все —</option>
+        {% for subject in subjects %}
+          <option value="{{ subject.id }}" {% if selected_subject == subject.id %}selected{% endif %}>
+            {{ subject.icon }} {{ subject.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+</form>
+
+<div class="card">
+  {% if textbooks %}
+    <div class="data-table-wrap">
+      <table class="table">
+        <thead><tr><th>Пособие</th><th>Предмет</th><th>Класс</th><th>Страниц</th><th>Тем</th><th></th></tr></thead>
+        <tbody>
+          {% for book in textbooks %}
+            <tr>
+              <td><b>{{ book.title }}</b>
+                {% if book.author %}<div class="muted small">{{ book.author }}</div>{% endif %}</td>
+              <td>{{ book.subject_icon }} {{ book.subject_name }}</td>
+              <td>{{ book.grade }}</td>
+              <td>{{ book.pages }}</td>
+              <td>{{ book.topics_count }}</td>
+              <td>
+                <a class="btn btn--ghost btn--small"
+                   href="{{ url_for('admin.textbook_open', textbook_id=book.id) }}" target="_blank">Открыть ↗</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">Пособий пока нет. Попросите администратора загрузить PDF в админ-панели
+      (раздел «Учебные пособия»).</p>
+  {% endif %}
+</div>
+{% endblock %}

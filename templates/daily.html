@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Ежедневное задание{% endblock %}
+{% block content %}
+
+<section class="hero">
+  <div>
+    <span class="chip chip--amber">Ежедневный челлендж</span>
+    <h1 class="mt-1">🎯 Задание дня</h1>
+    <p>Три коротких задачи из разных тем. За каждую — опыт и монетки.
+      Задание обновляется каждый день.</p>
+  </div>
+  <div class="hero__art" aria-hidden="true">🎯</div>
+</section>
+
+<div class="method-list mt-2">
+  {% for item in tasks %}
+    <div class="method-item">
+      <span class="method-item__num">{{ loop.index }}</span>
+      <span class="method-item__body">
+        <span class="method-item__title">{{ item.icon }} {{ item.topic }}</span>
+        <span class="method-item__desc">
+          {% if item.done %}✅ {{ 'Решено верно' if item.correct else 'Была ошибка — попробуй ещё раз' }}
+          {% else %}Задание: {{ item.label }} — ещё не решено{% endif %}
+        </span>
+      </span>
+      {% if not item.done %}
+        <form method="post" action="{{ url_for('play.daily_start') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="generator" value="{{ item.generator }}">
+          <button class="btn btn--small" type="submit">Решить →</button>
+        </form>
+      {% else %}
+        <span class="chip chip--green">готово</span>
+      {% endif %}
+    </div>
+  {% endfor %}
+</div>
+
+<div class="row mt-3">
+  <a class="btn btn--ghost" href="{{ url_for('main.map_page') }}">← К карте тем</a>
+</div>
+
+{% endblock %}

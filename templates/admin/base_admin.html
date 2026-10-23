@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{% block admin_title %}Админ-панель{% endblock %}{% endblock %}
+{% block content %}
+
+<div class="cabinet">
+  <aside class="cabinet__nav">
+    <div class="cabinet__user">
+      <span class="avatar avatar--sm">{{ current_user.avatar }}</span>
+      <div>
+        <div style="font-weight:900; font-size:.95rem;">{{ current_user.first_name }} {{ current_user.last_name }}</div>
+        <div class="muted" style="font-size:.78rem;">Администратор</div>
+      </div>
+    </div>
+    <a href="{{ url_for('admin.dashboard') }}" class="{% if request.endpoint == 'admin.dashboard' %}is-active{% endif %}">📊 Сводка</a>
+    <a href="{{ url_for('admin.users') }}" class="{% if request.endpoint in ('admin.users', 'admin.user_detail') %}is-active{% endif %}">👥 Пользователи</a>
+    <a href="{{ url_for('admin.cities') }}" class="{% if request.endpoint == 'admin.cities' %}is-active{% endif %}">🏙 Города</a>
+    <a href="{{ url_for('admin.schools') }}" class="{% if request.endpoint == 'admin.schools' %}is-active{% endif %}">🏫 Школы</a>
+    <a href="{{ url_for('admin.classes') }}" class="{% if request.endpoint == 'admin.classes' %}is-active{% endif %}">🎓 Классы</a>
+    <a href="{{ url_for('admin.subjects') }}" class="{% if request.endpoint == 'admin.subjects' %}is-active{% endif %}">📘 Предметы</a>
+    <a href="{{ url_for('admin.courses') }}" class="{% if request.endpoint in ('admin.courses', 'admin.course_topics') %}is-active{% endif %}">📚 Курсы</a>
+    <a href="{{ url_for('admin.textbooks_page') }}" class="{% if request.endpoint in ('admin.textbooks_page', 'admin.textbook_detail') %}is-active{% endif %}">📖 Пособия (PDF)</a>
+    <a href="{{ url_for('admin.ai_settings') }}" class="{% if request.endpoint == 'admin.ai_settings' %}is-active{% endif %}">🤖 ИИ</a>
+    <a href="{{ url_for('admin.audit') }}" class="{% if request.endpoint == 'admin.audit' %}is-active{% endif %}">🧾 Журнал</a>
+    <a href="{{ url_for('auth.account') }}">⚙️ Профиль</a>
+  </aside>
+
+  <section class="cabinet__body">
+    {% block admin_content %}{% endblock %}
+  </section>
+</div>
+
+{% endblock %}

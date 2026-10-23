@@ -1,0 +1,87 @@
+name: Android APK
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "android/**"
+      - ".github/workflows/android.yml"
+  pull_request:
+    paths:
+      - "android/**"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+    inputs:
+      server_url:
+        description: "Адрес сервера по умолчанию (https://…)"
+        required: false
+        default: "https://uchus.alwaysdata.net"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Собрать debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Получить код
+        uses: actions/checkout@v4
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Установить платформу и build-tools
+        run: |
+          yes | sdkmanager --licenses > /dev/null || true
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+
+      - name: Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Собрать APK
+        working-directory: android
+        shell: bash
+        run: |
+          SERVER_URL="${{ github.event.inputs.server_url }}"
+          if [ -z "$SERVER_URL" ]; then
+            SERVER_URL="https://uchus.alwaysdata.net"
+          fi
+          echo "Адрес сервера по умолчанию: $SERVER_URL"
+          gradle assembleDebug -PserverUrl="$SERVER_URL" --no-daemon
+
+      - name: Переименовать APK
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/uchus-debug.apk
+          ls -lh artifacts
+
+      - name: Загрузить APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: uchus-debug-apk
+          path: artifacts/uchus-debug.apk
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Краткая сводка
+        run: |
+          {
+            echo "### Android APK готов"
+            echo ""
+            echo "- Артефакт: **uchus-debug-apk** (внизу страницы запуска)"
+            echo "- Адрес сервера по умолчанию: \`${{ github.event.inputs.server_url || 'https://uchus.alwaysdata.net' }}\`"
+            echo "- Адрес можно изменить на экране входа в приложении."
+          } >> "$GITHUB_STEP_SUMMARY"

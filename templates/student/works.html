@@ -1,0 +1,57 @@
+{% extends "cabinet.html" %}
+{% block cabinet_title %}Мои работы{% endblock %}
+
+{% block cabinet_nav %}
+  <a href="{{ url_for('student.dashboard') }}" class="is-active">🎒 Мой кабинет</a>
+  <a href="{{ url_for('student.works') }}">📝 Мои работы</a>
+  <a href="{{ url_for('student.textbooks_page') }}">📖 Учебники</a>
+  <a href="{{ url_for('student.schedule') }}">🗓 Расписание</a>
+  <a href="{{ url_for('student.badges') }}">🏅 Значки</a>
+  <a href="{{ url_for('main.map_page') }}">🗺 Тренироваться</a>
+{% endblock %}
+
+{% block cabinet_content %}
+<div class="page-head">
+  <div>
+    <h1>📝 Мои работы</h1>
+    <p>Проверочные и контрольные работы, которые назначил учитель</p>
+  </div>
+</div>
+
+<div class="card">
+  {% if works %}
+    <div class="data-table-wrap">
+      <table class="table">
+        <thead><tr><th>Работа</th><th>Тип</th><th>Темы</th><th>Срок</th><th>Результат</th><th></th></tr></thead>
+        <tbody>
+          {% for work in works %}
+            <tr>
+              <td><b>{{ work.title }}</b><div class="muted small">{{ work.subject_name or '' }}</div></td>
+              <td>{{ work.kind }}</td>
+              <td class="muted small">
+                {% for slug in work.topic_slugs | fromjson %}{{ topic_titles.get(slug, slug) }}{% if not loop.last %}, {% endif %}{% endfor %}
+              </td>
+              <td>{{ work.due_date or '—' }}</td>
+              <td>
+                {% if work.result %}
+                  <span class="chip chip--green">{{ work.result.score }} / {{ work.result.max_score }}</span>
+                {% elif work.status == 'опубликована' %}
+                  <span class="chip chip--amber">ждёт</span>
+                {% else %}
+                  <span class="chip chip--gray">не открыта</span>
+                {% endif %}
+              </td>
+              <td>
+                <a class="btn btn--ghost btn--small" href="{{ url_for('student.work_detail', assignment_id=work.id) }}">
+                  {% if work.result %}Посмотреть{% else %}Решить{% endif %}</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">Работ пока нет.</p>
+  {% endif %}
+</div>
+{% endblock %}

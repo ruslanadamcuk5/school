@@ -1,0 +1,51 @@
+{% extends "cabinet.html" %}
+{% block cabinet_title %}Работы{% endblock %}
+
+{% block cabinet_nav %}
+  <a href="{{ url_for('teacher.dashboard') }}">📊 Главная</a>
+  <a href="{{ url_for('teacher.students') }}">👦 Ученики</a>
+  <a href="{{ url_for('teacher.courses') }}">📚 Курсы</a>
+  <a href="{{ url_for('teacher.works') }}" class="is-active">📝 Работы</a>
+  <a href="{{ url_for('teacher.textbooks_page') }}">📖 Пособия</a>
+{% endblock %}
+
+{% block cabinet_content %}
+<div class="page-head">
+  <div>
+    <h1>📝 Проверочные и контрольные работы</h1>
+    <p>{{ works|length }} работ</p>
+  </div>
+  <a class="btn" href="{{ url_for('teacher.work_new') }}">＋ Новая работа</a>
+</div>
+
+<div class="card">
+  {% if works %}
+    <div class="data-table-wrap">
+      <table class="table">
+        <thead><tr><th>Название</th><th>Тип</th><th>Класс</th><th>Темы</th><th>Статус</th><th>Сдали</th><th>Срок</th><th></th></tr></thead>
+        <tbody>
+          {% for work in works %}
+            <tr>
+              <td><b>{{ work.title }}</b></td>
+              <td>{{ work.kind }}</td>
+              <td>{{ work.grade }}{% if work.letter %} «{{ work.letter }}»{% endif %}</td>
+              <td>{{ work.questions_count }} заданий</td>
+              <td>
+                {% if work.status == 'опубликована' %}<span class="chip chip--green">опубликована</span>
+                {% elif work.status == 'закрыта' %}<span class="chip chip--gray">закрыта</span>
+                {% else %}<span class="chip chip--amber">черновик</span>{% endif %}
+              </td>
+              <td>{{ work.done_count }} / {{ work.students_count }}</td>
+              <td>{{ work.due_date or '—' }}</td>
+              <td><a class="btn btn--ghost btn--small" href="{{ url_for('teacher.work_detail', assignment_id=work.id) }}">Открыть</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">Работ пока нет. Создайте проверочную работу — выберите темы, а задания
+      сгенерируются автоматически.</p>
+  {% endif %}
+</div>
+{% endblock %}

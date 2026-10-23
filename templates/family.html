@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Результаты семьи{% endblock %}
+{% block content %}
+
+<section class="hero">
+  <div>
+    <span class="chip chip--purple">Семейный чемпионат</span>
+    <h1 class="mt-1">🏆 Результаты семьи</h1>
+    <p>Кто больше занимался математикой — тот и чемпион. Подключайся к соревнованию!</p>
+  </div>
+  <div class="hero__art" aria-hidden="true">🏆</div>
+</section>
+
+<div class="method-list mt-2">
+  {% for row in rows %}
+    <div class="method-item">
+      <span class="method-item__num">{{ loop.index }}</span>
+      <span class="avatar avatar--sm">{{ row.learner.avatar }}</span>
+      <span class="method-item__body">
+        <span class="method-item__title">{{ row.learner.name }}</span>
+        <span class="method-item__desc">
+          Уровень {{ row.level }} · {{ row.correct }} верных ответов · {{ '⭐' * row.stars }}
+        </span>
+      </span>
+      <span class="chip chip--purple">{{ row.xp }} XP</span>
+    </div>
+  {% else %}
+    <p class="muted">Пока нет профилей.</p>
+  {% endfor %}
+</div>
+
+{% endblock %}

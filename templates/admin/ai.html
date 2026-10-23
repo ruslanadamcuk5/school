@@ -1,0 +1,195 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_title %}ИИ · облачные модели{% endblock %}
+
+{% block admin_content %}
+<div class="page-head">
+  <div>
+    <h1>🤖 Искусственный интеллект</h1>
+    <p>Подключите облачную модель, чтобы объяснять темы и включить помощника по приложению.
+      Пока модель не настроена, функции ИИ скрыты, а приложение работает как обычно.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="row" style="gap:10px; flex-wrap:wrap; align-items:center;">
+    {% if status.enabled %}
+      <span class="chip chip--green">✅ ИИ включён</span>
+      <span class="chip chip--blue">{{ status.provider_name }}</span>
+      <span class="chip chip--gray">{{ status.model }}</span>
+      <span class="chip chip--gray">ключ: {{ 'задан' if status.has_key else 'не задан' }}</span>
+    {% else %}
+      <span class="chip chip--gray">⛔ ИИ выключен</span>
+      <span class="muted small">Приложение работает без внешних сервисов.</span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid-2 mt-3">
+  <form method="post" class="card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="save">
+    <h2>Подключение модели</h2>
+
+    <label class="chip chip--gray mt-2" style="cursor:pointer;">
+      <input type="checkbox" name="enabled" value="1" {% if settings.enabled %}checked{% endif %}>
+      Включить функции ИИ
+    </label>
+
+    <div class="field mt-2">
+      <label for="provider">Провайдер</label>
+      <select id="provider" name="provider">
+        {% for p in providers %}
+          <option value="{{ p.id }}" {% if settings.provider == p.id %}selected{% endif %}>{{ p.name }}</option>
+        {% endfor %}
+      </select>
+      <p class="muted small" id="provider-note"></p>
+    </div>
+
+    <div class="field">
+      <label for="base_url">Адрес API</label>
+      <input id="base_url" name="base_url" value="{{ settings.base_url }}" placeholder="https://openrouter.ai/api/v1">
+      <p class="muted small">OpenAI-совместимый адрес: запрос идёт на <code>&lt;адрес&gt;/chat/completions</code>.</p>
+    </div>
+
+    <div class="field">
+      <label for="model">Модель</label>
+      <input id="model" name="model" list="model-list" value="{{ settings.model }}">
+      <datalist id="model-list"></datalist>
+    </div>
+
+    <div class="field">
+      <label for="api_key">Ключ доступа</label>
+      <input id="api_key" name="api_key" type="password" autocomplete="new-password"
+             placeholder="{% if status.has_key %}ключ сохранён — оставьте пустым, чтобы не менять{% else %}вставьте ключ провайдера{% endif %}">
+      {% if status.has_key %}
+        <label class="muted small mt-1" style="display:block; cursor:pointer;">
+          <input type="checkbox" name="clear_key" value="1"> удалить сохранённый ключ
+        </label>
+      {% endif %}
+      <p class="muted small">Ключ хранится в базе приложения и не показывается в интерфейсе.</p>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="temperature">Творчество (temperature)</label>
+        <input id="temperature" name="temperature" type="number" step="0.1" min="0" max="1.5"
+               value="{{ settings.temperature }}">
+      </div>
+      <div class="field">
+        <label for="max_tokens">Максимум токенов</label>
+        <input id="max_tokens" name="max_tokens" type="number" min="100" max="4000" step="50"
+               value="{{ settings.max_tokens }}">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="system_note">Дополнительная инструкция модели (необязательно)</label>
+      <textarea id="system_note" name="system_note" rows="2"
+                placeholder="Например: учитывай программу Республики Беларусь">{{ settings.system_note or '' }}</textarea>
+    </div>
+
+    <button class="btn btn--success mt-2" type="submit">💾 Сохранить настройки</button>
+  </form>
+
+  <div>
+    <div class="card">
+      <h2>🔌 Проверка связи</h2>
+      <p class="muted small">Отправляет короткий запрос модели и показывает ответ или ошибку.</p>
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="test">
+        <button class="btn mt-2" type="submit">Проверить связь</button>
+      </form>
+    </div>
+
+    <div class="card mt-3">
+      <h2>📊 Статистика</h2>
+      <div class="stat-grid mt-2">
+        <div class="stat-box"><div class="stat-box__value">{{ stats.total }}</div><div class="stat-box__label">запросов</div></div>
+        <div class="stat-box"><div class="stat-box__value">{{ stats.ok }}</div><div class="stat-box__label">успешных</div></div>
+        <div class="stat-box"><div class="stat-box__value">{{ stats.failed }}</div><div class="stat-box__label">ошибок</div></div>
+        <div class="stat-box"><div class="stat-box__value">{{ stats.explanations }}</div><div class="stat-box__label">объяснений</div></div>
+      </div>
+      {% if stats.last_error %}
+        <p class="muted small mt-2">Последняя ошибка ({{ stats.last_error.created_at }}):</p>
+        <p class="small" style="word-break:break-word;">{{ stats.last_error.detail }}</p>
+      {% endif %}
+      <form method="post" class="mt-2">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="clear_cache">
+        <button class="btn btn--ghost btn--small" type="submit">🗑 Очистить готовые объяснения</button>
+      </form>
+    </div>
+
+    <div class="card mt-3">
+      <h2>🔑 Где взять ключ</h2>
+      <div class="data-table-wrap mt-2">
+        <table class="table">
+          <thead><tr><th>Провайдер</th><th>Ключ</th></tr></thead>
+          <tbody>
+            {% for p in providers %}
+              <tr>
+                <td>{{ p.name }}<div class="muted small">{{ p.note }}</div></td>
+                <td>
+                  {% if p.keys_url %}
+                    <a class="btn btn--ghost btn--small" target="_blank" rel="noopener" href="{{ p.keys_url }}">получить ↗</a>
+                  {% else %}—{% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% if stats.recent %}
+      <div class="card mt-3">
+        <h2>Последние обращения</h2>
+        <div class="data-table-wrap mt-2">
+          <table class="table">
+            <thead><tr><th>Время</th><th>Тип</th><th>Итог</th><th>Детали</th></tr></thead>
+            <tbody>
+              {% for r in stats.recent %}
+                <tr>
+                  <td class="muted small">{{ r.created_at }}</td>
+                  <td>{{ 'объяснение' if r.kind == 'explain' else 'помощник' }}</td>
+                  <td>{% if r.ok %}<span class="chip chip--green small">ок</span>{% else %}<span class="chip chip--gray small">ошибка</span>{% endif %}</td>
+                  <td class="muted small" style="word-break:break-word;">{{ r.detail or '' }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  (function () {
+    const providers = {{ providers|tojson }};
+    const select = document.getElementById("provider");
+    const baseUrl = document.getElementById("base_url");
+    const model = document.getElementById("model");
+    const list = document.getElementById("model-list");
+    const note = document.getElementById("provider-note");
+    const currentModel = model.value;
+    function apply(id, keepModel) {
+      const p = providers.find((x) => x.id === id);
+      if (!p) return;
+      if (p.base_url) baseUrl.value = p.base_url;
+      list.innerHTML = "";
+      (p.models || []).forEach((m) => {
+        const opt = document.createElement("option");
+        opt.value = m;
+        list.appendChild(opt);
+      });
+      note.textContent = p.note || "";
+      if (!keepModel && p.models && p.models.length) model.value = p.models[0];
+    }
+    select.addEventListener("change", () => apply(select.value, false));
+    apply(select.value, true);
+    if (currentModel) model.value = currentModel;
+  })();
+</script>
+{% endblock %}

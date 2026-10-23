@@ -1,0 +1,150 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_title %}{{ user.last_name }} {{ user.first_name }}{% endblock %}
+
+{% block admin_content %}
+<div class="page-head">
+  <div>
+    <h1>{{ user.avatar }} {{ user.last_name }} {{ user.first_name }}</h1>
+    <p>{{ user.login }} · {{ roles.get(user.role, user.role) }}
+      {% if user.last_login %} · был в системе {{ user.last_login }}{% endif %}</p>
+  </div>
+  <a class="btn btn--ghost" href="{{ url_for('admin.users') }}">← К списку</a>
+</div>
+
+<div class="grid-2">
+  <form method="post" class="card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="profile">
+    <h2>Данные пользователя</h2>
+    <div class="grid-2 mt-2">
+      <div class="field">
+        <label for="first_name">Имя</label>
+        <input id="first_name" name="first_name" value="{{ user.first_name }}">
+      </div>
+      <div class="field">
+        <label for="last_name">Фамилия</label>
+        <input id="last_name" name="last_name" value="{{ user.last_name }}">
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label for="email">E-mail</label>
+        <input id="email" name="email" type="email" value="{{ user.email or '' }}">
+      </div>
+      <div class="field">
+        <label for="phone">Телефон</label>
+        <input id="phone" name="phone" value="{{ user.phone or '' }}">
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label for="role">Роль</label>
+        <select id="role" name="role">
+          {% for key, label in roles.items() %}
+            <option value="{{ key }}" {% if user.role == key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="avatar">Аватар</label>
+        <input id="avatar" name="avatar" maxlength="4" value="{{ user.avatar }}">
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label for="city_id">Город</label>
+        <select id="city_id" name="city_id">
+          <option value="">— не указан —</option>
+          {% for city in cities %}
+            <option value="{{ city.id }}" {% if user.city_id == city.id %}selected{% endif %}>{{ city.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="school_id">Школа</label>
+        <select id="school_id" name="school_id">
+          <option value="">— не указана —</option>
+          {% for school in schools %}
+            <option value="{{ school.id }}" {% if user.school_id == school.id %}selected{% endif %}>{{ school.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <button class="btn" type="submit">Сохранить</button>
+  </form>
+
+  <div class="card">
+    <h2>Связи</h2>
+    {% if classes %}
+      <h3 class="mt-2">Классы</h3>
+      {% for klass in classes %}
+        <div class="schedule-row mt-1">
+          <div><b>{{ klass.grade }} «{{ klass.letter }}»</b><div class="muted small">{{ klass.school_name }}</div></div>
+          <div></div>
+          <form method="post" class="inline-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="classes">
+            <input type="hidden" name="class_id" value="{{ klass.id }}">
+            <button class="btn btn--danger btn--small" type="submit">Убрать</button>
+          </form>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    {% if parents %}
+      <h3 class="mt-2">Родители</h3>
+      {% for parent in parents %}
+        <p>{{ parent.avatar }} <b>{{ parent.last_name }} {{ parent.first_name }}</b>
+          <span class="muted small">({{ parent.relation }})</span></p>
+      {% endfor %}
+    {% endif %}
+
+    {% if children %}
+      <h3 class="mt-2">Дети</h3>
+      {% for child in children %}
+        <p>{{ child.avatar }} <b>{{ child.last_name }} {{ child.first_name }}</b>
+          <span class="muted small">({{ child.relation }})</span></p>
+      {% endfor %}
+    {% endif %}
+
+    {% if user.role == 'student' and user.child_code %}
+      <div class="card card--flat mt-2">
+        <b>Код для привязки родителя:</b> <span class="chip chip--purple">{{ user.child_code }}</span>
+      </div>
+    {% endif %}
+
+    <form method="post" class="card card--flat mt-3" onsubmit="return confirm('Сбросить пароль пользователя?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="password">
+      <input type="hidden" name="user_id" value="{{ user.id }}">
+      <label class="field__hint" for="newpass">Сбросить пароль</label>
+      <div class="row mt-1">
+        <input id="newpass" class="answer-input" style="flex:1;min-width:140px;" type="text" name="password" value="math2025" required>
+        <button class="btn btn--warn btn--small" type="submit">Сбросить</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if attempts %}
+  <div class="card mt-3">
+    <h2>📈 Последние задания</h2>
+    <div class="data-table-wrap mt-2">
+      <table class="table">
+        <thead><tr><th>Когда</th><th>Тема</th><th>Задание</th><th>Ответ</th><th>Верно</th></tr></thead>
+        <tbody>
+          {% for row in attempts %}
+            <tr>
+              <td class="muted small">{{ row.created_at }}</td>
+              <td class="small">{{ row.topic_title or row.topic_slug }}</td>
+              <td class="muted small">{{ row.generator }}</td>
+              <td class="small">{{ row.given_answer }}</td>
+              <td>{% if row.correct %}✅{% else %}❌{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

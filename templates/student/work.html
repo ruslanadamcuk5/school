@@ -1,0 +1,73 @@
+{% extends "cabinet.html" %}
+{% block cabinet_title %}{{ assignment.title }}{% endblock %}
+
+{% block cabinet_nav %}
+  <a href="{{ url_for('student.dashboard') }}" class="is-active">🎒 Мой кабинет</a>
+  <a href="{{ url_for('student.works') }}">📝 Мои работы</a>
+  <a href="{{ url_for('student.textbooks_page') }}">📖 Учебники</a>
+  <a href="{{ url_for('student.schedule') }}">🗓 Расписание</a>
+  <a href="{{ url_for('student.badges') }}">🏅 Значки</a>
+{% endblock %}
+
+{% block cabinet_content %}
+<div class="page-head">
+  <div>
+    <h1>📝 {{ assignment.title }}</h1>
+    <p>
+      {{ assignment.kind }} · {{ tasks|length }} заданий
+      {% if assignment.time_limit %} · на время {{ assignment.time_limit }} мин{% endif %}
+      {% if assignment.due_date %} · срок {{ assignment.due_date }}{% endif %}
+    </p>
+  </div>
+</div>
+
+{% if assignment.description %}
+  <div class="card mb-3" style="background:linear-gradient(135deg,#eff6ff,#fff);">
+    <b>Инструкция:</b> {{ assignment.description }}
+  </div>
+{% endif %}
+
+<form method="post" action="{{ url_for('student.work_submit', assignment_id=assignment.id) }}" id="work-form">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="duration" id="duration" value="0">
+
+  {% for task in tasks %}
+    {% set task_index = loop.index0 %}
+    <div class="card mb-3">
+      <div class="row row--between mb-2">
+        <b>Задание {{ loop.index }} из {{ tasks|length }}</b>
+        <span class="chip chip--purple">{{ topic_titles.get(task.topic_slug, task.topic_slug) }}</span>
+      </div>
+      <p style="font-size:1.05rem; font-weight:700;">{{ task.question }}</p>
+      {% if task.answer_type == 'choice' %}
+        <div class="choices mt-2">
+          {% for choice in task.choices %}
+            <label class="choice" style="display:flex; align-items:center; gap:8px;">
+              <input type="radio" name="answer_{{ task_index }}" value="{{ choice }}" required style="width:18px;height:18px;accent-color:var(--brand);">
+              <span>{{ choice }}</span>
+            </label>
+          {% endfor %}
+        </div>
+      {% else %}
+        <input class="answer-input mt-2" type="text" name="answer_{{ task_index }}" placeholder="Твой ответ" required>
+      {% endif %}
+    </div>
+  {% endfor %}
+
+  <button class="btn btn--lg btn--block" type="submit">📨 Отправить учителю</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    const form = document.getElementById("work-form");
+    const duration = document.getElementById("duration");
+    if (!form) return;
+    const start = Date.now();
+    form.addEventListener("submit", function () {
+      duration.value = Math.round((Date.now() - start) / 1000);
+    });
+  })();
+</script>
+{% endblock %}

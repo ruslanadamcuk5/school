@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Помощник ИИ{% endblock %}
+{% block body_attrs %}data-ai-inline="1"{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <h1>🤖 Помощник по приложению</h1>
+  <p>Спросите, как пользоваться «Учусь»: где найти тему, как пройти тест, как назначить работу,
+    как подключить книгу и что делают кнопки. Помощник отвечает по-русски и опирается
+    на возможности приложения.</p>
+</div>
+
+<div class="card mt-2">
+  <div class="ai-thread" id="ai-thread">
+    {% if not history %}
+      <div class="ai-msg ai-msg--bot">Здравствуйте! Я помогу разобраться с приложением.
+        Например, спросите: «Как пройти тест по теме?» или «Где найти работы ученика?»</div>
+    {% endif %}
+    {% for item in history %}
+      <div class="ai-msg ai-msg--{{ 'user' if item.role == 'user' else 'bot' }}">{{ item.content }}</div>
+    {% endfor %}
+    {% if question and error %}
+      <div class="ai-msg ai-msg--user">{{ question }}</div>
+      <div class="ai-msg ai-msg--bot ai-msg--error">{{ error }}</div>
+    {% endif %}
+  </div>
+
+  <form method="post" action="{{ url_for('ai.assistant_ask_form') }}" class="ai-form mt-2">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <textarea name="question" rows="2" maxlength="2000" required
+              placeholder="Например: как назначить работу классу?">{{ question }}</textarea>
+    <button class="btn" type="submit">Спросить</button>
+  </form>
+  <p class="muted small mt-1">Помощник отвечает о приложении. Проверяйте важные шаги на страницах.</p>
+</div>
+{% endblock %}

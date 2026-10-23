@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{% block cabinet_title %}Кабинет{% endblock %}{% endblock %}
+{% block content %}
+
+<div class="cabinet">
+  <aside class="cabinet__nav">
+    <div class="cabinet__user">
+      <span class="avatar avatar--sm">{{ user.avatar }}</span>
+      <div>
+        <div style="font-weight:900; font-size:.95rem;">{{ user.first_name }} {{ user.last_name }}</div>
+        <div class="muted" style="font-size:.78rem;">{{ user.login }}</div>
+      </div>
+    </div>
+    {% block cabinet_nav %}
+      <a href="{{ url_for('teacher.dashboard') }}">📊 Главная</a>
+    {% endblock %}
+    {% set cabinet_library_url = safe_url('library.library', '') if safe_url is defined else '' %}
+    {% if cabinet_library_url %}
+      <a href="{{ cabinet_library_url }}"
+         class="{% if (request.endpoint or '').startswith('library.') %}is-active{% endif %}">📚 Библиотека</a>
+    {% endif %}
+    {% if ai_available and endpoint_exists('ai.assistant') %}
+      <a href="{{ url_for('ai.assistant') }}"
+         class="{% if request.endpoint == 'ai.assistant' %}is-active{% endif %}">🤖 ИИ-помощник</a>
+    {% endif %}
+  </aside>
+
+  <section class="cabinet__body">
+    {% block cabinet_content %}{% endblock %}
+  </section>
+</div>
+
+{% endblock %}

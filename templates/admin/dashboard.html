@@ -1,0 +1,85 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_title %}Сводка{% endblock %}
+
+{% block admin_content %}
+<div class="page-head">
+  <div>
+    <h1>📊 Сводка по платформе</h1>
+    <p>Пользователи, организации, контент и активность</p>
+  </div>
+</div>
+
+<div class="metric-row mb-3">
+  <div class="stat-box"><div class="stat-box__value">{{ counts.users }}</div><div class="stat-box__label">пользователей</div></div>
+  <div class="stat-box"><div class="stat-box__value">{{ counts.students }}</div><div class="stat-box__label">учеников</div></div>
+  <div class="stat-box"><div class="stat-box__value">{{ counts.teachers }}</div><div class="stat-box__label">учителей</div></div>
+  <div class="stat-box"><div class="stat-box__value">{{ counts.parents }}</div><div class="stat-box__label">родителей</div></div>
+</div>
+
+<div class="metric-row mb-3">
+  <div class="stat-box"><div class="stat-box__value">{{ counts.cities }}</div><div class="stat-box__label">городов</div></div>
+  <div class="stat-box"><div class="stat-box__value">{{ counts.schools }}</div><div class="stat-box__label">школ</div></div>
+  <div class="stat-box"><div class="stat-box__value">{{ counts.classes }}</div><div class="stat-box__label">классов</div></div>
+  <div class="stat-box"><div class="stat-box__value">{{ counts.subjects }}</div><div class="stat-box__label">предметов</div></div>
+  <div class="stat-box"><div class="stat-box__value">{{ counts.courses }}</div><div class="stat-box__label">курсов</div></div>
+  <div class="stat-box"><div class="stat-box__value">{{ counts.textbooks }}</div><div class="stat-box__label">пособий</div></div>
+  <div class="stat-box"><div class="stat-box__value">{{ counts.assignments }}</div><div class="stat-box__label">работ</div></div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h2>🏫 Школы и ученики</h2>
+    <div class="data-table-wrap mt-2">
+      <table class="table">
+        <thead><tr><th>Город</th><th>Школа</th><th>Учеников</th></tr></thead>
+        <tbody>
+          {% for row in by_school %}
+            <tr>
+              <td>{{ row.city }}</td>
+              <td>{{ row.school }}</td>
+              <td>{{ row.students }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="3" class="muted">Школ пока нет</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🧾 Последние действия</h2>
+    <div class="data-table-wrap mt-2">
+      <table class="table">
+        <thead><tr><th>Когда</th><th>Кто</th><th>Действие</th></tr></thead>
+        <tbody>
+          {% for row in recent %}
+            <tr>
+              <td class="muted small">{{ row.created_at }}</td>
+              <td class="small">{{ row.user_id or 'система' }}</td>
+              <td class="small">{{ row.action }} {{ row.entity or '' }} {{ row.entity_id or '' }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="3" class="muted">Журнал пуст</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <h2>📈 Активность за 14 дней</h2>
+  <div class="activity mt-2">
+    {% set maxv = activity | map(attribute='attempts') | max %}
+    {% for day in activity %}
+      <div class="activity__bar" style="height: {{ ((day.attempts / (maxv if maxv else 1)) * 80 + 4) | round | int }}px;"
+           title="{{ day.day }}: {{ day.attempts }} заданий">
+        <span>{{ day.day[8:10] }}</span>
+      </div>
+    {% else %}
+      <p class="muted">Активности пока нет.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

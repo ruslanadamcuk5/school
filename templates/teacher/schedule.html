@@ -1,0 +1,108 @@
+{% extends "cabinet.html" %}
+{% block cabinet_title %}Расписание{% endblock %}
+
+{% block cabinet_nav %}
+  <a href="{{ url_for('teacher.dashboard') }}">📊 Главная</a>
+  <a href="{{ url_for('teacher.students') }}">👦 Ученики</a>
+  <a href="{{ url_for('teacher.courses') }}">📚 Курсы</a>
+  <a href="{{ url_for('teacher.works') }}">📝 Работы</a>
+  <a href="{{ url_for('teacher.textbooks_page') }}">📖 Пособия</a>
+{% endblock %}
+
+{% block cabinet_content %}
+<div class="page-head">
+  <div>
+    <h1>🗓 Расписание · {{ class_title }} класс</h1>
+    <p>{{ klass.school_name }}, {{ klass.city_name }}</p>
+  </div>
+  <a class="btn btn--ghost" href="{{ url_for('teacher.class_detail', class_id=klass.id) }}">← К классу</a>
+</div>
+
+<div class="card mb-3">
+  <h2>Расписание уроков</h2>
+  {% for index, day in weekdays %}
+    {% set items = grid.get(index, []) %}
+    <div class="schedule-row mt-2">
+      <div><b>{{ day }}</b><div class="muted small">{{ items|length }} урок(ов)</div></div>
+      <div class="row" style="gap:8px;">
+        {% for item in items %}
+          <div class="lesson-item">
+            {{ item.subject_icon or '📘' }} {{ item.subject_name or 'Математика' }}
+            {% if item.topic_title %}<span class="muted">· {{ item.topic_title }}</span>{% endif %}
+            {% if item.time_start %}<div class="lesson-item__time">{{ item.time_start }}–{{ item.time_end or '' }}</div>{% endif %}
+            <form class="inline-form" method="post"
+                  action="{{ url_for('teacher.schedule', class_id=klass.id) }}"
+                  onsubmit="return confirm('Удалить урок?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="action" value="delete">
+              <input type="hidden" name="item_id" value="{{ item.id }}">
+              <button class="btn btn--ghost btn--small" type="submit">✕</button>
+            </form>
+          </div>
+        {% else %}
+          <span class="muted small">Уроков нет</span>
+        {% endfor %}
+      </div>
+      <span class="muted small">урок №</span>
+    </div>
+  {% endfor %}
+</div>
+
+<form method="post" class="card">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <h2>＋ Добавить урок</h2>
+  <div class="grid-2 mt-2">
+    <div class="field">
+      <label for="weekday">День недели</label>
+      <select id="weekday" name="weekday">
+        {% for index, day in weekdays %}
+          <option value="{{ index }}">{{ day }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="lesson_no">Номер урока</label>
+      <input id="lesson_no" name="lesson_no" type="number" min="1" max="10" value="1">
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="field">
+      <label for="subject_id">Предмет</label>
+      <select id="subject_id" name="subject_id">
+        <option value="">— Математика —</option>
+        {% for subject in subjects %}
+          <option value="{{ subject.id }}">{{ subject.icon }} {{ subject.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="topic_slug">Тема урока</label>
+      <select id="topic_slug" name="topic_slug">
+        <option value="">— не указана —</option>
+        {% for subject_name, group in topics | groupby('subject_name') %}
+          <optgroup label="{{ subject_name or 'Без предмета' }}">
+            {% for topic in group %}
+              <option value="{{ topic.slug }}">{{ topic.icon }} {{ topic.title }} · {{ topic.grade }} класс</option>
+            {% endfor %}
+          </optgroup>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="field">
+      <label for="time_start">Начало</label>
+      <input id="time_start" name="time_start" type="time" value="09:00">
+    </div>
+    <div class="field">
+      <label for="time_end">Конец</label>
+      <input id="time_end" name="time_end" type="time" value="09:45">
+    </div>
+  </div>
+  <div class="field">
+    <label for="note">Примечание</label>
+    <input id="note" name="note" maxlength="200" placeholder="Например: повторить таблицу умножения">
+  </div>
+  <button class="btn btn--lg" type="submit">Добавить урок</button>
+</form>
+{% endblock %}

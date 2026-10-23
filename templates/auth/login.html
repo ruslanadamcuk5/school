@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Вход{% endblock %}
+{% block content %}
+
+<section class="card card--pad-lg mt-3" style="max-width:460px; margin-left:auto; margin-right:auto;">
+  <h1 class="center">🔑 Вход</h1>
+  <p class="muted center small">Для учеников, учителей, родителей и администратора</p>
+
+  <form method="post" action="{{ url_for('auth.login') }}" class="mt-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="field">
+      <label for="login">Логин</label>
+      <input id="login" name="login" value="{{ login }}" required autocomplete="username" autofocus>
+    </div>
+    <div class="field">
+      <label for="password">Пароль</label>
+      <input id="password" name="password" type="password" required autocomplete="current-password">
+    </div>
+    <button class="btn btn--lg btn--block" type="submit">Войти</button>
+  </form>
+
+  <p class="center mt-3">
+    <a class="btn btn--ghost" href="{{ url_for('auth.register') }}">Создать аккаунт</a>
+  </p>
+
+  <div class="card card--flat mt-3">
+    <h3>👨‍👩‍👧 Семейный режим</h3>
+    <p class="muted small">Можно заниматься без регистрации — просто выбери героя на главной.</p>
+    <a class="btn btn--ghost btn--small" href="{{ url_for('main.welcome') }}">Выбрать героя</a>
+  </div>
+</section>
+
+{% endblock %}

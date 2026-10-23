@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}{{ topic.title }} — способ «{{ method.name }}»{% endblock %}
+{% block content %}
+
+<section class="row row--between mt-2">
+  <div>
+    <span class="chip chip--blue">{{ topic.icon }} {{ topic.title }}</span>
+    <h1 style="margin:8px 0 0;">Способ {{ method_index + 1 }} из {{ methods_total }}: {{ method.name }}</h1>
+  </div>
+  <button class="speak-btn" data-speak-target="explanation-text">🔊 Прочитать вслух</button>
+</section>
+
+<div class="visual-box mt-2" data-widget='{{ widget | tojson }}'>
+  {% if widget.type == 'none' %}<p class="muted">Здесь появится наглядная модель.</p>{% endif %}
+</div>
+
+<div class="card explain-card mt-2">
+  <div id="explanation-text" data-speak="{{ explanation }}">
+    <p style="font-size:1.1rem; font-weight:600; margin:0;">{{ explanation }}</p>
+  </div>
+
+  <div class="explain-steps mt-3">
+    {% for step in steps %}
+      <div class="explain-step">
+        <span>{{ step.text }}</span>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="example-box">
+    <span class="muted small">Пример:</span> {{ example.question }}
+    <div class="muted small mt-1">{{ example.solution }}</div>
+  </div>
+
+  <div class="row mt-3">
+    <a class="btn btn--lg" href="{{ url_for('play.start_play', slug=topic.slug, method=method.slug) }}">
+      Понятно, поехали! →
+    </a>
+    {% if next_method %}
+      <a class="btn btn--lg btn--ghost" href="{{ url_for('main.explain', slug=topic.slug, method_slug=next_method) }}">
+        Объяснить по-другому
+      </a>
+    {% endif %}
+    <a class="btn btn--ghost" href="{{ url_for('main.topic_page', slug=topic.slug) }}">← К теме</a>
+  </div>
+</div>
+
+{% endblock %}

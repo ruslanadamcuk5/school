@@ -1,0 +1,76 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_title %}Школы{% endblock %}
+
+{% block admin_content %}
+<div class="page-head">
+  <div>
+    <h1>🏫 Школы</h1>
+    <p>Учебные заведения, в которых работают учителя и учатся дети</p>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <h2>＋ Добавить школу</h2>
+  <form method="post" class="mt-2">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="add">
+    <div class="grid-2">
+      <div class="field">
+        <label for="city_id">Город *</label>
+        <select id="city_id" name="city_id" required>
+          <option value="">— выбери город —</option>
+          {% for city in cities %}
+            <option value="{{ city.id }}">{{ city.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="name">Название школы *</label>
+        <input id="name" name="name" required maxlength="150" placeholder="Гимназия №1">
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label for="address">Адрес</label>
+        <input id="address" name="address" maxlength="200">
+      </div>
+      <div class="field">
+        <label for="director">Директор</label>
+        <input id="director" name="director" maxlength="120">
+      </div>
+    </div>
+    <button class="btn" type="submit">Добавить школу</button>
+  </form>
+</div>
+
+<div class="card">
+  {% if schools %}
+    <div class="data-table-wrap">
+      <table class="table">
+        <thead><tr><th>Школа</th><th>Город</th><th>Классов</th><th>Учеников</th><th>Адрес</th><th></th></tr></thead>
+        <tbody>
+          {% for school in schools %}
+            <tr>
+              <td><b>{{ school.name }}</b></td>
+              <td>{{ school.city_name }}</td>
+              <td>{{ school.classes_count }}</td>
+              <td>{{ school.students_count }}</td>
+              <td class="muted small">{{ school.address or '—' }}</td>
+              <td>
+                <form class="inline-form" method="post" onsubmit="return confirm('Удалить школу и её классы?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="school_id" value="{{ school.id }}">
+                  <button class="btn btn--danger btn--small" type="submit">Удалить</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">Школ пока нет. Сначала добавьте город.</p>
+  {% endif %}
+</div>
+{% endblock %}

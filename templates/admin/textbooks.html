@@ -1,0 +1,133 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_title %}Учебные пособия{% endblock %}
+
+{% block admin_content %}
+<div class="page-head">
+  <div>
+    <h1>📖 Учебные пособия (PDF)</h1>
+    <p>Загрузите пособия — они станут доступны ученикам и учителям выбранных классов</p>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <h2>↑ Загрузить пособие</h2>
+  <form method="post" enctype="multipart/form-data" class="mt-2">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="upload">
+    <div class="grid-2">
+      <div class="field">
+        <label for="file">Файл PDF *</label>
+        <input id="file" name="file" type="file" accept="application/pdf" required
+               data-max-mb="{{ config.MAX_UPLOAD_MB }}">
+        <span class="field__hint">До {{ config.MAX_UPLOAD_MB }} МБ</span>
+      </div>
+      <div class="field">
+        <label for="title">Название *</label>
+        <input id="title" name="title" maxlength="150" placeholder="Математика. 3 класс (часть 1)">
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label for="subject_id">Предмет *</label>
+        <select id="subject_id" name="subject_id" required>
+          <option value="">— выбери предмет —</option>
+          {% for subject in subjects %}
+            <option value="{{ subject.id }}">{{ subject.icon }} {{ subject.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="grade">Класс *</label>
+        <select id="grade" name="grade">
+          <option value="3">3 класс</option>
+          <option value="4">4 класс</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label for="author">Автор</label>
+        <input id="author" name="author" maxlength="150" placeholder="Муравьёва Г.Л., Урбан М.А.">
+      </div>
+      <div class="field">
+        <label for="publisher">Издательство</label>
+        <input id="publisher" name="publisher" maxlength="120" placeholder="НИО">
+      </div>
+    </div>
+    <div class="field">
+      <label for="description">Описание</label>
+      <input id="description" name="description" maxlength="300">
+    </div>
+    <label class="check-item">
+      <input type="checkbox" name="auto_link" value="1" checked>
+      <span>Сформировать темы из содержания PDF и привязать страницы автоматически
+        (для сканов темы добавляются вручную на странице пособия)</span>
+    </label>
+    <button class="btn mt-2" type="submit">Загрузить</button>
+  </form>
+</div>
+
+<form method="get" class="card mb-3">
+  <div class="grid-2">
+    <div class="field">
+      <label for="grade">Класс</label>
+      <select id="grade" name="grade" onchange="this.form.submit()">
+        <option value="">— все —</option>
+        {% for g in grades %}
+          <option value="{{ g }}" {% if selected_grade == g %}selected{% endif %}>{{ g }} класс</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="subject_id">Предмет</label>
+      <select id="subject_id" name="subject_id" onchange="this.form.submit()">
+        <option value="">— все —</option>
+        {% for subject in subjects %}
+          <option value="{{ subject.id }}" {% if selected_subject == subject.id %}selected{% endif %}>
+            {{ subject.icon }} {{ subject.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+</form>
+
+<div class="card">
+  {% if textbooks %}
+    <div class="data-table-wrap">
+      <table class="table">
+        <thead><tr><th>Пособие</th><th>Предмет</th><th>Класс</th><th>Размер</th><th>Страниц</th><th>Тем</th><th></th></tr></thead>
+        <tbody>
+          {% for book in textbooks %}
+            <tr>
+              <td><b>{{ book.title }}</b>
+                {% if book.author %}<div class="muted small">{{ book.author }}</div>{% endif %}</td>
+              <td>{{ book.subject_icon }} {{ book.subject_name }}</td>
+              <td>{{ book.grade }}</td>
+              <td class="muted small">{{ book.size_bytes | filesize }}</td>
+              <td>{{ book.pages }}</td>
+              <td>{{ book.topics_count }}</td>
+              <td class="row" style="gap:6px;">
+                <a class="btn btn--ghost btn--small" href="{{ url_for('admin.textbook_detail', textbook_id=book.id) }}">Настроить</a>
+                <a class="btn btn--ghost btn--small" target="_blank"
+                   href="{{ url_for('admin.textbook_open', textbook_id=book.id) }}">PDF ↗</a>
+                <form class="inline-form" method="post" onsubmit="return confirm('Удалить пособие?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="textbook_id" value="{{ book.id }}">
+                  <button class="btn btn--danger btn--small" type="submit">✕</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">Пособий пока нет. Загрузите первый PDF выше.</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/upload_guard.js') }}" defer></script>
+{% endblock %}

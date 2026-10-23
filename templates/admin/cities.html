@@ -1,0 +1,51 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_title %}Города{% endblock %}
+
+{% block admin_content %}
+<div class="page-head">
+  <div>
+    <h1>🏙 Города</h1>
+    <p>Справочник городов для выбора школы</p>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <h2>＋ Добавить город</h2>
+  <form method="post" class="row mt-2">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="add">
+    <input class="answer-input" style="flex:1;min-width:200px;" type="text" name="name" placeholder="Название города" required>
+    <input class="answer-input" style="flex:1;min-width:160px;" type="text" name="region" placeholder="Область (необязательно)">
+    <button class="btn" type="submit">Добавить</button>
+  </form>
+</div>
+
+<div class="card">
+  {% if cities %}
+    <div class="data-table-wrap">
+      <table class="table">
+        <thead><tr><th>Город</th><th>Область</th><th>Добавлен</th><th></th></tr></thead>
+        <tbody>
+          {% for city in cities %}
+            <tr>
+              <td><b>{{ city.name }}</b></td>
+              <td class="muted">{{ city.region or '—' }}</td>
+              <td class="muted small">{{ city.created_at }}</td>
+              <td>
+                <form class="inline-form" method="post" onsubmit="return confirm('Удалить город со всеми школами?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="city_id" value="{{ city.id }}">
+                  <button class="btn btn--danger btn--small" type="submit">Удалить</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">Городов пока нет.</p>
+  {% endif %}
+</div>
+{% endblock %}

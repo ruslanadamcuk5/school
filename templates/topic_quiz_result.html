@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Результат теста: {{ topic.title }}{% endblock %}
+{% block content %}
+
+<div class="row row--between mt-3">
+  <div>
+    <h1 style="margin:0;">📊 Результат теста</h1>
+    <p class="muted" style="margin:4px 0 0;">
+      {{ topic.subject_icon }} {{ topic.subject_name }} · {{ topic.title }}
+    </p>
+  </div>
+  <a class="btn btn--ghost btn--small" href="{{ url_for('main.topic_page', slug=topic.slug) }}">← К теме</a>
+</div>
+
+<section class="card mt-3">
+  <div class="row row--between">
+    <div>
+      <h2 style="margin:0;">Верно {{ correct_count }} из {{ results|length }}</h2>
+      <p class="muted" style="margin:4px 0 0;">
+        {% if correct_count == results|length %}Отличная работа!{% elif correct_count * 2 >= results|length %}Хороший результат, можно улучшить.{% else %}Стоит перечитать тему и попробовать снова.{% endif %}
+      </p>
+    </div>
+    <div class="row" style="gap:8px;">
+      <span class="chip chip--purple">⭐ {{ stars }}</span>
+      <a class="btn btn--ghost btn--small" href="{{ url_for('main.topic_quiz', slug=topic.slug) }}">Пройти ещё раз</a>
+    </div>
+  </div>
+</section>
+
+<div class="card mt-3">
+  <div class="data-table-wrap">
+    <table class="table">
+      <thead><tr><th>Вопрос</th><th>Твой ответ</th><th>Правильный ответ</th><th>Итог</th></tr></thead>
+      <tbody>
+        {% for row in results %}
+          <tr>
+            <td>{{ row.question }}</td>
+            <td>{{ row.given or '—' }}</td>
+            <td><b>{{ row.expected }}</b></td>
+            <td>
+              {% if row.correct %}
+                <span class="chip chip--green">верно</span>
+              {% else %}
+                <span class="chip chip--gray">ошибка</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="row mt-3" style="gap:8px; flex-wrap:wrap;">
+  <a class="btn" href="{{ url_for('main.topic_quiz', slug=topic.slug) }}">📝 Пройти ещё раз</a>
+  {% if topic.subject_slug %}
+    <a class="btn btn--ghost" href="{{ url_for('main.map_page', subject=topic.subject_slug) }}">🗺 К карте тем</a>
+  {% endif %}
+</div>
+{% endblock %}

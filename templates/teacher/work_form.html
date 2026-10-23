@@ -1,0 +1,116 @@
+{% extends "cabinet.html" %}
+{% block cabinet_title %}Новая работа{% endblock %}
+
+{% block cabinet_nav %}
+  <a href="{{ url_for('teacher.dashboard') }}">📊 Главная</a>
+  <a href="{{ url_for('teacher.students') }}">👦 Ученики</a>
+  <a href="{{ url_for('teacher.courses') }}">📚 Курсы</a>
+  <a href="{{ url_for('teacher.works') }}" class="is-active">📝 Работы</a>
+  <a href="{{ url_for('teacher.textbooks_page') }}">📖 Пособия</a>
+{% endblock %}
+
+{% block cabinet_content %}
+<div class="page-head">
+  <h1>＋ Новая работа</h1>
+</div>
+
+<form method="post" class="card">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="grid-2">
+    <div class="field">
+      <label for="title">Название *</label>
+      <input id="title" name="title" required maxlength="120" placeholder="Например: Контрольная №1">
+    </div>
+    <div class="field">
+      <label for="kind">Тип работы</label>
+      <select id="kind" name="kind">
+        {% for key, label in kinds.items() %}
+          <option value="{{ key }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="field">
+      <label for="class_id">Класс</label>
+      <select id="class_id" name="class_id">
+        <option value="">— все классы —</option>
+        {% for klass in classes %}
+          <option value="{{ klass.id }}">{{ klass.grade }} «{{ klass.letter }}» — {{ klass.school_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="course_id">Курс</label>
+      <select id="course_id" name="course_id">
+        <option value="">— без курса —</option>
+        {% for course in courses %}
+          <option value="{{ course.id }}">{{ course.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="field">
+      <label for="subject_id">Предмет</label>
+      <select id="subject_id" name="subject_id">
+        <option value="">— автоматически по курсу —</option>
+        {% for subject in subjects %}
+          <option value="{{ subject.id }}">{{ subject.icon }} {{ subject.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="due_date">Срок сдачи</label>
+      <input id="due_date" name="due_date" type="date">
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="field">
+      <label for="questions_count">Количество заданий</label>
+      <input id="questions_count" name="questions_count" type="number" min="1" max="40" value="10">
+    </div>
+    <div class="field">
+      <label for="time_limit">Время на выполнение (мин, 0 — без ограничения)</label>
+      <input id="time_limit" name="time_limit" type="number" min="0" max="180" value="0">
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="description">Инструкция для учеников</label>
+    <textarea id="description" name="description" rows="3" placeholder="Например: работа без калькулятора"></textarea>
+  </div>
+
+  <div class="field">
+    <label>Темы работы *</label>
+    <span class="field__hint">По математике генерируются вычислительные задания,
+      по остальным предметам — вопросы по тексту пособия: пропущенное слово,
+      страница, предмет и описание темы. Чем больше тем, тем разнообразнее работа.</span>
+    <div class="mt-1">
+      {% for group in topic_groups %}
+        <details class="card mb-2" {% if loop.first %}open{% endif %}>
+          <summary style="cursor:pointer; font-weight:700;">
+            {{ group.icon }} {{ group.name }}
+            <span class="muted small">· {{ group.topics|length }} тем</span>
+          </summary>
+          <div class="checkbox-list mt-2">
+            {% for topic in group.topics %}
+              <label class="check-item">
+                <input type="checkbox" name="topic_slugs" value="{{ topic.slug }}">
+                <span><b>{{ topic.icon }} {{ topic.title }}</b>
+                  <span class="muted small">· {{ topic.grade }} класс</span></span>
+              </label>
+            {% endfor %}
+          </div>
+        </details>
+      {% endfor %}
+    </div>
+  </div>
+
+  <button class="btn btn--lg" type="submit">Создать черновик</button>
+</form>
+{% endblock %}

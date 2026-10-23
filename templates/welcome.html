@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Учусь · 3–4 класс — выбери героя{% endblock %}
+{% block content %}
+
+<section class="hero">
+  <div>
+    <span class="chip chip--purple">3–4 класс · Беларусь</span>
+    <h1 class="mt-1">Учиться — интересно 🎉</h1>
+    <p>Математика, языки, литература и «Человек и мир». Решай задачи, читай темы
+      по учебникам, получай монетки, звёзды и значки. Математические темы объясняются
+      разными способами — как тебе удобнее.</p>
+    <div class="row mt-2">
+      <a class="btn btn--lg" href="#profiles">👦 Выбрать героя</a>
+      <a class="btn btn--lg btn--ghost" href="{{ url_for('main.textbook') }}">📖 Пособия</a>
+    </div>
+  </div>
+  <div class="hero__art" aria-hidden="true">🦉📚</div>
+</section>
+
+<section class="card mt-3" style="background:linear-gradient(135deg,#eef2ff,#fff); border-left:6px solid #6366f1;">
+  <div class="row row--between">
+    <div>
+      <h2 style="margin:0;">🏫 Школьный режим</h2>
+      <p class="muted small" style="margin:4px 0 0;">
+        Войдите как ученик, учитель или родитель. Учитель видит свои классы, учеников и может
+        назначать проверочные и контрольные работы; родитель — статистику ребёнка;
+        администратор управляет школами, курсами и учебными пособиями.
+      </p>
+    </div>
+    <div class="row" style="gap:8px;">
+      <a class="btn" href="{{ url_for('auth.login') }}">🔑 Войти</a>
+      <a class="btn btn--ghost" href="{{ url_for('auth.register') }}">Регистрация</a>
+    </div>
+  </div>
+</section>
+
+{% if learners %}
+<section id="profiles" class="mt-3">
+  <h2 class="section-title">Кто сегодня занимается? <small>выбери свой профиль</small></h2>
+  <div class="profile-grid">
+    {% for learner in learners %}
+      <form method="post" action="{{ url_for('main.login_learner', learner_id=learner.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="profile-card" style="width:100%; border:none; cursor:pointer;">
+          <span class="avatar avatar--lg">{{ learner.avatar }}</span>
+          <span class="profile-card__name">{{ learner.name }}</span>
+          <span class="profile-card__meta">{{ learner.grade }} класс · {{ learner.xp }} XP</span>
+        </button>
+      </form>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="mt-3">
+  <h2 class="section-title">Создать профиль <small>нужно имя и, по желанию, PIN</small></h2>
+  <form method="post" action="{{ url_for('main.create_learner') }}" class="card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="grid-2">
+      <div class="field">
+        <label for="name">Имя ребёнка</label>
+        <input id="name" name="name" required maxlength="24" placeholder="Например, Аня" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="grade">Класс</label>
+        <select id="grade" name="grade">
+          {% for g in grades %}
+            <option value="{{ g }}">{{ g }} класс</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Аватар</label>
+      <div class="avatar-picker">
+        {% for avatar in ['🦊','🐻','🐼','🐨','🦁','🐯','🐸','🐧','🦄','🐙','🦖','🐳','🦉','🐝','🦋','🐢'] %}
+          <input type="radio" name="avatar" id="av-{{ loop.index }}" value="{{ avatar }}" {% if loop.first %}checked{% endif %}>
+          <label for="av-{{ loop.index }}">{{ avatar }}</label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="pin">PIN-код (4 цифры) — по нему родители смогут открыть статистику</label>
+      <input id="pin" name="pin" inputmode="numeric" pattern="\d{4}" maxlength="4" placeholder="Например, 1234" autocomplete="off">
+      <span class="field__hint">Можно оставить пустым — тогда ребёнок не сможет зайти в родительскую зону.</span>
+    </div>
+
+    <button class="btn btn--lg" type="submit">🚀 Начать заниматься</button>
+  </form>
+</section>
+
+<section class="mt-3">
+  <h2 class="section-title">Что внутри</h2>
+  <div class="grid-2">
+    <div class="card card--flat">
+      <h3>🧠 {{ topics_count }} тем математики</h3>
+      <p class="muted small">Числа до 1000, действия в столбик, таблица умножения, доли и дроби,
+        величины, периметр и площадь, движение, признаки делимости. А ещё — темы языков,
+        литературы и «Человека и мира» из загруженных пособий.</p>
+    </div>
+    <div class="card card--flat">
+      <h3>🎨 {{ methods_count }} способов объяснения</h3>
+      <p class="muted small">Каждая тема объясняется несколькими способами: числовая прямая,
+        круг с долями, массив, весы, столбик, таблица. Не понял — объясним иначе!</p>
+    </div>
+    <div class="card card--flat">
+      <h3>♾️ {{ generators_count }} генераторов заданий</h3>
+      <p class="muted small">Каждое задание генерируется заново: числа случайные, поэтому
+        примеры не повторяются и тренируют настоящий навык.</p>
+    </div>
+    <div class="card card--flat">
+      <h3>👨‍👩‍👧 Зона родителя</h3>
+      <p class="muted small">Статистика по темам, время занятий, точность, экспорт в CSV
+        и удобные настройки для ребёнка.</p>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

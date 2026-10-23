@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.title }} · Библиотека{% endblock %}
+{% block wrap_class %}library-page{% endblock %}
+
+{% block content %}
+  <div class="page-head row--between">
+    <div>
+      <h1>📖 {{ item.title }}</h1>
+      <p>
+        {% if item.author %}{{ item.author }} · {% endif %}
+        {% if item.subject_name %}{{ item.subject_icon }} {{ item.subject_name }} · {% endif %}
+        {{ item.grade }} класс{% if item.pages %} · {{ item.pages }} стр.{% endif %}
+        {% if user_role == 'admin' and item.owner_first %}
+          · учитель: {{ item.owner_first }} {{ item.owner_last }}
+        {% endif %}
+      </p>
+    </div>
+    <div class="row">
+      <a class="btn btn--ghost" href="{{ open_url }}" target="_blank" rel="noopener">📄 Открыть PDF</a>
+      <a class="btn btn--ghost" href="{{ url_for('library.library') }}">← В библиотеку</a>
+    </div>
+  </div>
+
+  <div class="grid-2 mt-2">
+    <form method="post" action="{{ url_for('library.set_access', book_id=item.id) }}" class="card">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <h2>👥 Кому доступна книга</h2>
+      <p class="muted small">Ученики отмеченных классов увидят книгу в своей библиотеке.</p>
+      {% if classes %}
+        <div class="mt-2" style="display:flex; flex-direction:column; gap:8px;">
+          {% for klass in classes %}
+            <label class="chip chip--gray" style="cursor:pointer;">
+              <input type="checkbox" name="class_ids" value="{{ klass.id }}"
+                     {% if klass.id in current_class_ids %}checked{% endif %}>
+              {{ klass.grade }} {% if klass.letter %}«{{ klass.letter }}»{% endif %}
+              {% if klass.school_name %}<span class="muted small">· {{ klass.school_name }}</span>{% endif %}
+            </label>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="muted small">У вас нет классов — обратитесь к администратору школы.</p>
+      {% endif %}
+      <button class="btn mt-2" type="submit">💾 Сохранить доступ</button>
+    </form>
+
+    <div class="card">
+      <h2>📑 Темы книги</h2>
+      <p class="muted small">Темы определяются по оглавлению PDF: {{ topics|length }} шт.
+        Уберите лишние или добавьте вручную.</p>
+      <div class="row mt-2" style="gap:8px; flex-wrap:wrap;">
+        <form method="post" action="{{ url_for('library.import_topics', book_id=item.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn--ghost btn--small" type="submit">🔄 Обновить из оглавления</button>
+        </form>
+        <form method="post" action="{{ url_for('library.delete', book_id=item.id) }}"
+              onsubmit="return confirm('Удалить книгу из библиотеки вместе с файлом и темами?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn--danger btn--small" type="submit">🗑 Удалить книгу</button>
+        </form>
+      </div>
+      <form method="post" action="{{ url_for('library.add_topics', book_id=item.id) }}" class="mt-2">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="field">
+          <label for="manual_topics">Добавить темы вручную: «Название — страница»</label>
+          <textarea id="manual_topics" name="manual_topics" rows="3"
+                    placeholder="Глава 1. Осень — 8&#10;Глава 2. Зима — 24"></textarea>
+        </div>
+        <button class="btn btn--small mt-1" type="submit">＋ Добавить темы</button>
+      </form>
+    </div>
+  </div>
+
+  <form method="post" action="{{ url_for('library.recommend', book_id=item.id) }}" class="card mt-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h2>📤 Рекомендовать тему</h2>
+    <p class="muted small">Выберите тему книги (или книгу целиком) и тех, кому её рекомендуете:
+      классы и/или отдельных учеников.</p>
+
+    <div class="field mt-2">
+      <label for="topic_slug">Что рекомендуем</label>
+      <select id="topic_slug" name="topic_slug">
+        <option value="">— книгу целиком —</option>
+        {% for t in topics %}
+          <option value="{{ t.topic_slug }}">
+            {{ t.title or t.topic_slug }}{% if t.page %} (стр. {{ t.page }}{% if t.page_end and t.page_end != t.page %}–{{ t.page_end }}{% endif %}){% endif %}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="grid-2 mt-2">
+      <div>
+        <label>Классы</label>
+        {% if classes %}
+          <div style="display:flex; flex-direction:column; gap:6px; margin-top:6px;">
+            {% for klass in classes %}
+              <label class="chip chip--gray" style="cursor:pointer;">
+                <input type="checkbox" name="class_ids" value="{{ klass.id }}">
+                {{ klass.grade }} {% if klass.letter %}«{{ klass.letter }}»{% endif %}
+              </label>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="muted small">Нет классов.</p>
+        {% endif %}
+      </div>
+
+      <div>
+        <label>Ученики</label>
+        {% if students %}
+          <div style="max-height:280px; overflow:auto; margin-top:6px;">
+            {% for class_id, group in students|groupby('class_id') %}
+              <div class="muted small" style="margin-top:6px;">
+                {{ group[0].grade }} {% if group[0].letter %}«{{ group[0].letter }}»{% endif %}
+              </div>
+              {% for st in group %}
+                <label class="chip chip--gray" style="cursor:pointer; margin:2px 4px 2px 0;">
+                  <input type="checkbox" name="student_ids" value="{{ st.id }}">
+                  {{ st.last_name or '' }} {{ st.first_name or '' }}
+                </label>
+              {% endfor %}
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="muted small">Нет учеников.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="field mt-2">
+      <label for="note">Комментарий ученику</label>
+      <input id="note" name="note" maxlength="500" placeholder="Прочитайте к пятнице, обсудим на уроке">
+    </div>
+    <button class="btn btn--success mt-2" type="submit">Отправить рекомендацию</button>
+  </form>
+
+  <h2 class="section-title mt-3">🔖 Темы книги</h2>
+  <div class="card">
+    {% if topics %}
+      <div class="data-table-wrap" style="max-height:520px; overflow-y:auto;">
+        <table class="table">
+          <thead><tr><th>Тема</th><th>Страницы</th><th></th></tr></thead>
+          <tbody>
+            {% for t in topics %}
+              <tr>
+                <td>{{ t.icon or '📘' }} {{ t.title or t.topic_slug }}</td>
+                <td>{{ t.page }}{% if t.page_end and t.page_end != t.page %}–{{ t.page_end }}{% endif %}</td>
+                <td>
+                  <form method="post"
+                        action="{{ url_for('library.remove_topic', book_id=item.id, topic_slug=t.topic_slug) }}"
+                        onsubmit="return confirm('Убрать тему из книги?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn--small btn--danger" type="submit">✕</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="muted">Тем пока нет. Обновите их из оглавления или добавьте вручную.</p>
+    {% endif %}
+  </div>
+{% endblock %}

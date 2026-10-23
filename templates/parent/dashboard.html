@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Статистика — родительская зона{% endblock %}
+{% block content %}
+
+<div class="row row--between mt-3">
+  <h1 style="margin:0;">👨‍👩‍👧 Родительская зона</h1>
+  <div class="row" style="gap:8px;">
+    {% if school_mode %}
+      <a class="btn btn--ghost btn--small" href="{{ url_for('parent.assignments_page') }}">📝 Задания детям</a>
+    {% endif %}
+    <a class="btn btn--ghost btn--small" href="{{ url_for('parent.settings') }}">⚙️ Настройки</a>
+    <form method="post" action="{{ url_for('parent.lock') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn--ghost btn--small" type="submit">Закрыть</button>
+    </form>
+  </div>
+</div>
+
+{% for card in cards %}
+<section class="card mt-3">
+  <div class="row row--between">
+    <div class="row" style="gap:14px; align-items:center;">
+      <span class="avatar">{{ card.learner.avatar }}</span>
+      <div>
+        <h2 style="margin:0;">{{ card.learner.name }}</h2>
+        <p class="muted small" style="margin:0;">{{ card.learner.grade }} класс · уровень {{ card.stats.level }}</p>
+      </div>
+    </div>
+    <a class="btn btn--ghost btn--small" href="{{ url_for('parent.learner_settings', learner_id=card.learner.id) }}">
+      Настроить
+    </a>
+  </div>
+
+  <div class="stat-grid mt-3">
+    <div class="stat-box">
+      <div class="stat-box__value">{{ card.stats.total_correct }}</div>
+      <div class="stat-box__label">верных ответов</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box__value">{{ card.stats.accuracy }}%</div>
+      <div class="stat-box__label">точность</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box__value">{{ card.stats.topics_started }}/{{ card.stats.topics_total }}</div>
+      <div class="stat-box__label">тем начато</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box__value">{{ card.stats.topics_three_stars }}</div>
+      <div class="stat-box__label">тем на 3 звезды</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box__value">{{ card.stats.streak_days }}</div>
+      <div class="stat-box__label">дней подряд</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box__value">{{ card.stats.max_combo }}</div>
+      <div class="stat-box__label">лучшая серия</div>
+    </div>
+  </div>
+
+  <h3 class="mt-3">Активность за 14 дней</h3>
+  <div class="activity">
+    {% for day in card.activity %}
+      {% set maxv = card.activity | map(attribute='attempts') | max %}
+      <div class="activity__bar" style="height: {{ ((day.attempts / (maxv if maxv else 1)) * 80 + 4) | round | int }}px;"
+           title="{{ day.day }}: {{ day.attempts }} заданий, {{ day.correct }} верных">
+        <span>{{ day.day[8:10] }}</span>
+      </div>
+    {% endfor %}
+  </div>
+
+  <h3 class="mt-3">Темы</h3>
+  {% if card.accuracy %}
+    <table class="table">
+      <thead><tr><th>Тема</th><th>Заданий</th><th>Верных</th><th>Точность</th><th>Ср. время</th><th>★</th></tr></thead>
+      <tbody>
+        {% for slug, data in card.accuracy.items() %}
+          <tr>
+            <td>{{ topic_titles.get(slug, slug) }}</td>
+            <td>{{ data.attempts }}</td>
+            <td>{{ data.correct }}</td>
+            <td>
+              <div class="row" style="gap:6px;">
+                <span>{{ data.accuracy }}%</span>
+                <span style="flex:1; min-width:60px; height:8px; background:#e2e8f0; border-radius:999px; overflow:hidden;">
+                  <span style="display:block; height:100%; width:{{ data.accuracy }}%; background:linear-gradient(90deg,#34d399,#059669);"></span>
+                </span>
+              </div>
+            </td>
+            <td>{{ (data.avg_time_ms / 1000) | round(1) }} c</td>
+            <td>{{ '⭐' * data.stars }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted">Пока нет данных.</p>
+  {% endif %}
+
+  <h3 class="mt-3">Последние сессии</h3>
+  {% if card.sessions %}
+    <table class="table">
+      <thead><tr><th>Когда</th><th>Тема</th><th>Режим</th><th>Заданий</th><th>Верных</th><th>XP</th></tr></thead>
+      <tbody>
+        {% for s in card.sessions %}
+          <tr>
+            <td>{{ s.started_at }}</td>
+            <td>{{ topic_titles.get(s.topic_slug, s.topic_slug) }}</td>
+            <td>{{ s.mode }}</td>
+            <td>{{ s.task_count }}</td>
+            <td>{{ s.correct_count }}</td>
+            <td>{{ s.xp_gained }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted">Сессий пока не было.</p>
+  {% endif %}
+
+  <div class="row mt-3">
+    <a class="btn btn--ghost btn--small" href="{{ url_for('parent.export_csv', learner_id=card.learner.id) }}">
+      ⬇️ Выгрузить CSV
+    </a>
+    <span class="chip chip--purple">{{ card.badges|length }} значков</span>
+  </div>
+</section>
+{% else %}
+<div class="card mt-3">
+  <p>Профилей пока нет. Создайте профиль ребёнка на главной странице.</p>
+</div>
+{% endfor %}
+
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "cabinet.html" %}
+{% block cabinet_title %}Курсы{% endblock %}
+
+{% block cabinet_nav %}
+  <a href="{{ url_for('teacher.dashboard') }}">📊 Главная</a>
+  <a href="{{ url_for('teacher.students') }}">👦 Ученики</a>
+  <a href="{{ url_for('teacher.courses') }}" class="is-active">📚 Курсы</a>
+  <a href="{{ url_for('teacher.works') }}">📝 Работы</a>
+  <a href="{{ url_for('teacher.textbooks_page') }}">📖 Пособия</a>
+{% endblock %}
+
+{% block cabinet_content %}
+<div class="page-head">
+  <div>
+    <h1>📚 Курсы</h1>
+    <p>Курс — это предмет и набор тем для класса. Настройте, какие темы изучать.</p>
+  </div>
+  <a class="btn" href="{{ url_for('teacher.course_new') }}">＋ Новый курс</a>
+</div>
+
+<div class="card">
+  {% if courses %}
+    <div class="data-table-wrap">
+      <table class="table">
+        <thead><tr><th>Курс</th><th>Предмет</th><th>Класс</th><th>Тем</th><th>Классы</th><th></th></tr></thead>
+        <tbody>
+          {% for course in courses %}
+            <tr>
+              <td><b>{{ course.title }}</b><div class="muted small">{{ course.grade }} класс</div></td>
+              <td>{{ course.subject_icon }} {{ course.subject_name }}</td>
+              <td>{{ course.school_name or '—' }}</td>
+              <td>{{ course.topics_count }}</td>
+              <td>{{ course.classes_count }}</td>
+              <td class="row" style="gap:6px;">
+                <a class="btn btn--ghost btn--small" href="{{ url_for('teacher.course_topics', course_id=course.id) }}">Темы</a>
+                <form class="inline-form" method="post" action="{{ url_for('teacher.course_delete', course_id=course.id) }}"
+                      onsubmit="return confirm('Удалить курс?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn--ghost btn--small" type="submit">Удалить</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">Курсов пока нет. Создайте первый — например, «Математика, 3 класс».</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Моя библиотека{% endblock %}
+{% block wrap_class %}library-page{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <h1>📚 {% if readonly %}Библиотека ребёнка{% else %}Моя библиотека{% endif %}</h1>
+    <p>Книги, которые учитель открыл вашим классам, и рекомендации для чтения.</p>
+  </div>
+
+  {% if children %}
+    <form method="get" class="card mb-2">
+      <div class="field">
+        <label for="child_id">Ребёнок</label>
+        <select id="child_id" name="child_id" onchange="this.form.submit()">
+          {% for c in children %}
+            <option value="{{ c.id }}" {% if child and c.id == child.id %}selected{% endif %}>
+              {{ c.first_name }} {{ c.last_name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </form>
+  {% endif %}
+
+  {% if not student %}
+    <div class="card">
+      <p>Библиотека доступна ученикам, которые зачислены в класс.</p>
+      <p class="muted small">Привяжите аккаунт ребёнка в настройках родительской зоны,
+        чтобы видеть его книги и рекомендации.</p>
+    </div>
+  {% else %}
+    <div class="mt-2">
+      <span class="chip chip--blue">Книг: {{ stats.books }}</span>
+      <span class="chip chip--gray">К прочтению: {{ stats.active }}</span>
+      <span class="chip chip--gray">Прочитано: {{ stats.done }}</span>
+    </div>
+
+    {% if recommendations %}
+      <h2 class="section-title mt-3">📖 Рекомендации учителя</h2>
+      <div class="book-grid">
+        {% for rec in recommendations %}
+          <div class="recommend-card">
+            <div class="recommend-card__cover">
+              {% if rec.topic_icon %}{{ rec.topic_icon }}{% else %}📖{% endif %}
+            </div>
+            <div class="recommend-card__body">
+              <div class="recommend-card__title">
+                {% if rec.topic_title %}{{ rec.topic_title }}{% else %}{{ rec.title }}{% endif %}
+              </div>
+              <div class="recommend-card__meta">
+                {{ rec.title }}
+                {% if rec.teacher_first %} · {{ rec.teacher_first }} {{ rec.teacher_last }}{% endif %}
+                {% if rec.page %} · стр. {{ rec.page }}{% if rec.page_end and rec.page_end != rec.page %}–{{ rec.page_end }}{% endif %}{% endif %}
+                {% if rec.done %} · <span class="chip chip--gray small">прочитано</span>{% endif %}
+              </div>
+              {% if rec.note %}<div class="recommend-card__note">{{ rec.note }}</div>{% endif %}
+              <div class="row mt-1" style="gap:8px; flex-wrap:wrap;">
+                <a class="btn btn--small btn--ghost" target="_blank" rel="noopener"
+                   href="{{ url_for('library.open_textbook', textbook_id=rec.textbook_id) }}{% if rec.page %}#page={{ rec.page }}{% endif %}">
+                  Открыть в приложении
+                </a>
+                <a class="btn btn--small btn--ghost"
+                   href="{{ url_for('library.book', book_id=rec.book_id) }}">О книге</a>
+                {% if not readonly and not rec.done %}
+                  <form method="post" action="{{ url_for('library.done', rec_id=rec.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn--small" type="submit" title="Отметить прочитанным">✅ Прочитано</button>
+                  </form>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <h2 class="section-title mt-3">📚 Книги класса</h2>
+    {% if books %}
+      <div class="book-grid">
+        {% for b in books %}
+          <a class="book-card" href="{{ url_for('library.book', book_id=b.id) }}">
+            <div class="book-card__cover">{{ b.subject_icon or '📖' }}</div>
+            <h3 class="book-card__title">{{ b.title }}</h3>
+            <div class="book-card__meta">
+              {% if b.author %}{{ b.author }} · {% endif %}
+              {% if b.subject_name %}{{ b.subject_name }} · {% endif %}
+              {{ b.grade }} класс
+            </div>
+            <div class="book-card__meta">тем: {{ b.topics_count }}{% if b.pages %} · {{ b.pages }} стр.{% endif %}</div>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="card">
+        <p>Пока нет книг, доступных вашему классу.</p>
+        <p class="muted small">Как только учитель откроет доступ к книге, она появится здесь.</p>
+      </div>
+    {% endif %}
+  {% endif %}
+{% endblock %}

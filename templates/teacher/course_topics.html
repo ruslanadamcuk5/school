@@ -1,0 +1,64 @@
+{% extends "cabinet.html" %}
+{% block cabinet_title %}Темы курса{% endblock %}
+
+{% block cabinet_nav %}
+  <a href="{{ url_for('teacher.dashboard') }}">📊 Главная</a>
+  <a href="{{ url_for('teacher.students') }}">👦 Ученики</a>
+  <a href="{{ url_for('teacher.courses') }}" class="is-active">📚 Курсы</a>
+  <a href="{{ url_for('teacher.works') }}">📝 Работы</a>
+  <a href="{{ url_for('teacher.textbooks_page') }}">📖 Пособия</a>
+{% endblock %}
+
+{% block cabinet_content %}
+<div class="page-head">
+  <div>
+    <h1>🧩 Темы курса «{{ course.title }}»</h1>
+    <p>{{ course.subject_name }} · {{ course.grade }} класс · включено тем: {{ current_count }}</p>
+  </div>
+  <a class="btn btn--ghost" href="{{ url_for('teacher.courses') }}">← К курсам</a>
+</div>
+
+<div class="card mb-3">
+  <h2>＋ Добавить тему</h2>
+  <form method="post" class="mt-2">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="add_topic">
+    <div class="grid-2">
+      <div class="field">
+        <label for="title">Название *</label>
+        <input id="title" name="title" required maxlength="150">
+      </div>
+      <div class="field">
+        <label for="description">Описание</label>
+        <input id="description" name="description" maxlength="300">
+      </div>
+    </div>
+    <button class="btn mt-1" type="submit">Добавить</button>
+  </form>
+</div>
+
+<form method="post" class="card">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="action" value="save">
+  <p class="muted small">Отметьте темы, которые изучаете с классом. Ученики увидят только их
+    в карте тем; порядок сохраняется.</p>
+
+  <div class="checkbox-list mt-2">
+    {% for row in rows %}
+      <label class="check-item">
+        <input type="checkbox" name="topic_slugs" value="{{ row.topic.slug }}" {% if row.enabled %}checked{% endif %}>
+        <span>
+          <b>{{ row.topic.icon }} {{ row.topic.title }}</b>
+          <span class="muted small">· {{ row.topic.description }}
+            {% if row.topic.books_count %}· 📖 {{ row.topic.books_count }}{% endif %}</span>
+        </span>
+      </label>
+    {% else %}
+      <p class="muted">В предмете пока нет тем. Добавьте тему выше или попросите администратора
+        загрузить пособие.</p>
+    {% endfor %}
+  </div>
+
+  <button class="btn btn--lg mt-3" type="submit">💾 Сохранить состав тем</button>
+</form>
+{% endblock %}

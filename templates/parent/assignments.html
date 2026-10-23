@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Задания детям — родительская зона{% endblock %}
+{% block content %}
+
+<div class="row row--between mt-3">
+  <div>
+    <h1 style="margin:0;">📝 Задания детям</h1>
+    <p class="muted" style="margin:4px 0 0;">
+      Работа по темам любого предмета. Задания составляются автоматически по учебнику.
+    </p>
+  </div>
+  <a class="btn btn--ghost btn--small" href="{{ url_for('parent.dashboard') }}">← В родительскую зону</a>
+</div>
+
+{% if not children %}
+  <div class="card mt-3">
+    <h2>Нужен аккаунт ребёнка</h2>
+    <p class="muted">
+      Отправлять задания можно детям, у которых есть школьный аккаунт.
+      Привяжите его по коду в разделе «Настройки» родительской зоны.
+    </p>
+    <a class="btn btn--ghost mt-2" href="{{ url_for('parent.settings') }}">Перейти в настройки</a>
+  </div>
+{% else %}
+  <form method="post" class="card mt-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="field">
+      <label>Кому отправить *</label>
+      <div class="checkbox-list">
+        {% for child in children %}
+          <label class="check-item">
+            <input type="checkbox" name="child_ids" value="{{ child.user.id }}" checked>
+            <span><b>{{ child.user.first_name }} {{ child.user.last_name }}</b>
+              <span class="muted small">· {{ child.grade }} класс</span></span>
+          </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="title">Название</label>
+        <input id="title" name="title" maxlength="120" placeholder="Например: Домашнее задание по чтению">
+      </div>
+      <div class="field">
+        <label for="kind">Тип работы</label>
+        <select id="kind" name="kind">
+          {% for key, label in kinds.items() %}
+            <option value="{{ key }}" {% if key == 'домашняя' %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="subject_id">Предмет</label>
+        <select id="subject_id" name="subject_id">
+          <option value="">— по выбранным темам —</option>
+          {% for subject in subjects %}
+            <option value="{{ subject.id }}">{{ subject.icon }} {{ subject.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="due_date">Срок сдачи</label>
+        <input id="due_date" name="due_date" type="date">
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="questions_count">Количество заданий</label>
+        <input id="questions_count" name="questions_count" type="number" min="1" max="40" value="10">
+      </div>
+      <div class="field">
+        <label for="time_limit">Время (мин, 0 — без ограничения)</label>
+        <input id="time_limit" name="time_limit" type="number" min="0" max="180" value="0">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="description">Инструкция для ребёнка</label>
+      <textarea id="description" name="description" rows="2"
+                placeholder="Например: сначала прочитай тему в учебнике"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Темы работы *</label>
+      <span class="field__hint">Выбирайте темы класса ребёнка. По математике задания
+        вычислительные, по другим предметам — по тексту учебника.</span>
+      <div class="mt-1">
+        {% for group in groups %}
+          <details class="card mb-2" {% if loop.first %}open{% endif %}>
+            <summary style="cursor:pointer; font-weight:700;">
+              {{ group.icon }} {{ group.name }}
+              <span class="muted small">· {{ group.topics|length }} тем</span>
+            </summary>
+            <div class="checkbox-list mt-2">
+              {% for topic in group.topics %}
+                <label class="check-item">
+                  <input type="checkbox" name="topic_slugs" value="{{ topic.slug }}">
+                  <span><b>{{ topic.icon }} {{ topic.title }}</b>
+                    <span class="muted small">· {{ topic.grade }} класс</span></span>
+                </label>
+              {% endfor %}
+            </div>
+          </details>
+        {% endfor %}
+      </div>
+    </div>
+
+    <button class="btn btn--lg" type="submit">Отправить задание</button>
+  </form>
+
+  <h2 class="section-title mt-4">📊 Отправленные задания</h2>
+  <div class="card">
+    {% if sent %}
+      <div class="data-table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>Задание</th><th>Ребёнок</th><th>Предмет</th><th>Статус</th><th>Результат</th><th>Когда</th></tr>
+          </thead>
+          <tbody>
+            {% for item in sent %}
+              {% set assignment = item.assignment %}
+              {% set result = item.result %}
+              <tr>
+                <td><b>{{ assignment.title }}</b><br><span class="muted small">{{ assignment.kind }}</span></td>
+                <td>{{ assignment.student_first }} {{ assignment.student_last }}</td>
+                <td>{{ assignment.subject_icon }} {{ assignment.subject_name }}</td>
+                <td>
+                  {% if result %}
+                    <span class="chip chip--green">выполнено</span>
+                  {% else %}
+                    <span class="chip chip--amber">ожидает</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if result %}
+                    {{ result.score }} / {{ result.max_score }}
+                    {% if result.max_score %}
+                      · {{ (result.score / result.max_score * 100) | round(0, 'floor') | int }}%
+                    {% endif %}
+                  {% else %}—{% endif %}
+                </td>
+                <td class="muted">{{ assignment.created_at }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="muted">Вы ещё не отправляли задания. Выберите темы и отправьте первую работу.</p>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

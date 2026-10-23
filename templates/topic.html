@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}{{ topic.title }} — тема{% endblock %}
+{% block content %}
+
+<section class="topic-head" style="--topic-color: {{ topic_colors.get(topic.color, '#6366f1') }};">
+  <span class="topic-head__icon">{{ topic.icon }}</span>
+  <div style="flex:1 1 240px;">
+    <h1>{{ topic.title }}</h1>
+    <p>{{ topic.description }}</p>
+    <div class="row mt-1" style="gap:6px;">
+      <span class="chip chip--blue">{{ learner.grade }} класс</span>
+      <span class="chip chip--purple">📖 учебник ч.{{ topic.part }}, с.{{ topic.page_start }}–{{ topic.page_end }}</span>
+      <span class="stars">
+        {% for i in range(3) %}<span class="{% if i < stars %}on{% else %}off{% endif %}">⭐</span>{% endfor %}
+      </span>
+    </div>
+  </div>
+  <div class="row" style="flex-direction:column; gap:10px;">
+    <a class="btn btn--lg" href="{{ url_for('play.start_play', slug=topic.slug) }}">▶ Тренироваться</a>
+    <a class="btn btn--warn" href="{{ url_for('play.start_boss', slug=topic.slug) }}">🐉 Испытание-босс</a>
+    {% if ai_available %}
+      <a class="btn btn--ghost" href="{{ url_for('ai.explain_topic', slug=topic.slug) }}">🤖 Объяснить с ИИ</a>
+    {% endif %}
+  </div>
+</section>
+
+<div class="grid-2">
+  <div class="card">
+    <h2>🧠 Способы объяснения</h2>
+    <p class="muted small">Не понял тему? Выбери другой способ — объясним по-другому.
+      Способы чередуются в игре, когда задание не получается.</p>
+    <div class="method-list mt-2">
+      {% for method in methods %}
+        <a class="method-item" href="{{ url_for('main.explain', slug=topic.slug, method_slug=method.slug) }}">
+          <span class="method-item__num">{{ loop.index }}</span>
+          <span class="method-item__body">
+            <span class="method-item__title">{{ method.name }}</span>
+            <span class="method-item__desc">
+              {% if method.mastered %}✅ освоено · {% endif %}
+              {% if method.attempts %}верно {{ method.correct }} из {{ method.attempts }}{% else %}ещё не пробовал{% endif %}
+            </span>
+          </span>
+          <span class="chip chip--green">👀 наглядно</span>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📊 Твои результаты</h2>
+    <div class="stat-grid mt-2">
+      <div class="stat-box">
+        <div class="stat-box__value">{{ attempts }}</div>
+        <div class="stat-box__label">заданий решено</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box__value">{{ correct }}</div>
+        <div class="stat-box__label">верных ответов</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box__value">{{ stars }}</div>
+        <div class="stat-box__label">звёзд</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box__value">{{ 'да' if boss_cleared else 'нет' }}</div>
+        <div class="stat-box__label">босс побеждён</div>
+      </div>
+    </div>
+    <div class="mt-3">
+      {% if books %}
+        <a class="btn btn--ghost btn--block" target="_blank" rel="noopener"
+           href="{{ url_for('admin.textbook_open', textbook_id=books[0].id) }}#page={{ books[0].page }}&zoom=page-width">
+          📖 Открыть пособие: с. {{ books[0].page }}
+        </a>
+      {% else %}
+        <a class="btn btn--ghost btn--block" href="{{ url_for('main.textbook') }}">
+          📖 Все учебные пособия
+        </a>
+      {% endif %}
+    </div>
+    <p class="muted small mt-2">
+      В игре задания подбираются автоматически: если ребёнок ошибается дважды,
+      мы переключаем способ объяснения и даём подсказку.
+    </p>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <h3>📖 Учебные пособия по теме</h3>
+  {% if books %}
+    <p class="muted small">Все загруженные пособия, где разбирается эта тема. Нажми на страницу — откроется нужное место в PDF.</p>
+    <div class="method-list mt-2">
+      {% for book in books %}
+        <a class="method-item" target="_blank" rel="noopener"
+           href="{{ url_for('admin.textbook_open', textbook_id=book.id) }}#page={{ book.page }}&zoom=page-width">
+          <span class="method-item__num">📄</span>
+          <span class="method-item__body">
+            <span class="method-item__title">{{ book.title }}</span>
+            <span class="method-item__desc">
+              {{ book.subject_name }} · {{ book.grade }} класс
+              {% if book.author %}· {{ book.author }}{% endif %}
+              · стр. {{ book.page }}{% if book.page_end and book.page_end != book.page %}–{{ book.page_end }}{% endif %}
+            </span>
+          </span>
+          <span class="chip chip--purple">открыть ↗</span>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="muted small">Пособия по этой теме пока не загружены.
+      <a href="{{ url_for('main.textbook') }}">Открыть встроенный учебник →</a></p>
+  {% endif %}
+  <div class="mt-2">
+    <a class="btn btn--ghost btn--small" href="{{ url_for('main.textbook') }}#{{ topic.slug }}">
+      📘 Встроенный учебник (часть {{ topic.part }}, с. {{ topic.page_start }}–{{ topic.page_end }})
+    </a>
+  </div>
+</div>
+
+{% endblock %}

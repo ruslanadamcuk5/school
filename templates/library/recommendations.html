@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Мои рекомендации · Библиотека{% endblock %}
+{% block wrap_class %}library-page{% endblock %}
+
+{% block content %}
+  <div class="page-head row--between">
+    <div>
+      <h1>📤 Мои рекомендации</h1>
+      <p>Темы книг, которые вы рекомендовали классам и ученикам.</p>
+    </div>
+    <a class="btn btn--ghost" href="{{ url_for('library.library') }}">← В библиотеку</a>
+  </div>
+
+  {% if recs %}
+    <div class="card mt-2">
+      <div class="data-table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>Книга</th><th>Тема</th><th>Кому</th><th>Прочитали</th><th>Дата</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for rec in recs %}
+              <tr>
+                <td><b>{{ rec.title }}</b>
+                  {% if rec.note %}<div class="muted small">{{ rec.note }}</div>{% endif %}
+                </td>
+                <td>
+                  {% if rec.topic_title %}{{ rec.topic_title }}
+                    {% if rec.page %}<div class="muted small">стр. {{ rec.page }}</div>{% endif %}
+                  {% else %}<span class="muted">книга целиком</span>{% endif %}
+                </td>
+                <td>
+                  {% if rec.target_kind == 'class' %}
+                    класс {{ rec.class_grade }} {% if rec.class_letter %}«{{ rec.class_letter }}»{% endif %}
+                  {% else %}
+                    {{ rec.student_last or '' }} {{ rec.student_first or '' }}
+                  {% endif %}
+                </td>
+                <td>{{ rec.done_count }} / {{ rec.total_count }}</td>
+                <td>{{ rec.created_at[:10] }}</td>
+                <td>
+                  <form method="post" action="{{ url_for('library.revoke', rec_id=rec.id) }}"
+                        onsubmit="return confirm('Отозвать рекомендацию?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn--small btn--danger" type="submit">✕</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% else %}
+    <div class="card mt-3">
+      <p>Рекомендаций пока нет.</p>
+      <p class="muted small">Откройте книгу в библиотеке, выберите тему и отправьте её классу
+        или ученику.</p>
+    </div>
+  {% endif %}
+{% endblock %}

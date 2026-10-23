@@ -1,0 +1,5 @@
+Flask>=2.3,<4.0
+waitress>=3.0,<4.0
+gunicorn>=22.0,<24.0; platform_system != "Windows"
+pypdf>=5.0,<7.0
+PyMuPDF>=1.24,<3.0

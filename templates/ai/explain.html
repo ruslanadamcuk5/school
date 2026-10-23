@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ topic_title }} — объяснение ИИ{% endblock %}
+
+{% block content %}
+<div class="page-head row--between">
+  <div>
+    <h1>🤖 {{ topic_title }}</h1>
+    <p>
+      {{ info.subject }}{% if info.grade %} · {{ info.grade }} класс{% endif %}
+      {% if info.page_start %} · стр. {{ info.page_start }}{% if info.page_end and info.page_end != info.page_start %}–{{ info.page_end }}{% endif %}{% endif %}
+    </p>
+  </div>
+  <div class="row" style="gap:8px;">
+    <a class="btn btn--ghost" href="{{ url_for('main.topic_page', slug=info.slug) }}">← К теме</a>
+    <form method="post" action="{{ url_for('ai.refresh_explanation', slug=info.slug) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn--ghost" type="submit">🔄 Обновить объяснение</button>
+    </form>
+  </div>
+</div>
+
+{% if error %}
+  <div class="card mt-2">
+    <p><b>Не удалось получить объяснение.</b></p>
+    <p class="muted small">{{ error }}</p>
+    <p class="muted small">Проверьте настройки ИИ в админ-панели или попробуйте позже.
+      Учебные материалы темы доступны по кнопке «← К теме».</p>
+  </div>
+{% else %}
+  <div class="card mt-2 ai-explain">
+    {{ content_html | safe }}
+  </div>
+  <p class="muted small mt-2">
+    Объяснение сгенерировано моделью
+    {% if cached and cached.model %}«{{ cached.model }}»{% elif ai_status and ai_status.model %}«{{ ai_status.model }}»{% endif %}.
+    ИИ может ошибаться — сверяйтесь с учебником.
+    {% if cached and cached.created_at %}· создано {{ cached.created_at }}{% endif %}
+  </p>
+{% endif %}
+
+<div class="card mt-3 card--flat" style="background:#f8fafc;">
+  <b>Как пользоваться</b>
+  <p class="muted small mt-1">Прочитайте объяснение, разберите примеры и ответьте на вопросы
+    самопроверки. Затем вернитесь к теме и пройдите тренировку или тест.</p>
+</div>
+{% endblock %}

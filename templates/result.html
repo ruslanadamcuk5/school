@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Результат — {{ topic.title }}{% endblock %}
+{% block content %}
+
+<section class="card result-card mt-3">
+  {% if mode == 'daily' %}
+    <div style="font-size:4rem;">🎯</div>
+    <h1>{% if correct %}Ежедневное задание выполнено!{% else %}Ежедневное задание — попробуй ещё!{% endif %}</h1>
+    <p class="mt-2" style="font-size:1.1rem;">
+      Верных ответов: <b>{{ correct }} из {{ total }}</b>
+    </p>
+    <div class="stat-grid mt-2">
+      <div class="stat-box"><div class="stat-box__value">+{{ xp }}</div><div class="stat-box__label">опыта (XP)</div></div>
+      <div class="stat-box"><div class="stat-box__value">+{{ coins }}</div><div class="stat-box__label">монеток</div></div>
+    </div>
+  {% else %}
+    {% if mode == 'boss' %}
+      <div style="font-size:4rem;">{% if correct >= 2 %}🐉{% else %}💪{% endif %}</div>
+      <h1>{% if correct >= 2 %}Босс побеждён!{% else %}Почти получилось!{% endif %}</h1>
+    {% else %}
+      <div style="font-size:4rem;">{% if stars == 3 %}🏆{% elif stars == 2 %}🎉{% else %}💪{% endif %}</div>
+      <h1>{% if stars == 3 %}Отлично, {{ learner.name }}!{% elif stars == 2 %}Хорошая работа!{% else %}Тренируемся дальше{% endif %}</h1>
+    {% endif %}
+
+    <div class="big-stars mt-1">
+      {% for i in range(3) %}<span class="{% if i < stars %}on{% else %}off{% endif %}">⭐</span>{% endfor %}
+    </div>
+
+    <p class="mt-2" style="font-size:1.1rem;">
+      Верных ответов: <b>{{ correct }} из {{ total }}</b>
+    </p>
+
+    <div class="stat-grid mt-2">
+      <div class="stat-box"><div class="stat-box__value">+{{ xp }}</div><div class="stat-box__label">опыта (XP)</div></div>
+      <div class="stat-box"><div class="stat-box__value">+{{ coins }}</div><div class="stat-box__label">монеток</div></div>
+      <div class="stat-box"><div class="stat-box__value">{{ combo }}</div><div class="stat-box__label">лучшая серия</div></div>
+      <div class="stat-box"><div class="stat-box__value">{{ stars }}</div><div class="stat-box__label">звёзд</div></div>
+    </div>
+  {% endif %}
+
+  {% if badges %}
+    <div class="card card--flat mt-3" style="background:linear-gradient(135deg,#fffbeb,#fff);">
+      <h3 style="margin:0 0 8px;">🎖 Новые значки</h3>
+      {% for badge in badges %}
+        <p style="margin:4px 0;"><b>{{ badge.icon }} {{ badge.name }}</b> — {{ badge.description }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="row mt-3" style="justify-content:center;">
+    {% if mode == 'daily' %}
+      <a class="btn btn--lg" href="{{ url_for('main.daily') }}">← К заданию дня</a>
+    {% else %}
+      <a class="btn btn--lg" href="{{ url_for('play.start_play', slug=topic.slug) }}">🔁 Ещё раз</a>
+      <a class="btn btn--lg btn--warn" href="{{ url_for('play.start_boss', slug=topic.slug) }}">🐉 Босс</a>
+    {% endif %}
+    <a class="btn btn--lg btn--ghost" href="{{ url_for('main.map_page') }}">🗺 К карте</a>
+  </div>
+</section>
+
+<section class="card mt-3">
+  <h2>📝 Разбор заданий</h2>
+  <p class="muted small">Посмотри, где были ошибки — и разбери их вместе с родителем.</p>
+  <div class="mt-2">
+    {% for item in items %}
+      <div class="review-item">
+        <span class="review-item__icon">{% if item.correct %}✅{% else %}❌{% endif %}</span>
+        <div class="review-item__body">
+          <div>{{ item.question }}</div>
+          <div class="review-item__answer">
+            {% if item.correct %}Твой ответ: {{ item.given }}
+            {% else %}Твой ответ: {{ item.given }} · Правильный: {{ item.answer }}{% endif %}
+          </div>
+          {% if item.solution %}<div class="review-item__answer">{{ item.solution }}</div>{% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+{% endblock %}

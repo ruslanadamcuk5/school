@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Настройки приложения{% endblock %}
+{% block content %}
+
+<div class="row row--between mt-3">
+  <h1 style="margin:0;">⚙️ Настройки</h1>
+  <a class="btn btn--ghost btn--small" href="{{ url_for('parent.dashboard') }}">← К статистике</a>
+</div>
+
+<div class="grid-2 mt-3">
+  <section class="card">
+    <h2>PIN-код родителя</h2>
+    <p class="muted small">PIN нужен для входа в родительскую зону.</p>
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="pin">
+      <div class="field">
+        <label for="current_pin">Текущий PIN</label>
+        <input id="current_pin" name="current_pin" inputmode="numeric" maxlength="4" pattern="\d{4}" required>
+      </div>
+      <div class="field">
+        <label for="new_pin">Новый PIN (4 цифры)</label>
+        <input id="new_pin" name="new_pin" inputmode="numeric" maxlength="4" pattern="\d{4}" required>
+      </div>
+      <button class="btn" type="submit">Изменить PIN</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Обслуживание</h2>
+    <form method="post" onsubmit="return confirm('Сбросить прогресс всех детей?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="reset_all">
+      <button class="btn btn--warn btn--block" type="submit">Сбросить весь прогресс</button>
+    </form>
+    <form method="post" class="mt-2" onsubmit="return confirm('Сбросить PIN родителя?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="reset_parent_pin">
+      <button class="btn btn--ghost btn--block" type="submit">Сбросить PIN родителя</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>О приложении</h2>
+    <p class="muted small">
+      «Учусь» — образовательная платформа для 3–4 класса по программе
+      Республики Беларусь: математика, языки, литература и «Человек и мир».
+      18 тем математики, 60+ способов объяснения, генерация заданий и изучение
+      остальных предметов по загруженным учебным пособиям.
+    </p>
+    <p class="muted small">
+      Математика: Муравьёва Г.Л., Урбан М.А. «Математика. 3 класс», в 2 частях.
+      НИО, Минск. Пособия по другим предметам загружает администратор.
+    </p>
+  </section>
+</div>
+
+{% endblock %}

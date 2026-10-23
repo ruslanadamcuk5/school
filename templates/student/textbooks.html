@@ -1,0 +1,75 @@
+{% extends "cabinet.html" %}
+{% block cabinet_title %}Учебники{% endblock %}
+
+{% block cabinet_nav %}
+  <a href="{{ url_for('student.dashboard') }}" class="is-active">🎒 Мой кабинет</a>
+  <a href="{{ url_for('student.works') }}">📝 Мои работы</a>
+  <a href="{{ url_for('student.textbooks_page') }}" class="is-active">📖 Учебники</a>
+  <a href="{{ url_for('student.schedule') }}">🗓 Расписание</a>
+  <a href="{{ url_for('student.badges') }}">🏅 Значки</a>
+{% endblock %}
+
+{% block cabinet_content %}
+<div class="page-head">
+  <div>
+    <h1>📖 Учебные пособия</h1>
+    <p>Все пособия, загруженные для твоего класса. Нажми на тему — откроется нужная страница.</p>
+  </div>
+</div>
+
+<form method="get" class="card mb-3">
+  <div class="grid-2">
+    <div class="field">
+      <label for="grade">Класс</label>
+      <select id="grade" name="grade" onchange="this.form.submit()">
+        {% for g in grades %}
+          <option value="{{ g }}" {% if selected_grade == g %}selected{% endif %}>{{ g }} класс</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="subject_id">Предмет</label>
+      <select id="subject_id" name="subject_id" onchange="this.form.submit()">
+        <option value="">— все —</option>
+        {% for subject in subjects %}
+          <option value="{{ subject.id }}" {% if selected_subject == subject.id %}selected{% endif %}>
+            {{ subject.icon }} {{ subject.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+</form>
+
+{% if textbooks %}
+  {% for book in textbooks %}
+    <div class="card mb-3">
+      <div class="row row--between">
+        <div>
+          <h2 style="margin:0;">{{ book.subject_icon }} {{ book.title }}</h2>
+          <p class="muted small" style="margin:2px 0 0;">
+            {{ book.subject_name }} · {{ book.grade }} класс
+            {% if book.author %} · {{ book.author }}{% endif %}
+            · {{ book.pages }} стр.
+          </p>
+        </div>
+        <a class="btn" target="_blank" href="{{ url_for('admin.textbook_open', textbook_id=book.id) }}">📖 Открыть</a>
+      </div>
+      {% if book.links %}
+        <div class="row mt-2" style="gap:6px;">
+          {% for link in book.links %}
+            <a class="chip chip--blue"
+               href="{{ url_for('main.topic_page', slug=link.topic_slug) }}"
+               style="text-decoration:none;">{{ link.icon or '📄' }} {{ link.title or link.topic_slug }}
+              · с. {{ link.page }}{% if link.page_end and link.page_end != link.page %}–{{ link.page_end }}{% endif %}</a>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  {% endfor %}
+{% else %}
+  <div class="card">
+    <p class="muted">Для этого класса пока нет загруженных пособий. Учитель и администратор
+      добавят их позже.</p>
+  </div>
+{% endif %}
+{% endblock %}

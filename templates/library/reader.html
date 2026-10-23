@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.title }} · Библиотека{% endblock %}
+{% block wrap_class %}library-page{% endblock %}
+
+{% block content %}
+  <div class="page-head row--between">
+    <div>
+      <h1>📖 {{ item.title }}</h1>
+      <p>
+        {% if item.author %}{{ item.author }} · {% endif %}
+        {% if item.subject_name %}{{ item.subject_icon }} {{ item.subject_name }} · {% endif %}
+        {{ item.grade }} класс{% if item.pages %} · {{ item.pages }} стр.{% endif %}
+      </p>
+      {% if item.description %}<p class="mt-2">{{ item.description }}</p>{% endif %}
+    </div>
+    <div class="row">
+      <a class="btn" href="{{ open_url }}" target="_blank" rel="noopener">📄 Открыть книгу</a>
+      <a class="btn btn--ghost" href="{{ url_for('library.library') }}">← В библиотеку</a>
+    </div>
+  </div>
+
+  {% if recommendations %}
+    <div class="card mt-2">
+      <h2 style="font-size:1.05rem;">📌 Что рекомендовал учитель</h2>
+      <ul class="mt-1">
+        {% for rec in recommendations %}
+          <li>
+            {% if rec.topic_title %}<b>{{ rec.topic_title }}</b>
+              {% if rec.page %}(стр. {{ rec.page }}{% if rec.page_end and rec.page_end != rec.page %}–{{ rec.page_end }}{% endif %}){% endif %}
+            {% else %}Книга целиком{% endif %}
+            {% if rec.note %} — {{ rec.note }}{% endif %}
+            {% if rec.done %}<span class="chip chip--gray small">прочитано</span>{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <h2 class="section-title mt-3">📑 Темы книги</h2>
+  <div class="card">
+    {% if topics %}
+      <div class="data-table-wrap" style="max-height:560px; overflow-y:auto;">
+        <table class="table">
+          <thead><tr><th>Тема</th><th>Страницы</th><th></th></tr></thead>
+          <tbody>
+            {% for t in topics %}
+              <tr>
+                <td>{{ t.icon or '📘' }} {{ t.title or t.topic_slug }}</td>
+                <td>{{ t.page }}{% if t.page_end and t.page_end != t.page %}–{{ t.page_end }}{% endif %}</td>
+                <td>
+                  <a class="btn btn--small btn--ghost" target="_blank" rel="noopener"
+                     href="{{ open_url }}#page={{ t.page }}">Открыть стр. {{ t.page }}</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="muted small mt-2">PDF откроется на нужной странице в браузере.</p>
+    {% else %}
+      <p class="muted">Темы для этой книги ещё не добавлены.</p>
+    {% endif %}
+  </div>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "cabinet.html" %}
+{% block cabinet_title %}Новый курс{% endblock %}
+
+{% block cabinet_nav %}
+  <a href="{{ url_for('teacher.dashboard') }}">📊 Главная</a>
+  <a href="{{ url_for('teacher.students') }}">👦 Ученики</a>
+  <a href="{{ url_for('teacher.courses') }}" class="is-active">📚 Курсы</a>
+  <a href="{{ url_for('teacher.works') }}">📝 Работы</a>
+  <a href="{{ url_for('teacher.textbooks_page') }}">📖 Пособия</a>
+{% endblock %}
+
+{% block cabinet_content %}
+<div class="page-head">
+  <h1>＋ Новый курс</h1>
+</div>
+
+<form method="post" class="card">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="grid-2">
+    <div class="field">
+      <label for="subject_id">Предмет *</label>
+      <select id="subject_id" name="subject_id" required>
+        <option value="">— выбери предмет —</option>
+        {% for subject in subjects %}
+          <option value="{{ subject.id }}">{{ subject.icon }} {{ subject.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="grade">Класс *</label>
+      <select id="grade" name="grade">
+        <option value="3">3 класс</option>
+        <option value="4">4 класс</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="title">Название курса *</label>
+    <input id="title" name="title" required maxlength="120" placeholder="Например: Математика, 3 класс">
+  </div>
+
+  <div class="field">
+    <label for="description">Описание</label>
+    <textarea id="description" name="description" rows="3" placeholder="Цели, особенности, сроки"></textarea>
+  </div>
+
+  <div class="field">
+    <label>Классы курса</label>
+    <div class="checkbox-list">
+      {% for klass in classes %}
+        <label class="check-item">
+          <input type="checkbox" name="class_ids" value="{{ klass.id }}">
+          <span><b>{{ klass.grade }} «{{ klass.letter }}»</b> · {{ klass.school_name }}
+            ({{ klass.students_count }} уч.)</span>
+        </label>
+      {% else %}
+        <span class="muted small">У вас пока нет классов.</span>
+      {% endfor %}
+    </div>
+  </div>
+
+  <button class="btn btn--lg" type="submit">Создать курс и настроить темы →</button>
+</form>
+{% endblock %}

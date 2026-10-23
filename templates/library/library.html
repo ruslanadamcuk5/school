@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Библиотека · книги учителя{% endblock %}
+{% block wrap_class %}library-page{% endblock %}
+
+{% block content %}
+  <div class="page-head row--between">
+    <div>
+      <h1>📚 Библиотека</h1>
+      <p>Загрузите книгу (PDF) — она разобьётся на темы по оглавлению. Отметьте классы,
+        которым книга доступна, и рекомендуйте темы ученикам.</p>
+    </div>
+    <a class="btn btn--ghost" href="{{ url_for('library.recommendations') }}">📤 Мои рекомендации</a>
+  </div>
+
+  <div class="mt-2">
+    <span class="chip chip--blue">Книг: {{ stats.books }}</span>
+    <span class="chip chip--gray">Классов в доступе: {{ stats.classes }}</span>
+    <span class="chip chip--gray">Рекомендаций: {{ stats.recommendations }}</span>
+  </div>
+
+  <div class="card mt-3">
+    <h2>⬆️ Загрузить книгу в библиотеку</h2>
+    <p class="muted small">Принимаются файлы PDF. Темы определяются по закладкам или странице
+      «Содержание»; страницы можно поправить на странице книги.</p>
+    <form method="post" action="{{ url_for('library.upload') }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="grid-2 mt-2">
+        <div class="field">
+          <label for="file">Файл книги (PDF)</label>
+          <input id="file" type="file" name="file" accept="application/pdf,.pdf" required>
+        </div>
+        <div class="field">
+          <label for="title">Название</label>
+          <input id="title" name="title" maxlength="200" placeholder="Литературное чтение, 3 класс">
+        </div>
+        <div class="field">
+          <label for="subject_id">Предмет</label>
+          <select id="subject_id" name="subject_id" required>
+            <option value="">— выберите предмет —</option>
+            {% for s in subjects %}
+              <option value="{{ s.id }}">{{ s.icon }} {{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="grade">Класс</label>
+          <select id="grade" name="grade" required>
+            {% for g in range(1, 12) %}
+              <option value="{{ g }}" {% if user_grade == g %}selected{% endif %}>{{ g }} класс</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="author">Автор</label>
+          <input id="author" name="author" maxlength="200" placeholder="И. И. Иванов">
+        </div>
+        <div class="field">
+          <label for="description">Краткое описание</label>
+          <input id="description" name="description" maxlength="400" placeholder="Для чего эта книга">
+        </div>
+      </div>
+
+      <div class="field mt-2">
+        <label>Кому доступна книга (классы)</label>
+        {% if classes %}
+          <div class="row" style="flex-wrap:wrap; gap:10px;">
+            {% for klass in classes %}
+              <label class="chip chip--gray" style="cursor:pointer;">
+                <input type="checkbox" name="class_ids" value="{{ klass.id }}">
+                {{ klass.grade }} {% if klass.letter %}«{{ klass.letter }}»{% endif %}
+                {% if klass.school_name %}<span class="muted small">· {{ klass.school_name }}</span>{% endif %}
+              </label>
+            {% endfor %}
+          </div>
+          <p class="muted small">Если не отметить ни один класс, книгу никто не увидит —
+            доступ можно выдать позже на странице книги.</p>
+        {% else %}
+          <p class="muted small">У вас пока нет классов. Обратитесь к администратору школы.</p>
+        {% endif %}
+      </div>
+
+      <button class="btn btn--success mt-2" type="submit">⬆️ Загрузить и разбить на темы</button>
+    </form>
+  </div>
+
+  <h2 class="section-title mt-3">Книги библиотеки</h2>
+  <form method="get" class="library-bar">
+    <input type="search" name="search" value="{{ search }}" placeholder="Поиск по названию…"
+           class="field input" style="flex:1 1 260px;">
+    <select name="subject_id" class="field select" style="flex:0 0 200px;">
+      <option value="">Все предметы</option>
+      {% for s in subjects %}
+        <option value="{{ s.id }}" {% if selected_subject == s.id %}selected{% endif %}>
+          {{ s.icon }} {{ s.name }}</option>
+      {% endfor %}
+    </select>
+    <select name="grade" class="field select" style="flex:0 0 140px;">
+      <option value="">Все классы</option>
+      {% for g in range(1, 12) %}
+        <option value="{{ g }}" {% if selected_grade == g %}selected{% endif %}>{{ g }} класс</option>
+      {% endfor %}
+    </select>
+    <button class="btn btn--ghost btn--small" type="submit">Искать</button>
+  </form>
+
+  {% if books %}
+    <div class="book-grid mt-2">
+      {% for b in books %}
+        <a class="book-card" href="{{ url_for('library.book', book_id=b.id) }}">
+          <div class="book-card__cover">{{ b.subject_icon or '📖' }}</div>
+          <h3 class="book-card__title">{{ b.title }}</h3>
+          <div class="book-card__meta">
+            {% if b.author %}{{ b.author }} · {% endif %}
+            {% if b.subject_name %}{{ b.subject_name }} · {% endif %}
+            {{ b.grade }} класс
+          </div>
+          <div class="book-card__meta">
+            тем: {{ b.topics_count }} · классов: {{ b.classes_count }}
+            {% if b.pages %} · {{ b.pages }} стр.{% endif %}
+          </div>
+          {% if user_role == 'admin' and b.owner_first %}
+            <div class="book-card__meta">учитель: {{ b.owner_first }} {{ b.owner_last }}</div>
+          {% endif %}
+          <div class="book-card__foot">
+            {% if b.classes_count %}
+              <span class="chip chip--blue small">доступна классам</span>
+            {% else %}
+              <span class="chip chip--gray small">классы не выбраны</span>
+            {% endif %}
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card mt-2">
+      <p>Книг пока нет.</p>
+      <p class="muted small">Загрузите первую книгу — она появится здесь и станет доступна
+        выбранным классам.</p>
+    </div>
+  {% endif %}
+{% endblock %}

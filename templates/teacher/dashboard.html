@@ -1,0 +1,99 @@
+{% extends "cabinet.html" %}
+{% block cabinet_title %}Кабинет учителя{% endblock %}
+
+{% block cabinet_nav %}
+  <a href="{{ url_for('teacher.dashboard') }}" class="{% if request.endpoint == 'teacher.dashboard' %}is-active{% endif %}">📊 Главная</a>
+  <a href="{{ url_for('teacher.students') }}" class="{% if request.endpoint == 'teacher.students' %}is-active{% endif %}">
+    👦 Ученики <span class="count">{{ students|length }}</span></a>
+  <a href="{{ url_for('teacher.courses') }}" class="{% if request.endpoint in ('teacher.courses', 'teacher.course_topics') %}is-active{% endif %}">
+    📚 Курсы <span class="count">{{ courses|length }}</span></a>
+  <a href="{{ url_for('teacher.works') }}" class="{% if request.endpoint in ('teacher.works', 'teacher.work_detail', 'teacher.work_new') %}is-active{% endif %}">
+    📝 Работы <span class="count">{{ works|length }}</span></a>
+  <a href="{{ url_for('teacher.textbooks_page') }}" class="{% if request.endpoint == 'teacher.textbooks_page' %}is-active{% endif %}">📖 Пособия</a>
+  <a href="{{ url_for('auth.account') }}">⚙️ Профиль</a>
+{% endblock %}
+
+{% block cabinet_content %}
+<div class="page-head">
+  <div>
+    <h1>👩‍🏫 Здравствуйте, {{ user.first_name }}!</h1>
+    <p>{{ classes|length }} класс(ов) · {{ students|length }} учеников · {{ courses|length }} курсов</p>
+  </div>
+  <div class="row">
+    <a class="btn" href="{{ url_for('teacher.work_new') }}">＋ Новая работа</a>
+    <a class="btn btn--ghost" href="{{ url_for('teacher.course_new') }}">＋ Новый курс</a>
+  </div>
+</div>
+
+{% if not classes %}
+  <div class="card">
+    <h2>Пока нет классов</h2>
+    <p class="muted">Попросите администратора создать классы в вашей школе и назначить вас учителем —
+      либо выберите их при регистрации.</p>
+    <a class="btn btn--ghost" href="{{ url_for('auth.account') }}">Обновить профиль</a>
+  </div>
+{% else %}
+  {% if needs_attention %}
+    <div class="card mb-3" style="background:linear-gradient(135deg,#fff7ed,#fff); border-left:6px solid #f59e0b;">
+      <h2>⏳ Ждут выполнения</h2>
+      {% for item in needs_attention %}
+        <p style="margin:4px 0;">
+          <b>{{ item.assignment.title }}</b> ({{ item.assignment.kind }}) —
+          сдали {{ item.done }} из {{ item.total }}, не сдали: {{ item.pending }}
+        </p>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <h2 class="section-title">🏫 Мои классы</h2>
+  <div class="grid-2 mb-3">
+    {% for klass in classes %}
+      <a class="topic-card" style="--topic-color:#0ea5e9;" href="{{ url_for('teacher.class_detail', class_id=klass.id) }}">
+        <div class="topic-card__head">
+          <span class="topic-card__icon">🎓</span>
+          <div>
+            <div class="topic-card__title">{{ klass.grade }} «{{ klass.letter }}»</div>
+            <div class="muted small">{{ klass.school_name }}, {{ klass.city_name }}</div>
+          </div>
+        </div>
+        <p class="topic-card__desc">
+          Учеников: {{ klass.students_count }} · Год: {{ klass.year }}
+        </p>
+        <div class="topic-card__foot">
+          <span class="chip chip--blue">Открыть класс</span>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+
+  <h2 class="section-title">📝 Последние работы</h2>
+  <div class="card">
+    {% if works %}
+      <div class="data-table-wrap">
+        <table class="table">
+          <thead><tr><th>Название</th><th>Тип</th><th>Класс</th><th>Статус</th><th>Сдали</th><th>Срок</th><th></th></tr></thead>
+          <tbody>
+            {% for work in works %}
+              <tr>
+                <td><b>{{ work.title }}</b></td>
+                <td>{{ work.kind }}</td>
+                <td>{{ work.grade }}{% if work.letter %} «{{ work.letter }}»{% endif %}</td>
+                <td>
+                  {% if work.status == 'опубликована' %}<span class="chip chip--green">опубликована</span>
+                  {% elif work.status == 'закрыта' %}<span class="chip chip--gray">закрыта</span>
+                  {% else %}<span class="chip chip--amber">черновик</span>{% endif %}
+                </td>
+                <td>{{ work.done_count }} / {{ work.students_count }}</td>
+                <td>{{ work.due_date or '—' }}</td>
+                <td><a class="btn btn--ghost btn--small" href="{{ url_for('teacher.work_detail', assignment_id=work.id) }}">Открыть</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="muted">Работ пока нет. Создайте проверочную или контрольную работу.</p>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

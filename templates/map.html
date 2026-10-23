@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}Карта тем — {{ current_learner.name }}{% endblock %}
+{% block content %}
+
+<section class="hero">
+  <div>
+    <div class="row" style="align-items:center; gap:16px;">
+      <span class="avatar avatar--lg">{{ learner.avatar }}</span>
+      <div>
+        <h1 style="margin:0;">Привет, {{ learner.name }}!</h1>
+        <p class="muted" style="margin:0;">
+          {{ learner.grade }} класс · уровень {{ stats.level }} ({{ stats.level_info.title }})
+        </p>
+      </div>
+    </div>
+    <div class="mt-2">
+      <div class="row row--between small muted">
+        <span>Опыт: {{ stats.xp }} XP</span>
+        <span>До уровня {{ stats.level + 1 }}: {{ stats.level_info.need }} XP</span>
+      </div>
+      <div class="level-bar mt-1"><div class="level-bar__fill" style="width: {{ stats.level_info.percent }}%"></div></div>
+    </div>
+    <div class="row mt-2">
+      <span class="stat-pill stat-pill--coins">💰 {{ stats.coins }}</span>
+      <span class="stat-pill stat-pill--streak">🔥 {{ stats.streak_days }} дн.</span>
+      <span class="stat-pill">✅ {{ stats.total_correct }} верных</span>
+      <span class="stat-pill">🎯 {{ stats.accuracy }}%</span>
+    </div>
+  </div>
+  <div class="hero__art" aria-hidden="true">{{ learner.avatar }}</div>
+</section>
+
+<section class="card mt-2" style="background: linear-gradient(135deg,#fff7ed,#fff); border-left: 6px solid #f59e0b;">
+  <div class="row row--between">
+    <div>
+      <h2 style="margin:0; font-size:1.25rem;">🎯 Ежедневное задание</h2>
+      <p class="muted small" style="margin:4px 0 0;">
+        {% if daily_done %}Сегодня уже выполнено — молодец! Завтра будет новое.
+        {% else %}Три задачи на сегодня из разных тем. Это +30 XP.
+        {% endif %}
+      </p>
+    </div>
+    <a class="btn {% if daily_done %}btn--ghost{% else %}btn--warn{% endif %}"
+       href="{{ url_for('main.daily') }}">
+      {% if daily_done %}Результат{% else %}Начать{% endif %}
+    </a>
+  </div>
+</section>
+
+<h2 class="section-title mt-3">📚 Мои предметы</h2>
+<div class="row mt-2" style="gap:8px; flex-wrap:wrap;">
+  {% for item in subjects %}
+    <a class="chip {% if item.id == subject.id %}chip--blue{% endif %}"
+       href="{{ url_for('main.map_page', subject=item.slug) }}"
+       style="text-decoration:none; padding:10px 14px; font-size:1rem;">
+      {{ item.icon }} {{ item.name }}
+      <span class="muted small">{{ subject_counts.get(item.id, 0) }}</span>
+    </a>
+  {% endfor %}
+</div>
+
+<h2 class="section-title mt-3">🗺️ Карта тем
+  <small>{{ subject.icon }} {{ subject.name }} · {{ learner.grade }} класс</small></h2>
+
+{% if can_upgrade %}
+  <div class="card mt-2" style="background: linear-gradient(135deg,#ecfdf5,#fff); border-left: 6px solid #10b981;">
+    <div class="row row--between">
+      <div>
+        <h3 style="margin:0;">🌟 Ты вырос! Доступна программа {{ next_grade }} класса</h3>
+        <p class="muted small" style="margin:4px 0 0;">Новые темы: умножение в столбик, движение, дроби и признаки делимости.</p>
+      </div>
+      <form method="post" action="{{ url_for('main.change_grade') }}"
+            onsubmit="return confirm('Перейти на программу {{ next_grade }} класса?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="grade" value="{{ next_grade }}">
+        <button class="btn btn--success" type="submit">Перейти в {{ next_grade }} класс →</button>
+      </form>
+    </div>
+  </div>
+{% endif %}
+
+{% if subject.slug == 'math' %}
+<div class="map-grid">
+  {% for card in cards %}
+    <a class="topic-card {% if card.locked %}topic-card--locked{% endif %}"
+       style="--topic-color: {{ topic_colors.get(card.topic.color, '#6366f1') }};"
+       href="{{ url_for('main.topic_page', slug=card.topic.slug) }}">
+      <div class="topic-card__head">
+        <span class="topic-card__icon">{{ card.topic.icon }}</span>
+        <div>
+          <div class="topic-card__title">{{ card.topic.title }}</div>
+          <div class="muted small">{{ card.methods|length }} способов объяснения</div>
+        </div>
+      </div>
+      <p class="topic-card__desc">{{ card.topic.description }}</p>
+      <div class="row" style="gap:6px;">
+        <span class="chip chip--purple">📖 ч.{{ card.topic.part }}, с.{{ card.topic.page_start }}–{{ card.topic.page_end }}</span>
+        {% if card.advanced %}
+          <span class="chip chip--amber">⭐ продвинутая</span>
+        {% endif %}
+        {% if card.methods_mastered %}
+          <span class="chip chip--green">🧠 освоено {{ card.methods_mastered }}/{{ card.methods|length }}</span>
+        {% endif %}
+      </div>
+      <div class="topic-card__foot">
+        <span class="stars" title="Звёзды за тему">
+          {% for i in range(3) %}
+            <span class="{% if i < card.stars %}on{% else %}off{% endif %}">⭐</span>
+          {% endfor %}
+        </span>
+        {% if card.boss_cleared %}
+          <span class="chip chip--green">🐉 Босс побеждён</span>
+        {% elif card.attempts %}
+          <span class="chip chip--blue">{{ card.accuracy }}%</span>
+        {% else %}
+          <span class="chip chip--amber">▶ Играть</span>
+        {% endif %}
+      </div>
+    </a>
+  {% else %}
+    <div class="card">
+      <p class="muted">Для этого предмета пока нет тем. Администратор добавит их после загрузки пособия.</p>
+    </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="map-grid">
+  {% for card in reading_cards %}
+    <a class="topic-card"
+       style="--topic-color: {{ topic_colors.get(card.topic.color, '#6366f1') }};"
+       href="{{ url_for('main.topic_page', slug=card.topic.slug) }}">
+      <div class="topic-card__head">
+        <span class="topic-card__icon">{{ card.topic.icon }}</span>
+        <div>
+          <div class="topic-card__title">{{ card.topic.title }}</div>
+          <div class="muted small">
+            {% if card.books %}📖 {{ card.books|length }} пособие(й){% else %}Тема предмета{% endif %}
+          </div>
+        </div>
+      </div>
+      <p class="topic-card__desc">{{ card.topic.description or 'Изучение материала по загруженному пособию.' }}</p>
+      <div class="row" style="gap:6px;">
+        {% if card.books %}
+          {% set book = card.books[0] %}
+          <span class="chip chip--purple">с. {{ book.page }}{% if book.page_end and book.page_end != book.page %}–{{ book.page_end }}{% endif %}</span>
+        {% endif %}
+        <span class="chip chip--blue">{{ card.topic.subject_icon }} {{ card.topic.subject_name }}</span>
+      </div>
+      <div class="topic-card__foot">
+        <span class="stars">
+          {% for i in range(3) %}<span class="{% if i < card.stars %}on{% else %}off{% endif %}">⭐</span>{% endfor %}
+        </span>
+        {% if card.read %}
+          <span class="chip chip--green">✅ изучено</span>
+        {% else %}
+          <span class="chip chip--amber">📖 Читать</span>
+        {% endif %}
+      </div>
+    </a>
+  {% else %}
+    <div class="card">
+      <p class="muted">По предмету «{{ subject.name }}» для {{ learner.grade }} класса пока нет тем.
+        Загрузите пособие в админ-панели — темы сформируются из его содержания.</p>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="grid-2 mt-3">
+  <div class="card card--flat">
+    <h3>📖 Учебники и пособия</h3>
+    <p class="muted small">Все загруженные пособия для твоего класса: открой нужную тему
+      и перейди сразу на страницу в PDF.</p>
+    <a class="btn btn--ghost" href="{{ url_for('main.textbook') }}">Открыть пособия</a>
+  </div>
+  <div class="card card--flat">
+    <h3>🏆 Мои достижения</h3>
+    <p class="muted small">Значки за сильные серии, скорость, мастерство и упорство.</p>
+    <a class="btn btn--ghost" href="{{ url_for('main.profile') }}">Мои значки</a>
+  </div>
+</div>
+
+{% endblock %}

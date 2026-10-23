@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Регистрация{% endblock %}
+{% block content %}
+
+<section class="card card--pad-lg mt-3" style="max-width:720px; margin-left:auto; margin-right:auto;">
+  <h1>👋 Создание аккаунта</h1>
+  <p class="muted">Выбери роль — поля подстроятся сами.</p>
+
+  <form method="post" action="{{ url_for('auth.register') }}" id="register-form" class="mt-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="role-picker" id="role-picker">
+      <label class="role-card">
+        <input type="radio" name="role" value="student" {% if role != 'teacher' and role != 'parent' %}checked{% endif %}>
+        <span class="role-card__icon">🎒</span>
+        <span class="role-card__title">Ученик</span>
+        <span class="role-card__desc">Школа, класс и учитель подставятся автоматически</span>
+      </label>
+      <label class="role-card">
+        <input type="radio" name="role" value="teacher" {% if role == 'teacher' %}checked{% endif %}>
+        <span class="role-card__icon">👩‍🏫</span>
+        <span class="role-card__title">Учитель</span>
+        <span class="role-card__desc">Свои классы, темы, работы и расписание</span>
+      </label>
+      <label class="role-card">
+        <input type="radio" name="role" value="parent" {% if role == 'parent' %}checked{% endif %}>
+        <span class="role-card__icon">👨‍👩‍👧</span>
+        <span class="role-card__title">Родитель</span>
+        <span class="role-card__desc">Статистика и работы своего ребёнка</span>
+      </label>
+    </div>
+
+    <div class="grid-2 mt-3">
+      <div class="field">
+        <label for="first_name">Имя *</label>
+        <input id="first_name" name="first_name" required maxlength="40" value="{{ form.get('first_name', '') }}">
+      </div>
+      <div class="field">
+        <label for="last_name">Фамилия</label>
+        <input id="last_name" name="last_name" maxlength="40" value="{{ form.get('last_name', '') }}">
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="login">Логин *</label>
+        <input id="login" name="login" required minlength="3" maxlength="40"
+               value="{{ form.get('login', '') }}" autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="email">E-mail</label>
+        <input id="email" name="email" type="email" value="{{ form.get('email', '') }}">
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="password">Пароль * (мин. 6 символов)</label>
+        <input id="password" name="password" type="password" required minlength="6" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label for="password2">Повторите пароль *</label>
+        <input id="password2" name="password2" type="password" required minlength="6" autocomplete="new-password">
+      </div>
+    </div>
+
+    <!-- Ученик -->
+    <div class="role-block" data-role="student">
+      <h2 class="section-title">🏫 Школа и класс</h2>
+      <div class="grid-2">
+        <div class="field">
+          <label for="student_city">Город</label>
+          <select id="student_city" data-load="schools" data-target="student_school">
+            <option value="">— выбери город —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="student_school">Школа</label>
+          <select id="student_school" name="school_id" data-load="classes" data-target="student_class">
+            <option value="">— выбери школу —</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="student_class">Класс</label>
+        <select id="student_class" name="class_id">
+          <option value="">— выбери класс —</option>
+        </select>
+        <span class="field__hint" id="teacher-hint">Учитель класса подставится автоматически.</span>
+      </div>
+    </div>
+
+    <!-- Учитель -->
+    <div class="role-block" data-role="teacher">
+      <h2 class="section-title">👩‍🏫 Школа и классы</h2>
+      <div class="grid-2">
+        <div class="field">
+          <label for="teacher_city">Город</label>
+          <select id="teacher_city" data-load="schools" data-target="teacher_school">
+            <option value="">— выбери город —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="teacher_school">Школа</label>
+          <select id="teacher_school" name="school_id" data-load="classes" data-target="teacher_classes">
+            <option value="">— выбери школу —</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Классы, которые вы ведёте</label>
+        <div class="checkbox-list" id="teacher_classes">
+          <span class="muted small">Сначала выберите школу.</span>
+        </div>
+        <span class="field__hint">Отметьте классы, в которых вы ведёте уроки. Остальные классы можно
+          добавить позже в кабинете.</span>
+      </div>
+    </div>
+
+    <!-- Родитель -->
+    <div class="role-block" data-role="parent">
+      <h2 class="section-title">👨‍👩‍👧 Привязка ребёнка</h2>
+      <div class="field">
+        <label for="child_code">Код ребёнка</label>
+        <input id="child_code" name="child_code" maxlength="8" placeholder="Например, A1B2C3"
+               style="text-transform:uppercase">
+        <span class="field__hint">Код показывает ребёнок в своём профиле. Можно привязать позже.</span>
+      </div>
+    </div>
+
+    <button class="btn btn--lg btn--block mt-3" type="submit">Создать аккаунт</button>
+  </form>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/register.js') }}"></script>
+{% endblock %}

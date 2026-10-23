@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Профиль аккаунта{% endblock %}
+{% block content %}
+
+<section class="card card--pad-lg mt-3" style="max-width:640px; margin-left:auto; margin-right:auto;">
+  <div class="row" style="gap:16px; align-items:center;">
+    <span class="avatar avatar--lg">{{ user.avatar }}</span>
+    <div>
+      <h1 style="margin:0;">{{ user.first_name }} {{ user.last_name }}</h1>
+      <p class="muted" style="margin:0;">{{ user.login }} · {{ user.email or 'e-mail не указан' }}</p>
+    </div>
+  </div>
+
+  {% if user.role == 'student' and user.child_code %}
+    <div class="card card--flat mt-3" style="background:linear-gradient(135deg,#eff6ff,#fff);">
+      <b>Код для родителя:</b> <span class="chip chip--purple" style="font-size:1.1rem;">{{ user.child_code }}</span>
+      <p class="muted small" style="margin:6px 0 0;">Родитель вводит этот код при регистрации,
+        чтобы увидеть вашу статистику.</p>
+    </div>
+  {% endif %}
+
+  <form method="post" class="mt-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="profile">
+    <h2>Данные</h2>
+    <div class="grid-2 mt-2">
+      <div class="field">
+        <label for="first_name">Имя</label>
+        <input id="first_name" name="first_name" value="{{ user.first_name }}" maxlength="40">
+      </div>
+      <div class="field">
+        <label for="last_name">Фамилия</label>
+        <input id="last_name" name="last_name" value="{{ user.last_name }}" maxlength="40">
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label for="email">E-mail</label>
+        <input id="email" name="email" type="email" value="{{ user.email or '' }}">
+      </div>
+      <div class="field">
+        <label for="phone">Телефон</label>
+        <input id="phone" name="phone" value="{{ user.phone or '' }}">
+      </div>
+    </div>
+    <div class="field">
+      <label for="avatar">Аватар (эмодзи)</label>
+      <input id="avatar" name="avatar" maxlength="4" value="{{ user.avatar }}">
+    </div>
+    <button class="btn" type="submit">Сохранить</button>
+  </form>
+
+  <form method="post" class="card card--flat mt-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="password">
+    <h2>Смена пароля</h2>
+    <div class="field mt-2">
+      <label for="current_password">Текущий пароль</label>
+      <input id="current_password" name="current_password" type="password" required>
+    </div>
+    <div class="field">
+      <label for="new_password">Новый пароль (мин. 6 символов)</label>
+      <input id="new_password" name="new_password" type="password" minlength="6" required>
+    </div>
+    <button class="btn btn--ghost" type="submit">Изменить пароль</button>
+  </form>
+
+  {% if user.role == 'parent' %}
+    <div class="card card--flat mt-3">
+      <h2>👨‍👩‍👧 Мои дети</h2>
+      {% for child in user_children %}
+        <div class="schedule-row mt-2">
+          <div>{{ child.avatar }} <b>{{ child.last_name }} {{ child.first_name }}</b>
+            <div class="muted small">{{ child.relation }}</div></div>
+          <div></div>
+          <form method="post" action="{{ url_for('auth.unlink_child', child_id=child.id) }}"
+                onsubmit="return confirm('Отвязать ребёнка?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn--danger btn--small" type="submit">Отвязать</button>
+          </form>
+        </div>
+      {% else %}
+        <p class="muted small">Дети не привязаны.</p>
+      {% endfor %}
+      <form method="post" action="{{ url_for('auth.link_child') }}" class="row mt-2">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input class="answer-input" style="flex:1;min-width:160px;text-transform:uppercase;" type="text" name="child_code"
+               placeholder="Код ребёнка" required>
+        <button class="btn btn--small" type="submit">Привязать</button>
+      </form>
+    </div>
+  {% endif %}
+</section>
+
+{% endblock %}

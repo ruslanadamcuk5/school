@@ -1,0 +1,99 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_title %}Курсы{% endblock %}
+
+{% block admin_content %}
+<div class="page-head">
+  <div>
+    <h1>📚 Курсы предметов</h1>
+    <p>Программа предмета для класса: набор тем, учитель, подключённые классы</p>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <h2>＋ Создать курс</h2>
+  <form method="post" class="mt-2">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="add">
+    <div class="grid-2">
+      <div class="field">
+        <label for="subject_id">Предмет *</label>
+        <select id="subject_id" name="subject_id" required>
+          <option value="">— выбери предмет —</option>
+          {% for subject in subjects %}
+            <option value="{{ subject.id }}">{{ subject.icon }} {{ subject.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="title">Название *</label>
+        <input id="title" name="title" required maxlength="120" placeholder="Математика, 3 класс">
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label for="grade">Класс</label>
+        <select id="grade" name="grade">
+          <option value="3">3 класс</option>
+          <option value="4">4 класс</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="teacher_id">Ведущий учитель</label>
+        <select id="teacher_id" name="teacher_id">
+          <option value="">— назначить позже —</option>
+          {% for teacher in teachers %}
+            <option value="{{ teacher.id }}">{{ teacher.last_name }} {{ teacher.first_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="school_id">Школа</label>
+      <select id="school_id" name="school_id">
+        <option value="">— не указана —</option>
+        {% for school in schools %}
+          <option value="{{ school.id }}">{{ school.name }} ({{ school.city_name }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="description">Описание</label>
+      <textarea id="description" name="description" rows="2"></textarea>
+    </div>
+    <button class="btn" type="submit">Создать курс</button>
+  </form>
+</div>
+
+<div class="card">
+  {% if courses %}
+    <div class="data-table-wrap">
+      <table class="table">
+        <thead><tr><th>Курс</th><th>Предмет</th><th>Класс</th><th>Учитель</th><th>Тем</th><th>Классы</th><th></th></tr></thead>
+        <tbody>
+          {% for course in courses %}
+            <tr>
+              <td><b>{{ course.title }}</b></td>
+              <td>{{ course.subject_icon }} {{ course.subject_name }}</td>
+              <td>{{ course.grade }}</td>
+              <td class="small">{{ course.teacher_first }} {{ course.teacher_last }}</td>
+              <td>{{ course.topics_count }}</td>
+              <td>{{ course.classes_count }}</td>
+              <td class="row" style="gap:6px;">
+                <a class="btn btn--ghost btn--small" href="{{ url_for('admin.course_topics', course_id=course.id) }}">Темы</a>
+                <form class="inline-form" method="post" onsubmit="return confirm('Удалить курс?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="course_id" value="{{ course.id }}">
+                  <button class="btn btn--danger btn--small" type="submit">✕</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">Курсов пока нет.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_title %}{{ textbook.title }}{% endblock %}
+
+{% block admin_content %}
+<div class="page-head">
+  <div>
+    <h1>📖 {{ textbook.title }}</h1>
+    <p>{{ textbook.subject_icon }} {{ textbook.subject_name }} · {{ textbook.grade }} класс
+      · {{ textbook.pages }} стр. · {{ textbook.size_bytes | filesize }}</p>
+  </div>
+  <div class="row">
+    <a class="btn btn--ghost" target="_blank" rel="noopener"
+       href="{{ url_for('admin.textbook_open', textbook_id=textbook.id) }}">📄 Открыть PDF</a>
+    <a class="btn btn--ghost" href="{{ url_for('admin.textbooks_page') }}">← К списку</a>
+  </div>
+</div>
+
+<div class="grid-2">
+  <form method="post" class="card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="meta">
+    <h2>Сведения о пособии</h2>
+    <div class="field mt-2">
+      <label for="title">Название</label>
+      <input id="title" name="title" value="{{ textbook.title }}" maxlength="150">
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label for="author">Автор</label>
+        <input id="author" name="author" value="{{ textbook.author or '' }}">
+      </div>
+      <div class="field">
+        <label for="publisher">Издательство</label>
+        <input id="publisher" name="publisher" value="{{ textbook.publisher or '' }}">
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label for="subject_id">Предмет</label>
+        <select id="subject_id" name="subject_id">
+          {% for subject in subjects %}
+            <option value="{{ subject.id }}" {% if subject.id == textbook.subject_id %}selected{% endif %}>
+              {{ subject.icon }} {{ subject.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="grade">Класс</label>
+        <select id="grade" name="grade">
+          <option value="3" {% if textbook.grade == 3 %}selected{% endif %}>3 класс</option>
+          <option value="4" {% if textbook.grade == 4 %}selected{% endif %}>4 класс</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="description">Описание</label>
+      <textarea id="description" name="description" rows="2">{{ textbook.description or '' }}</textarea>
+    </div>
+    <button class="btn" type="submit">Сохранить</button>
+  </form>
+
+  <div class="card">
+    <h2>✨ Темы из содержания PDF</h2>
+    <p class="muted small">Сервис прочитает закладки или страницу «Содержание» и создаст темы
+      предмета «{{ textbook.subject_name }}» для {{ textbook.grade }} класса, привязав их к страницам.
+      Повторный запуск не создаёт дубли.</p>
+    <form method="post" class="mt-2">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="import_pdf">
+      <button class="btn btn--success" type="submit">📑 Сформировать темы из PDF</button>
+    </form>
+
+    <h3 class="mt-3">Или добавьте вручную</h3>
+    <form method="post" class="mt-1">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="manual_topics">
+      <div class="field">
+        <label for="manual_topics">По одной теме в строке: «Название — страница»</label>
+        <textarea id="manual_topics" name="manual_topics" rows="6"
+                  placeholder="UNIT 1. About me — 10&#10;UNIT 2. My family — 35"></textarea>
+      </div>
+      <button class="btn mt-1" type="submit">＋ Добавить темы</button>
+    </form>
+  </div>
+</div>
+
+<form method="post" class="card mt-3">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="action" value="link">
+  <h2>🔗 Привязка тем и страниц</h2>
+  <p class="muted small">Укажите страницы PDF для каждой темы. Пустое поле — тема не привязана
+    к этому пособию. Ученик откроет PDF сразу на нужной странице.</p>
+  <div class="data-table-wrap mt-2" style="max-height:620px; overflow-y:auto;">
+    <table class="table">
+      <thead><tr><th>Тема</th><th>Класс</th><th>Страница с</th><th>по</th></tr></thead>
+      <tbody>
+        {% for row in topic_rows %}
+          {% set topic = row.topic %}
+          {% set link = row.link %}
+          <tr>
+            <td>{{ topic.icon }} {{ topic.title }}
+              <div class="muted small">{{ topic.subject_name or textbook.subject_name }}
+                {% if topic.description %} · {{ topic.description }}{% endif %}</div>
+            </td>
+            <td>{{ topic.grade }}</td>
+            <td>
+              <input type="number" min="1" max="{{ textbook.pages or 2000 }}" name="page_{{ topic.slug }}"
+                     value="{{ link.page if link else '' }}" placeholder="—"
+                     style="width:90px; padding:8px; border-radius:10px; border:1px solid var(--line);">
+            </td>
+            <td>
+              <input type="number" min="1" max="{{ textbook.pages or 2000 }}" name="end_{{ topic.slug }}"
+                     value="{{ link.page_end if link else '' }}" placeholder="—"
+                     style="width:90px; padding:8px; border-radius:10px; border:1px solid var(--line);">
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="4" class="muted">Для этого предмета и класса ещё нет тем.
+            Сформируйте их из PDF или добавьте вручную выше.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <button class="btn mt-3" type="submit">💾 Сохранить привязку</button>
+</form>
+{% endblock %}

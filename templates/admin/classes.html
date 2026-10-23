@@ -1,0 +1,107 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_title %}Классы{% endblock %}
+
+{% block admin_content %}
+<div class="page-head">
+  <div>
+    <h1>🎓 Классы</h1>
+    <p>Учебные классы и их учителя</p>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <h2>＋ Создать класс</h2>
+  <form method="post" class="mt-2">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="add">
+    <div class="grid-2">
+      <div class="field">
+        <label for="school_id">Школа *</label>
+        <select id="school_id" name="school_id" required>
+          <option value="">— выбери школу —</option>
+          {% for school in schools %}
+            <option value="{{ school.id }}">{{ school.name }} ({{ school.city_name }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="grade">Класс *</label>
+        <select id="grade" name="grade">
+          <option value="3">3 класс</option>
+          <option value="4">4 класс</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label for="letter">Буква класса</label>
+        <input id="letter" name="letter" maxlength="3" placeholder="А" style="text-transform:uppercase">
+      </div>
+      <div class="field">
+        <label for="teacher_id">Учитель класса</label>
+        <select id="teacher_id" name="teacher_id">
+          <option value="">— назначить позже —</option>
+          {% for teacher in teachers %}
+            <option value="{{ teacher.id }}">{{ teacher.last_name }} {{ teacher.first_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="year">Учебный год</label>
+      <select id="year" name="year">
+        {% for year in years %}
+          <option value="{{ year }}">{{ year }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button class="btn" type="submit">Создать класс</button>
+  </form>
+</div>
+
+<div class="card">
+  {% if classes %}
+    <div class="data-table-wrap">
+      <table class="table">
+        <thead><tr><th>Класс</th><th>Школа</th><th>Город</th><th>Учитель</th><th>Учеников</th><th>Год</th><th></th></tr></thead>
+        <tbody>
+          {% for klass in classes %}
+            <tr>
+              <td><b>{{ klass.grade }} «{{ klass.letter }}»</b></td>
+              <td>{{ klass.school_name }}</td>
+              <td class="muted">{{ klass.city_name }}</td>
+              <td>
+                <form method="post" class="row" style="gap:6px;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="teacher">
+                  <input type="hidden" name="class_id" value="{{ klass.id }}">
+                  <select name="teacher_id" style="padding:6px 8px; border-radius:10px; border:1px solid var(--line);">
+                    <option value="">— нет —</option>
+                    {% for teacher in teachers %}
+                      <option value="{{ teacher.id }}" {% if klass.teacher_id == teacher.id %}selected{% endif %}>
+                        {{ teacher.last_name }} {{ teacher.first_name }}</option>
+                    {% endfor %}
+                  </select>
+                  <button class="btn btn--ghost btn--small" type="submit">OK</button>
+                </form>
+              </td>
+              <td>{{ klass.students_count }}</td>
+              <td class="muted small">{{ klass.year }}</td>
+              <td>
+                <form class="inline-form" method="post" onsubmit="return confirm('Удалить класс?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="class_id" value="{{ klass.id }}">
+                  <button class="btn btn--danger btn--small" type="submit">✕</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">Классов пока нет.</p>
+  {% endif %}
+</div>
+{% endblock %}

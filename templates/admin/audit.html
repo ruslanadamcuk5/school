@@ -1,0 +1,36 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_title %}Журнал действий{% endblock %}
+
+{% block admin_content %}
+<div class="page-head">
+  <div>
+    <h1>🧾 Журнал действий</h1>
+    <p>Последние 200 изменений в системе</p>
+  </div>
+</div>
+
+<div class="card">
+  {% if rows %}
+    <div class="data-table-wrap">
+      <table class="table">
+        <thead><tr><th>Когда</th><th>Пользователь</th><th>Действие</th><th>Объект</th><th>Детали</th></tr></thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td class="muted small">{{ row.created_at }}</td>
+              <td class="small">
+                {% if row.login %}{{ row.login }}<div class="muted small">{{ row.role }}</div>{% else %}система{% endif %}
+              </td>
+              <td><span class="chip chip--blue">{{ row.action }}</span></td>
+              <td class="small">{{ row.entity or '—' }} {{ row.entity_id or '' }}</td>
+              <td class="muted small">{{ row.details or '' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">Журнал пуст.</p>
+  {% endif %}
+</div>
+{% endblock %}

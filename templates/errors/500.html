@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Внутренняя ошибка{% endblock %}
+{% block content %}
+<section class="card card--pad-lg mt-3" style="max-width:520px; margin-left:auto; margin-right:auto; text-align:center;">
+  <div style="font-size:3.5rem;">🛠️</div>
+  <h1>Что-то сломалось</h1>
+  <p class="muted">Мы уже записали подробности в журнал сервера. Попробуй вернуться на карту тем.</p>
+  <a class="btn btn--lg" href="{{ url_for('main.map_page') }}">🗺 На карту</a>
+</section>
+{% endblock %}

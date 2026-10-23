@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Профиль — {{ learner.name }}{% endblock %}
+{% block content %}
+
+<section class="hero">
+  <div>
+    <div class="row" style="gap:16px; align-items:center;">
+      <span class="avatar avatar--lg">{{ learner.avatar }}</span>
+      <div>
+        <h1 style="margin:0;">{{ learner.name }}</h1>
+        <p class="muted" style="margin:0;">{{ learner.grade }} класс · уровень {{ stats.level }} · {{ stats.level_info.title }}</p>
+      </div>
+    </div>
+    <div class="mt-2">
+      <div class="level-bar"><div class="level-bar__fill" style="width: {{ stats.level_info.percent }}%"></div></div>
+      <p class="muted small mt-1">{{ stats.xp }} XP · до следующего уровня {{ stats.level_info.need }} XP</p>
+    </div>
+    <div class="row mt-2">
+      <span class="stat-pill stat-pill--coins">💰 {{ stats.coins }}</span>
+      <span class="stat-pill stat-pill--streak">🔥 {{ stats.streak_days }} дней</span>
+      <span class="stat-pill">✅ {{ stats.total_correct }}</span>
+      <span class="stat-pill">🎯 {{ stats.accuracy }}%</span>
+    </div>
+  </div>
+  <div class="hero__art" aria-hidden="true">{{ learner.avatar }}</div>
+</section>
+
+<section class="card mt-3">
+  <h2>🎖 Значки</h2>
+  <p class="muted small">Заработано {{ owned|length }} из {{ catalog|length }}.</p>
+  <div class="badge-grid mt-2">
+    {% for badge in catalog %}
+      <div class="badge {% if badge.key not in owned %}badge--locked{% endif %}">
+        <div class="badge__icon">{{ badge.icon }}</div>
+        <div class="badge__name">{{ badge.name }}</div>
+        <div class="badge__desc">{{ badge.description }}</div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="card mt-3">
+  <h2>📊 Точность по темам</h2>
+  {% if accuracy %}
+    <table class="table mt-2">
+      <thead><tr><th>Тема</th><th>Заданий</th><th>Верных</th><th>Точность</th><th>Звёзд</th></tr></thead>
+      <tbody>
+        {% for slug, data in accuracy.items() %}
+          <tr>
+            <td>{{ topic_titles.get(slug, slug) }}</td>
+            <td>{{ data.attempts }}</td>
+            <td>{{ data.correct }}</td>
+            <td>{{ data.accuracy }}%</td>
+            <td>{{ '⭐' * data.stars }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted">Пока нет данных — реши первую задачу!</p>
+  {% endif %}
+</section>
+
+<div class="row mt-3">
+  <a class="btn" href="{{ url_for('main.map_page') }}">🗺 К карте тем</a>
+  <a class="btn btn--ghost" href="{{ url_for('main.profile') }}">🏆 Все достижения</a>
+</div>
+
+{% endblock %}

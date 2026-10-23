@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+!.env.example
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Данные приложения (база, загруженные PDF, ключи)
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/uploads/
+data/.secret_key
+data/covers/
+data/page_cache/
+
+# Сборки и архивы
+dist/
+
+# Android
+android/.gradle/
+android/local.properties
+android/**/build/
+android/.idea/
+android/*.iml
+android/.kotlin/
+android/captures/
+*.apk
+*.aab
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,31 @@
+{% extends "cabinet.html" %}
+{% block cabinet_title %}Значки{% endblock %}
+
+{% block cabinet_nav %}
+  <a href="{{ url_for('student.dashboard') }}" class="is-active">🎒 Мой кабинет</a>
+  <a href="{{ url_for('student.works') }}">📝 Мои работы</a>
+  <a href="{{ url_for('student.textbooks_page') }}">📖 Учебники</a>
+  <a href="{{ url_for('student.schedule') }}">🗓 Расписание</a>
+  <a href="{{ url_for('student.badges') }}">🏅 Значки</a>
+{% endblock %}
+
+{% block cabinet_content %}
+<div class="page-head">
+  <div>
+    <h1>🏅 Мои значки</h1>
+    <p>Заработано {{ owned|length }} из {{ catalog|length }}</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="badge-grid">
+    {% for badge in catalog %}
+      <div class="badge {% if badge.key not in owned %}badge--locked{% endif %}">
+        <div class="badge__icon">{{ badge.icon }}</div>
+        <div class="badge__name">{{ badge.name }}</div>
+        <div class="badge__desc">{{ badge.description }}</div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Ошибка запроса{% endblock %}
+{% block content %}
+<section class="card card--pad-lg mt-3" style="max-width:520px; margin-left:auto; margin-right:auto; text-align:center;">
+  <div style="font-size:3.5rem;">🛠️</div>
+  <h1>Что-то не так с запросом</h1>
+  <p class="muted">Вернись назад и попробуй ещё раз.</p>
+  <a class="btn btn--lg" href="{{ url_for('main.map_page') }}">🗺 На карту</a>
+</section>
+{% endblock %}

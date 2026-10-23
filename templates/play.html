@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}{{ topic.title }} — задание{% endblock %}
+{% block content %}
+<div data-game
+     data-answer-type="{{ task.answer_type }}"
+     data-topic="{{ topic.slug }}"
+     data-mode="{{ mode }}">
+
+  <h1 class="sr-only">{{ topic.title }} — задание {{ index + 1 }} из {{ total }}</h1>
+
+  <div class="play-top">
+    <span class="stat-pill stat-pill--coins">💰 <span id="coin-count">{{ learner_stats.coins }}</span></span>
+    <span class="stat-pill stat-pill--streak">🔥 <span id="combo-count">{{ combo }}</span></span>
+    {% if mode == 'boss' %}
+      <span class="stat-pill" style="background:linear-gradient(135deg,#fee2e2,#fecaca);border-color:#fca5a5;color:#991b1b;">🐉 Испытание-босс</span>
+    {% endif %}
+    <span class="spacer"></span>
+    <span class="stat-pill" id="progress-label">Задание {{ index + 1 }} из {{ total }}</span>
+  </div>
+
+  <div class="progress-track">
+    <div class="progress-fill" id="progress-fill" style="width: {{ ((index) / total * 100) | round | int }}%"></div>
+  </div>
+
+  <div class="row mt-2" style="gap:8px;">
+    <span class="chip chip--purple" id="method-label">Способ: {{ method.name if method else '—' }}</span>
+    <button class="btn btn--ghost btn--small" id="switch-method-btn" type="button">🔁 Объяснить иначе</button>
+    <button class="btn btn--warn btn--small" id="hint-btn" type="button">💡 Подсказка ({{ hints_left }})</button>
+    <button class="speak-btn" data-speak-target="task-question">🔊</button>
+  </div>
+
+  <div class="task-card" id="task-card">
+    {% if task.widget %}
+      <div class="visual-box mb-2" data-widget='{{ task.widget | tojson }}'></div>
+    {% endif %}
+
+    <p class="task-card__question" id="task-question" data-speak="{{ task.question }}">{{ task.question }}</p>
+
+    {% if task.answer_type == 'choice' %}
+      <div class="choices" id="choices">
+        {% for choice in task.choices %}
+          <button type="button" class="choice" data-value="{{ choice }}">{{ choice }}</button>
+        {% endfor %}
+      </div>
+    {% else %}
+      <form id="answer-form" class="answer-row" autocomplete="off">
+        <input id="answer-input" class="answer-input" type="text" inputmode="text"
+               placeholder="Твой ответ" aria-label="Твой ответ">
+        <button type="submit" class="btn btn--lg btn--success">Ответить ✓</button>
+      </form>
+
+      <div class="keypad mt-2" id="keypad">
+        {% for n in [1,2,3,4,5,6,7,8,9] %}
+          <button type="button" class="keypad__key" data-key="{{ n }}">{{ n }}</button>
+        {% endfor %}
+        <button type="button" class="keypad__key" data-key="clear" title="Очистить">C</button>
+        <button type="button" class="keypad__key" data-key="0">0</button>
+        <button type="button" class="keypad__key" data-key="back" title="Стереть">⌫</button>
+      </div>
+    {% endif %}
+
+    <div class="feedback" id="feedback"><span id="feedback-text"></span></div>
+    <div class="hint-box" id="hint-box"><span id="hint-text"></span></div>
+  </div>
+
+  <p class="muted small center">
+    {% if mode == 'boss' %}
+      Испытание-босс: нужно ответить верно на большинство заданий.
+    {% else %}
+      Ошибился? Ничего страшного — мы покажем подсказку и объясним тему другим способом.
+    {% endif %}
+  </p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/game.js') }}"></script>
+{% endblock %}

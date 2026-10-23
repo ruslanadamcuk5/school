@@ -1,0 +1,89 @@
+{% extends "cabinet.html" %}
+{% block cabinet_title %}{{ assignment.title }}{% endblock %}
+
+{% block cabinet_nav %}
+  <a href="{{ url_for('teacher.dashboard') }}">📊 Главная</a>
+  <a href="{{ url_for('teacher.students') }}">👦 Ученики</a>
+  <a href="{{ url_for('teacher.courses') }}">📚 Курсы</a>
+  <a href="{{ url_for('teacher.works') }}" class="is-active">📝 Работы</a>
+  <a href="{{ url_for('teacher.textbooks_page') }}">📖 Пособия</a>
+{% endblock %}
+
+{% block cabinet_content %}
+<div class="page-head">
+  <div>
+    <h1>📝 {{ assignment.title }}</h1>
+    <p>
+      {{ assignment.kind }}
+      {% if assignment.grade %} · {{ assignment.grade }}{% if assignment.letter %} «{{ assignment.letter }}»{% endif %}{% endif %}
+      · {{ assignment.questions_count }} заданий
+      · статус: <b>{{ assignment.status }}</b>
+      {% if assignment.due_date %} · срок {{ assignment.due_date }}{% endif %}
+    </p>
+  </div>
+  <div class="row">
+    {% if assignment.status != 'опубликована' %}
+      <form method="post" action="{{ url_for('teacher.work_publish', assignment_id=assignment.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="publish">
+        <button class="btn btn--success" type="submit">📣 Опубликовать</button>
+      </form>
+    {% else %}
+      <form method="post" action="{{ url_for('teacher.work_publish', assignment_id=assignment.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="close">
+        <button class="btn btn--ghost" type="submit">Закрыть</button>
+      </form>
+    {% endif %}
+    <form method="post" action="{{ url_for('teacher.work_publish', assignment_id=assignment.id) }}"
+          onsubmit="return confirm('Удалить работу и результаты?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="delete">
+      <button class="btn btn--danger" type="submit">Удалить</button>
+    </form>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <h2>🧩 Темы работы</h2>
+  <div class="row mt-1">
+    {% for slug in topics %}
+      <span class="chip chip--purple">{{ topic_titles.get(slug, slug) }}</span>
+    {% endfor %}
+  </div>
+  {% if assignment.description %}
+    <p class="muted mt-2">{{ assignment.description }}</p>
+  {% endif %}
+</div>
+
+<h2 class="section-title">📊 Результаты класса</h2>
+<div class="card">
+  {% if results %}
+    <div class="data-table-wrap">
+      <table class="table">
+        <thead><tr><th>Ученик</th><th>Балл</th><th>%</th><th>Оценка</th><th>Время</th><th>Когда</th></tr></thead>
+        <tbody>
+          {% for row in results %}
+            <tr>
+              <td>{{ row.student.avatar }} <b>{{ row.student.last_name }} {{ row.student.first_name }}</b></td>
+              <td>{% if row.result %}{{ row.result.score }} / {{ row.result.max_score }}{% else %}—{% endif %}</td>
+              <td>{% if row.percent is not none %}{{ row.percent }}%{% else %}—{% endif %}</td>
+              <td>
+                {% if row.grade is not none %}
+                  <span class="chip {% if row.percent >= 70 %}chip--green{% elif row.percent >= 50 %}chip--amber{% else %}chip--gray{% endif %}">
+                    {{ row.grade }}
+                  </span>
+                {% else %}<span class="chip chip--gray">не сдал</span>{% endif %}
+              </td>
+              <td class="muted">{% if row.result %}{{ (row.result.duration_sec / 60) | round(1) }} мин{% else %}—{% endif %}</td>
+              <td class="muted">{% if row.result %}{{ row.result.completed_at }}{% else %}—{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">Результатов пока нет. Опубликуйте работу — ученики её увидят.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "cabinet.html" %}
+{% block cabinet_title %}Ученики{% endblock %}
+
+{% block cabinet_nav %}
+  <a href="{{ url_for('teacher.dashboard') }}">📊 Главная</a>
+  <a href="{{ url_for('teacher.students') }}" class="is-active">👦 Ученики</a>
+  <a href="{{ url_for('teacher.courses') }}">📚 Курсы</a>
+  <a href="{{ url_for('teacher.works') }}">📝 Работы</a>
+  <a href="{{ url_for('teacher.textbooks_page') }}">📖 Пособия</a>
+{% endblock %}
+
+{% block cabinet_content %}
+<div class="page-head">
+  <div>
+    <h1>👦 Ученики</h1>
+    <p>{{ rows|length }} учеников в ваших классах</p>
+  </div>
+</div>
+
+<div class="card">
+  {% if rows %}
+    <div class="data-table-wrap">
+      <table class="table">
+        <thead><tr><th>Ученик</th><th>Класс</th><th>Логин</th><th>Школа</th><th></th></tr></thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td>{{ row.student.avatar }} <b>{{ row.student.last_name }} {{ row.student.first_name }}</b></td>
+              <td>{{ row.class.grade }} «{{ row.class.letter }}»</td>
+              <td class="muted">{{ row.student.login }}</td>
+              <td class="muted">{{ row.class.school_name }}</td>
+              <td>
+                <a class="btn btn--ghost btn--small" href="{{ url_for('teacher.class_detail', class_id=row.class.id) }}">Класс</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">Ученики появятся, когда их добавят в классы.</p>
+  {% endif %}
+</div>
+{% endblock %}

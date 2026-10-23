@@ -1,0 +1,118 @@
+{% extends "cabinet.html" %}
+{% block cabinet_title %}Кабинет ученика{% endblock %}
+
+{% block cabinet_nav %}
+  <a href="{{ url_for('student.dashboard') }}" class="is-active">🎒 Мой кабинет</a>
+  <a href="{{ url_for('student.works') }}">📝 Мои работы
+    {% if pending %}<span class="count">{{ pending|length }}</span>{% endif %}</a>
+  <a href="{{ url_for('student.textbooks_page') }}">📖 Учебники</a>
+  <a href="{{ url_for('student.schedule') }}">🗓 Расписание</a>
+  <a href="{{ url_for('student.badges') }}">🏅 Значки</a>
+  <a href="{{ url_for('main.map_page') }}">🗺 Тренироваться</a>
+{% endblock %}
+
+{% block cabinet_content %}
+<div class="page-head">
+  <div class="row" style="gap:16px; align-items:center;">
+    <span class="avatar avatar--lg">{{ user.avatar }}</span>
+    <div>
+      <h1 style="margin:0;">Привет, {{ user.first_name }}!</h1>
+      <p>
+        {% for klass in classes %}
+          {{ klass.grade }} «{{ klass.letter }}» · {{ klass.school_name }}{% if not loop.last %},{% endif %}
+        {% else %}Класс не назначен{% endfor %}
+      </p>
+    </div>
+  </div>
+  <a class="btn" href="{{ url_for('main.map_page') }}">🗺 Тренироваться</a>
+</div>
+
+{% if classes %}
+  <div class="card mb-3">
+    <h2>👩‍🏫 Мой учитель</h2>
+    {% set teacher = classes[0].teacher_first %}
+    {% if teacher %}
+      <p style="margin:6px 0 0;">
+        <b>{{ classes[0].teacher_first }} {{ classes[0].teacher_last }}</b>
+        — ведёт {{ classes[0].grade }} «{{ classes[0].letter }}» класс
+        ({{ classes[0].school_name }}, {{ classes[0].city_name }})
+      </p>
+    {% else %}
+      <p class="muted">Учитель класса пока не назначен.</p>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% if pending %}
+  <div class="card mb-3" style="background:linear-gradient(135deg,#fff7ed,#fff); border-left:6px solid #f59e0b;">
+    <h2>⏳ Ждут выполнения</h2>
+    {% for work in pending %}
+      <div class="schedule-row mt-2">
+        <div>
+          <b>{{ work.title }}</b>
+          <div class="muted small">{{ work.kind }} · {{ work.questions_count }} заданий
+            {% if work.due_date %} · срок {{ work.due_date }}{% endif %}</div>
+        </div>
+        <div class="muted small">Темы: {% for slug in work.topic_slugs | fromjson %}{{ topic_titles.get(slug, slug) }}{% if not loop.last %}, {% endif %}{% endfor %}</div>
+        <a class="btn btn--warn" href="{{ url_for('student.work_detail', assignment_id=work.id) }}">Решить →</a>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<div class="metric-row mb-3">
+  <div class="stat-box"><div class="stat-box__value">{{ stats.get('level', 1) }}</div><div class="stat-box__label">уровень</div></div>
+  <div class="stat-box"><div class="stat-box__value">{{ stats.get('total_correct', 0) }}</div><div class="stat-box__label">верных ответов</div></div>
+  <div class="stat-box"><div class="stat-box__value">{{ stats.get('accuracy', 0) }}%</div><div class="stat-box__label">точность</div></div>
+  <div class="stat-box"><div class="stat-box__value">{{ stats.get('streak_days', 0) }}</div><div class="stat-box__label">дней подряд</div></div>
+</div>
+
+<div class="card mb-3">
+  <h2>📚 Мои предметы</h2>
+  <p class="muted small">Выбери предмет: математика — тренировка, остальные — изучение по пособиям.</p>
+  <div class="row mt-2" style="gap:8px; flex-wrap:wrap;">
+    {% for subject in subjects %}
+      <a class="chip chip--blue" style="text-decoration:none; padding:10px 14px;"
+         href="{{ url_for('main.map_page', subject=subject.slug) }}">
+        {{ subject.icon }} {{ subject.name }}
+      </a>
+    {% else %}
+      <p class="muted small">Предметы появятся после настройки администратором.</p>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h2>📖 Мои учебники</h2>
+    <div class="mt-2">
+      {% for book in textbooks %}
+        <div class="schedule-row" style="grid-template-columns:1fr auto;">
+          <div><b>{{ book.title }}</b><div class="muted small">{{ book.subject_name }} · {{ book.grade }} класс</div></div>
+          <a class="btn btn--ghost btn--small" target="_blank"
+             href="{{ url_for('admin.textbook_open', textbook_id=book.id) }}">Открыть ↗</a>
+        </div>
+      {% else %}
+        <p class="muted">Учебники загрузит учитель или администратор.</p>
+      {% endfor %}
+    </div>
+    <a class="btn btn--ghost btn--small mt-3" href="{{ url_for('student.textbooks_page') }}">Все пособия</a>
+  </div>
+
+  <div class="card">
+    <h2>📝 Мои работы</h2>
+    {% if works %}
+      <div class="mt-2">
+        {% for work in works %}
+          <div class="schedule-row" style="grid-template-columns:1fr auto;">
+            <div><b>{{ work.title }}</b><div class="muted small">{{ work.kind }} · {{ work.subject_name or '' }}</div></div>
+            <a class="btn btn--ghost btn--small" href="{{ url_for('student.work_detail', assignment_id=work.id) }}">Открыть</a>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">Пока нет назначенных работ.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,144 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_title %}Пользователи{% endblock %}
+
+{% block admin_content %}
+<div class="page-head">
+  <div>
+    <h1>👥 Пользователи</h1>
+    <p>Ученики, учителя, родители и администраторы</p>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <h2>＋ Создать пользователя</h2>
+  <form method="post" class="mt-2">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="create">
+    <div class="grid-2">
+      <div class="field">
+        <label for="login">Логин *</label>
+        <input id="login" name="login" required minlength="3" maxlength="40">
+      </div>
+      <div class="field">
+        <label for="password">Пароль * (мин. 6)</label>
+        <input id="password" name="password" type="text" required minlength="6" value="math2025">
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label for="first_name">Имя</label>
+        <input id="first_name" name="first_name" maxlength="40">
+      </div>
+      <div class="field">
+        <label for="last_name">Фамилия</label>
+        <input id="last_name" name="last_name" maxlength="40">
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label for="role">Роль</label>
+        <select id="role" name="role">
+          {% for key, label in roles.items() %}
+            <option value="{{ key }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="email">E-mail</label>
+        <input id="email" name="email" type="email">
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label for="city_id">Город</label>
+        <select id="city_id" name="city_id">
+          <option value="">— не указан —</option>
+          {% for city in cities %}
+            <option value="{{ city.id }}">{{ city.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="school_id">Школа</label>
+        <select id="school_id" name="school_id">
+          <option value="">— не указана —</option>
+          {% for school in schools %}
+            <option value="{{ school.id }}">{{ school.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="class_id">Класс (для ученика)</label>
+      <select id="class_id" name="class_id">
+        <option value="">— не назначать —</option>
+        {% for klass in classes %}
+          <option value="{{ klass.id }}">{{ klass.grade }} «{{ klass.letter }}» — {{ klass.school_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button class="btn" type="submit">Создать</button>
+  </form>
+</div>
+
+<form method="get" class="card mb-3">
+  <div class="row">
+    <input class="answer-input" style="flex:1;min-width:200px;" type="search" name="q" value="{{ search }}"
+           placeholder="Поиск по логину или имени">
+    <select name="role" style="padding:12px;border-radius:14px;border:2px solid var(--line);">
+      <option value="">Все роли</option>
+      {% for key, label in roles.items() %}
+        <option value="{{ key }}" {% if role == key %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn" type="submit">Найти</button>
+  </div>
+</form>
+
+<div class="card">
+  {% if users %}
+    <div class="data-table-wrap">
+      <table class="table">
+        <thead><tr><th>Пользователь</th><th>Логин</th><th>Роль</th><th>Школа</th><th>Класс</th><th>Последний вход</th><th></th></tr></thead>
+        <tbody>
+          {% for u in users %}
+            <tr>
+              <td>{{ u.avatar }} <b>{{ u.last_name }} {{ u.first_name }}</b>
+                {% if not u.is_active %}<span class="chip chip--gray">отключён</span>{% endif %}</td>
+              <td class="muted small">{{ u.login }}</td>
+              <td>
+                <form method="post" class="row" style="gap:6px;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="role">
+                  <input type="hidden" name="user_id" value="{{ u.id }}">
+                  <select name="role" style="padding:6px 8px;border-radius:10px;border:1px solid var(--line);">
+                    {% for key, label in roles.items() %}
+                      <option value="{{ key }}" {% if u.role == key %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                  <button class="btn btn--ghost btn--small" type="submit">OK</button>
+                </form>
+              </td>
+              <td class="small">{{ u.school_name or '—' }}</td>
+              <td class="small">{{ u.city_name or '—' }}</td>
+              <td class="muted small">{{ u.last_login or '—' }}</td>
+              <td class="row" style="gap:6px;">
+                <a class="btn btn--ghost btn--small" href="{{ url_for('admin.user_detail', user_id=u.id) }}">Открыть</a>
+                <form class="inline-form" method="post">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="toggle">
+                  <input type="hidden" name="user_id" value="{{ u.id }}">
+                  <button class="btn btn--ghost btn--small" type="submit">
+                    {% if u.is_active %}Отключить{% else %}Включить{% endif %}</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">Пользователи не найдены.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Файл слишком большой{% endblock %}
+{% block content %}
+<section class="card card--pad-lg mt-3" style="max-width:560px; margin-left:auto; margin-right:auto; text-align:center;">
+  <div style="font-size:3.5rem;">📦</div>
+  <h1>Файл слишком большой</h1>
+  <p class="muted">
+    Сервер принимает файлы размером до <b>{{ limit_mb }} МБ</b>.
+    Выберите файл поменьше или сожмите PDF и попробуйте снова.
+  </p>
+  <p class="muted small">
+    Подсказка: в Adobe Acrobat или бесплатном Ghostscript можно уменьшить размер PDF,
+    не теряя читаемость текста.
+  </p>
+  <div class="row" style="justify-content:center; gap:10px;">
+    <a class="btn btn--lg" href="{{ back_url }}">← Вернуться назад</a>
+    <a class="btn btn--ghost btn--lg" href="{{ url_for('main.map_page') }}">🗺 На карту</a>
+  </div>
+</section>
+{% endblock %}

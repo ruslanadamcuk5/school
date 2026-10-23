@@ -1,0 +1,510 @@
+"""Основные страницы: профиль, карта тем, объяснения, учебник."""
+from __future__ import annotations
+
+import re
+
+from flask import (
+    Blueprint,
+    abort,
+    flash,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
+
+from content.answer import check_answer
+from content.curriculum import TOPICS, topic_by_slug, widget_spec
+from database import query_all, query_one
+from services import learners as learners_service
+from services import orgs
+from services import progress as progress_service
+from services import reading_quiz
+from services import rewards as rewards_service
+from services import rounds as rounds_service
+from services import textbooks as textbooks_service
+from services import topics as topics_service
+
+bp = Blueprint("main", __name__)
+
+
+def _topics_for(grade: int) -> list[dict]:
+    return [t for t in TOPICS if t["grade"] == grade]
+
+
+def _visible_slugs(learner, subject_id: int) -> set[str]:
+    """Темы, которые учитель включил в курсах класса (пусто = показываем все)."""
+    if not learner["user_id"]:
+        return set()
+    slugs = orgs.course_topic_slugs_for_student(
+        learner["user_id"], subject_id, learner["grade"]
+    )
+    return set(slugs)
+
+
+def _topic_cards(learner, visible: set[str] | None = None) -> list[dict]:
+    """Данные для карты тем: прогресс, звёзды, доступность."""
+    level = progress_service.level_for_xp(learner["xp"] or 0)
+    tp = progress_service.topic_progress_map(learner["id"])
+    mp = progress_service.method_progress_map(learner["id"])
+    cards = []
+    for topic in TOPICS:
+        if topic["grade"] != learner["grade"]:
+            continue
+        if visible and topic["slug"] not in visible:
+            continue
+        row = tp.get(topic["slug"])
+        stars = (row["stars"] if row else 0) or 0
+        attempts = (row["attempts"] if row else 0) or 0
+        correct = (row["correct"] if row else 0) or 0
+        methods_state = [
+            {
+                "slug": m["slug"],
+                "name": m["name"],
+                "mastered": bool((mp.get((topic["slug"], m["slug"])) or {"mastered": 0})["mastered"]),
+            }
+            for m in topic["methods"]
+        ]
+        cards.append({
+            "topic": topic,
+            "stars": stars,
+            "attempts": attempts,
+            "correct": correct,
+            "accuracy": round(correct / attempts * 100) if attempts else 0,
+            "boss_cleared": bool((row["boss_cleared"] if row else 0)),
+            "locked": False,
+            "advanced": topic["min_level"] > 1,
+            "min_level": topic["min_level"],
+            "methods": methods_state,
+            "methods_mastered": sum(1 for m in methods_state if m["mastered"]),
+        })
+    return cards
+
+
+@bp.route("/")
+def welcome():
+    learners = learners_service.list_learners()
+    current = learners_service.current_learner()
+    if current:
+        return redirect(url_for("main.map_page"))
+    return render_template("welcome.html", learners=learners, grades=[3, 4])
+
+
+@bp.route("/map")
+def map_page():
+    learner = learners_service.current_learner()
+    if not learner:
+        return redirect(url_for("main.welcome"))
+
+    subjects = orgs.list_subjects(active_only=True)
+    if not subjects:
+        subjects = orgs.list_subjects()
+    requested = (request.args.get("subject") or "").strip()
+    subject = next((s for s in subjects if s["slug"] == requested), None)
+    if subject is None:
+        subject = next((s for s in subjects if s["slug"] == "math"), subjects[0] if subjects else None)
+    if subject is None:
+        abort(404)
+
+    grade_topics = topics_service.list_topics(grade=learner["grade"])
+    counts: dict[int, int] = {}
+    for row in grade_topics:
+        counts[row["subject_id"]] = counts.get(row["subject_id"], 0) + 1
+    visible = _visible_slugs(learner, subject["id"])
+
+    stats = progress_service.learner_stats(learner["id"])
+    tp = progress_service.topic_progress_map(learner["id"])
+    cards: list[dict] = []
+    reading_cards: list[dict] = []
+
+    if subject["slug"] == "math":
+        cards = _topic_cards(learner, visible)
+        stats["topics_total"] = len(cards)
+    else:
+        rows = topics_service.list_topics(subject_id=subject["id"], grade=learner["grade"])
+        if visible:
+            rows = [row for row in rows if row["slug"] in visible]
+        books = textbooks_service.books_for_topics([row["slug"] for row in rows])
+        for row in rows:
+            progress_row = tp.get(row["slug"])
+            topic_books = books.get(row["slug"], [])
+            reading_cards.append({
+                "topic": row,
+                "books": topic_books,
+                "stars": (progress_row["stars"] if progress_row else 0) or 0,
+                "read": bool(progress_row and (progress_row["stars"] or 0) > 0),
+            })
+        stats["topics_total"] = len(reading_cards)
+
+    daily = rewards_service.daily_status(learner["id"])
+    next_grade = learner["grade"] + 1 if learner["grade"] < 4 else None
+    can_upgrade = next_grade and stats["level"] >= 3
+    return render_template(
+        "map.html",
+        learner=learner,
+        stats=stats,
+        cards=cards,
+        reading_cards=reading_cards,
+        subjects=subjects,
+        subject=subject,
+        subject_counts=counts,
+        daily=daily,
+        daily_done=all(item["done"] for item in daily),
+        badges=rewards_service.badge_list(learner["id"]),
+        next_grade=next_grade,
+        can_upgrade=can_upgrade,
+    )
+
+
+@bp.route("/learners", methods=["POST"])
+def create_learner():
+    name = (request.form.get("name") or "").strip()
+    avatar = request.form.get("avatar") or "🦊"
+    grade = request.form.get("grade") or "3"
+    pin = (request.form.get("pin") or "").strip()
+    if not name:
+        flash("Введите имя ребёнка", "error")
+        return redirect(url_for("main.welcome"))
+    if pin and (not pin.isdigit() or len(pin) != 4):
+        flash("PIN должен состоять из 4 цифр", "error")
+        return redirect(url_for("main.welcome"))
+    learner_id = learners_service.create_learner(name, avatar, int(grade), pin or None)
+    learners_service.login(learner_id)
+    flash(f"Привет, {name}! Выбирай тему и начинаем 🚀", "success")
+    return redirect(url_for("main.map_page"))
+
+
+@bp.route("/learners/<int:learner_id>/login", methods=["POST"])
+def login_learner(learner_id: int):
+    learner = learners_service.get_learner(learner_id)
+    if not learner:
+        abort(404)
+    learners_service.login(learner_id)
+    flash(f"С возвращением, {learner['name']}!", "success")
+    return redirect(url_for("main.map_page"))
+
+
+@bp.route("/logout", methods=["POST"])
+def logout():
+    learners_service.logout()
+    flash("До встречи!", "info")
+    return redirect(url_for("main.welcome"))
+
+
+@bp.route("/profile")
+def profile():
+    learner = learners_service.current_learner()
+    if not learner:
+        return redirect(url_for("main.welcome"))
+    stats = progress_service.learner_stats(learner["id"])
+    owned = {b["badge_key"] for b in rewards_service.badge_list(learner["id"])}
+    from content.achievements import ACHIEVEMENTS
+
+    return render_template(
+        "profile.html",
+        learner=learner,
+        stats=stats,
+        owned=owned,
+        catalog=ACHIEVEMENTS,
+        accuracy=progress_service.topic_accuracy(learner["id"]),
+    )
+
+
+@bp.route("/learner/grade", methods=["POST"])
+def change_grade():
+    """Переход на программу следующего класса (доступен с 3 уровня)."""
+    learner = learners_service.current_learner()
+    if not learner:
+        return redirect(url_for("main.welcome"))
+    level = progress_service.level_for_xp(learner["xp"] or 0)
+    grade = int(request.form.get("grade") or learner["grade"])
+    if grade not in (3, 4) or level < 3:
+        flash("Этот класс пока не открыт. Нужно дорасти до 3 уровня.", "error")
+        return redirect(url_for("main.map_page"))
+    learners_service.update_learner(learner["id"], grade=grade)
+    flash(f"Теперь программа {grade} класса! Удачи!", "success")
+    return redirect(url_for("main.map_page"))
+
+
+@bp.route("/topic/<slug>")
+def topic_page(slug: str):
+    learner = learners_service.current_learner()
+    if not learner:
+        return redirect(url_for("main.welcome"))
+    topic = topic_by_slug(slug)
+    if not topic:
+        row = topics_service.get_topic(slug)
+        if not row:
+            abort(404)
+        return _reading_topic_page(learner, row)
+
+    tp = progress_service.topic_progress_map(learner["id"])
+    mp = progress_service.method_progress_map(learner["id"])
+    row = tp.get(slug)
+    methods = []
+    for method in topic["methods"]:
+        state = mp.get((slug, method["slug"]))
+        methods.append({
+            **method,
+            "mastered": bool(state and state["mastered"]),
+            "attempts": (state["attempts"] if state else 0) or 0,
+            "correct": (state["correct"] if state else 0) or 0,
+        })
+    books = textbooks_service.textbooks_for_topic(slug, grade=topic["grade"])
+    return render_template(
+        "topic.html",
+        learner=learner,
+        topic=topic,
+        methods=methods,
+        books=books,
+        stars=(row["stars"] if row else 0) or 0,
+        attempts=(row["attempts"] if row else 0) or 0,
+        correct=(row["correct"] if row else 0) or 0,
+        boss_cleared=bool(row and row["boss_cleared"]),
+    )
+
+
+def _reading_topic_page(learner, topic):
+    """Тема без автогенератора: изучение по загруженному пособию."""
+    if int(topic["grade"]) != int(learner["grade"]):
+        abort(403)
+    books = textbooks_service.textbooks_for_topic(
+        topic["slug"], subject_id=topic["subject_id"], grade=topic["grade"]
+    )
+    progress_row = query_one(
+        "SELECT * FROM topic_progress WHERE learner_id = ? AND topic_slug = ?",
+        (learner["id"], topic["slug"]),
+    )
+    read = query_one(
+        """SELECT id FROM attempts
+            WHERE learner_id = ? AND topic_slug = ? AND mode = 'reading' AND correct = 1
+            LIMIT 1""",
+        (learner["id"], topic["slug"]),
+    )
+    siblings = topics_service.list_topics(
+        subject_id=topic["subject_id"], grade=topic["grade"]
+    )
+    index = next((i for i, item in enumerate(siblings) if item["slug"] == topic["slug"]), None)
+    previous_topic = siblings[index - 1] if index not in (None, 0) else None
+    next_topic = siblings[index + 1] if index is not None and index + 1 < len(siblings) else None
+    return render_template(
+        "topic_reading.html",
+        learner=learner,
+        topic=topic,
+        books=books,
+        read=bool(read),
+        stars=(progress_row["stars"] if progress_row else 0) or 0,
+        previous_topic=previous_topic,
+        next_topic=next_topic,
+    )
+
+
+@bp.route("/topic/<slug>/complete", methods=["POST"])
+def complete_reading(slug: str):
+    learner = learners_service.current_learner()
+    if not learner:
+        return redirect(url_for("main.welcome"))
+    topic = topics_service.get_topic(slug)
+    if not topic:
+        abort(404)
+    if topic["source"] == "curriculum" or topic["kind"] == "practice":
+        abort(400)
+    if int(topic["grade"]) != int(learner["grade"]):
+        abort(403)
+    result = progress_service.mark_topic_read(learner["id"], slug)
+    if result["already"]:
+        flash("Эта тема уже отмечена как изученная ⭐", "info")
+    else:
+        flash(
+            f"Тема изучена! +{result['xp']} XP и +{result['coins']} монет ⭐",
+            "success",
+        )
+    return redirect(url_for("main.topic_page", slug=slug))
+
+
+@bp.route("/topic/<slug>/quiz", methods=["GET", "POST"])
+def topic_quiz(slug: str):
+    learner = learners_service.current_learner()
+    if not learner:
+        return redirect(url_for("main.welcome"))
+    topic = topics_service.get_topic(slug)
+    if not topic:
+        abort(404)
+    if topic["source"] == "curriculum" or topic["kind"] == "practice":
+        abort(400)
+    if int(topic["grade"]) != int(learner["grade"]):
+        abort(403)
+
+    if request.method == "GET":
+        questions = reading_quiz.build_questions(topic, 8)
+        if not questions:
+            flash(
+                "По этой теме пока не удалось составить вопросы. "
+                "Проверьте, что к ней привязано пособие с текстом.",
+                "error",
+            )
+            return redirect(url_for("main.topic_page", slug=slug))
+        session["reading_quiz"] = {
+            "slug": slug,
+            "items": [
+                {"question": item["question"], "answer": item["answer"]}
+                for item in questions
+            ],
+        }
+        return render_template(
+            "topic_quiz.html",
+            learner=learner,
+            topic=topic,
+            questions=questions,
+        )
+
+    stored = session.pop("reading_quiz", None) or {}
+    if stored.get("slug") != slug or not stored.get("items"):
+        flash("Проверочная работа устарела. Начните заново.", "info")
+        return redirect(url_for("main.topic_quiz", slug=slug))
+    legacy = request.form.getlist("answer")
+    results = []
+    correct_count = 0
+    for index, item in enumerate(stored["items"]):
+        answer = request.form.get(f"answer_{index}")
+        if answer is None:
+            answer = legacy[index] if index < len(legacy) else ""
+        correct, expected = check_answer(
+            answer, {"answer": item["answer"], "answer_type": "choice"}
+        )
+        if correct:
+            correct_count += 1
+        progress_service.record_attempt(
+            learner["id"], slug, None, "reading.quiz", correct,
+            answer, expected, 0, 0, mode="reading_quiz",
+        )
+        results.append({
+            "question": item["question"],
+            "given": answer,
+            "expected": expected,
+            "correct": correct,
+        })
+    stars = progress_service.apply_round_result(
+        learner["id"], slug, correct_count, len(results)
+    )
+    if correct_count == len(results):
+        flash("Отлично! Все ответы верные.", "success")
+    elif correct_count:
+        flash(f"Верно {correct_count} из {len(results)}. Можно попробовать ещё раз!", "info")
+    else:
+        flash("Пока ни одного верного ответа. Прочитай тему и попробуй снова.", "error")
+    return render_template(
+        "topic_quiz_result.html",
+        learner=learner,
+        topic=topic,
+        results=results,
+        correct_count=correct_count,
+        stars=stars,
+    )
+
+
+@bp.route("/topic/<slug>/explain/<method_slug>")
+def explain(slug: str, method_slug: str):
+    learner = learners_service.current_learner()
+    if not learner:
+        return redirect(url_for("main.welcome"))
+    topic = topic_by_slug(slug)
+    if not topic:
+        abort(404)
+    method = next((m for m in topic["methods"] if m["slug"] == method_slug), None)
+    if not method:
+        abort(404)
+
+    generator_key = rounds_service.generator_for(slug, method_slug)
+    example = rounds_service.build_task(generator_key, 1)
+    variables = example.get("variables", {})
+    explanation = _fill(method.get("explanation", ""), variables)
+    steps = [_fill_step(step, variables) for step in method.get("steps", [])]
+    spec = widget_spec(method.get("widget", "none"), variables, example.get("widget"))
+    return render_template(
+        "explain.html",
+        learner=learner,
+        topic=topic,
+        method=method,
+        example=example,
+        explanation=explanation,
+        steps=steps,
+        widget=spec,
+        method_index=topic["methods"].index(method),
+        methods_total=len(topic["methods"]),
+        next_method=rounds_service.next_method_slug(slug, method_slug),
+    )
+
+
+def _fill(template: str, variables: dict) -> str:
+    """Подставить значения в шаблон объяснения (поддерживает форматы вида {m:02d})."""
+
+    def repl(match: "re.Match[str]") -> str:
+        name = match.group(1)
+        spec = match.group(2)
+        if name not in variables:
+            return match.group(0)
+        value = variables[name]
+        if spec:
+            try:
+                return format(value, spec.lstrip(":"))
+            except (ValueError, TypeError):
+                return str(value)
+        return str(value)
+
+    return re.sub(r"\{(\w+)(:[^}]*)?\}", repl, template or "")
+
+
+def _fill_step(step: dict, variables: dict) -> dict:
+    filled = dict(step)
+    filled["text"] = _fill(step.get("text", ""), variables)
+    return filled
+
+
+@bp.route("/textbook")
+def textbook():
+    learner = learners_service.current_learner()
+    if learner:
+        rows = textbooks_service.textbooks_for_grade(learner["grade"])
+    else:
+        rows = textbooks_service.list_textbooks()
+    books = []
+    for row in rows:
+        item = dict(row)
+        item["links"] = textbooks_service.textbook_topics(row["id"])
+        books.append(item)
+    return render_template("textbook.html", learner=learner, books=books)
+
+
+@bp.route("/daily")
+def daily():
+    learner = learners_service.current_learner()
+    if not learner:
+        return redirect(url_for("main.welcome"))
+    tasks = rewards_service.daily_status(learner["id"])
+    return render_template("daily.html", learner=learner, tasks=tasks)
+
+
+@bp.route("/family")
+def family():
+    """Небольшая таблица результатов семьи (для соревновательного элемента)."""
+    learners = learners_service.list_learners()
+    rows = []
+    for learner in learners:
+        stats = progress_service.learner_stats(learner["id"])
+        rows.append({
+            "learner": learner,
+            "xp": stats.get("xp", 0),
+            "level": stats.get("level", 1),
+            "correct": stats.get("total_correct", 0),
+            "streak": stats.get("streak_days", 0),
+            "stars": sum(
+                (r["stars"] or 0)
+                for r in query_all(
+                    "SELECT stars FROM topic_progress WHERE learner_id = ?", (learner["id"],)
+                )
+            ),
+        })
+    rows.sort(key=lambda r: r["xp"], reverse=True)
+    return render_template("family.html", rows=rows)

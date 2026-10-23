@@ -1,0 +1,40 @@
+{% extends "cabinet.html" %}
+{% block cabinet_title %}Расписание{% endblock %}
+
+{% block cabinet_nav %}
+  <a href="{{ url_for('student.dashboard') }}" class="is-active">🎒 Мой кабинет</a>
+  <a href="{{ url_for('student.works') }}">📝 Мои работы</a>
+  <a href="{{ url_for('student.textbooks_page') }}">📖 Учебники</a>
+  <a href="{{ url_for('student.schedule') }}" class="is-active">🗓 Расписание</a>
+  <a href="{{ url_for('student.badges') }}">🏅 Значки</a>
+{% endblock %}
+
+{% block cabinet_content %}
+<div class="page-head">
+  <div>
+    <h1>🗓 Моё расписание</h1>
+    <p>Уроки, которые ведёт твой учитель</p>
+  </div>
+</div>
+
+<div class="card">
+  {% for index, day in weekdays %}
+    {% set items = grid.get(index, []) %}
+    <div class="schedule-row mt-2">
+      <div><b>{{ day }}</b></div>
+      <div class="row" style="gap:8px;">
+        {% for item in items %}
+          <div class="lesson-item">
+            {{ item.subject_icon or '📘' }} {{ item.subject_name or 'Математика' }}
+            {% if item.topic_title %}<span class="muted">· {{ item.topic_title }}</span>{% endif %}
+            {% if item.time_start %}<div class="lesson-item__time">{{ item.time_start }}–{{ item.time_end or '' }}</div>{% endif %}
+          </div>
+        {% else %}
+          <span class="muted small">Уроков нет</span>
+        {% endfor %}
+      </div>
+      <span class="muted small"></span>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}
