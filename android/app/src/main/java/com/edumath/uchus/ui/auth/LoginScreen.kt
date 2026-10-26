@@ -85,7 +85,7 @@ fun LoginScreen(vm: AuthViewModel) {
             modifier = Modifier.fillMaxWidth(),
         )
         Text(
-            "Например: https://uchus.alwaysdata.net",
+            "Например: https://virusadk.alwaysdata.net",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

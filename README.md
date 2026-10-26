@@ -380,6 +380,9 @@ nginx/Caddy с HTTPS и включить `COOKIE_SECURE=1`.
 
 ## ☁️ Бесплатный хостинг (Alwaysdata)
 
+Текущий рабочий адрес: **<https://virusadk.alwaysdata.net>** (Python WSGI,
+SQLite, HTTPS). Проверка: <https://virusadk.alwaysdata.net/healthz>.
+
 Пошаговая инструкция — в [deploy/alwaysdata/README.md](deploy/alwaysdata/README.md).
 Коротко:
 
@@ -458,7 +461,7 @@ python tools/prod_check.py
    ```
 
 2. Откройте **Actions → Android APK → Run workflow**. При необходимости укажите
-   `server_url` (по умолчанию `https://uchus.alwaysdata.net`).
+   `server_url` (по умолчанию `https://virusadk.alwaysdata.net`).
 3. Скачайте артефакт **uchus-debug-apk** и установите `uchus-debug.apk` на телефон
    (разрешите установку из неизвестных источников).
 

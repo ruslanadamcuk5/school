@@ -15,7 +15,7 @@ on:
       server_url:
         description: "Адрес сервера по умолчанию (https://…)"
         required: false
-        default: "https://uchus.alwaysdata.net"
+        default: "https://virusadk.alwaysdata.net"
         type: string
 
 permissions:
@@ -56,7 +56,7 @@ jobs:
         run: |
           SERVER_URL="${{ github.event.inputs.server_url }}"
           if [ -z "$SERVER_URL" ]; then
-            SERVER_URL="https://uchus.alwaysdata.net"
+            SERVER_URL="https://virusadk.alwaysdata.net"
           fi
           echo "Адрес сервера по умолчанию: $SERVER_URL"
           gradle assembleDebug -PserverUrl="$SERVER_URL" --no-daemon
@@ -82,6 +82,6 @@ jobs:
             echo "### Android APK готов"
             echo ""
             echo "- Артефакт: **uchus-debug-apk** (внизу страницы запуска)"
-            echo "- Адрес сервера по умолчанию: \`${{ github.event.inputs.server_url || 'https://uchus.alwaysdata.net' }}\`"
+            echo "- Адрес сервера по умолчанию: \`${{ github.event.inputs.server_url || 'https://virusadk.alwaysdata.net' }}\`"
             echo "- Адрес можно изменить на экране входа в приложении."
           } >> "$GITHUB_STEP_SUMMARY"

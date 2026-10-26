@@ -22,7 +22,7 @@ android {
         val serverUrl = (findProperty("serverUrl") as String?)
             ?.trim()
             ?.takeIf { it.isNotEmpty() }
-            ?: "https://uchus.alwaysdata.net"
+            ?: "https://virusadk.alwaysdata.net"
         buildConfigField("String", "DEFAULT_SERVER_URL", "\"$serverUrl\"")
     }
 
