@@ -17,6 +17,30 @@
   <div class="hero__art" aria-hidden="true">🦉📚</div>
 </section>
 
+{% if app_release %}
+<section class="card mt-3" style="background:linear-gradient(135deg,#ecfdf5,#fff); border-left:6px solid #10b981;">
+  <div class="row row--between">
+    <div>
+      <div class="row" style="gap:8px; align-items:center;">
+        <h2 style="margin:0;">📱 Приложение «Учусь» для Android</h2>
+        <span class="chip" style="background:#d1fae5; color:#065f46;">APK</span>
+      </div>
+      <p class="muted small" style="margin:4px 0 0;">
+        Версия {{ app_release.version_name }} · {{ app_release.size|filesize }} · Android 7.0+.
+        Скачайте и установите файл на телефон — учётная запись и семейные профили работают
+        так же, как на сайте.
+      </p>
+      <p class="muted small" style="margin:4px 0 0;">
+        При запуске приложение проверяет, нет ли на сайте новой версии, и предлагает обновление.
+      </p>
+    </div>
+    <div class="row" style="gap:8px;">
+      <a class="btn btn--lg" href="{{ url_for('app_release.download') }}" download>⬇️ Скачать APK</a>
+    </div>
+  </div>
+</section>
+{% endif %}
+
 <section class="card mt-3" style="background:linear-gradient(135deg,#eef2ff,#fff); border-left:6px solid #6366f1;">
   <div class="row row--between">
     <div>

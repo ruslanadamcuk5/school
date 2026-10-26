@@ -19,6 +19,9 @@ interface ApiService {
     @GET("health")
     suspend fun health(): HealthDto
 
+    @GET("app/version")
+    suspend fun appVersion(): AppVersionDto
+
     // ---------------------------------------------------------- вход
     @POST("auth/login")
     suspend fun login(@Body body: LoginRequest): SessionDto

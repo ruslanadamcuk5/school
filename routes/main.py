@@ -21,6 +21,7 @@ from services import learners as learners_service
 from services import orgs
 from services import progress as progress_service
 from services import reading_quiz
+from services import release as release_service
 from services import rewards as rewards_service
 from services import rounds as rounds_service
 from services import textbooks as textbooks_service
@@ -88,7 +89,12 @@ def welcome():
     current = learners_service.current_learner()
     if current:
         return redirect(url_for("main.map_page"))
-    return render_template("welcome.html", learners=learners, grades=[3, 4])
+    return render_template(
+        "welcome.html",
+        learners=learners,
+        grades=[3, 4],
+        app_release=release_service.info(),
+    )
 
 
 @bp.route("/map")

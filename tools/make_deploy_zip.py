@@ -3,7 +3,7 @@
     python tools/make_deploy_zip.py                # без данных (чистая установка)
     python tools/make_deploy_zip.py --with-data    # вместе с БД и загруженными PDF
 
-Архив: dist/edu-math-deploy.zip
+Архив: dist/edu-math-deploy.zip или dist/edu-math-deploy-with-data.zip
 """
 from __future__ import annotations
 
@@ -56,7 +56,9 @@ def _skip(path: Path, with_data: bool) -> bool:
 
     if any(part in EXCLUDE_DIRS for part in parts):
         return True
-    if path.suffix in EXCLUDE_SUFFIXES:
+    if path.suffix in EXCLUDE_SUFFIXES and not (
+        with_data and rel.startswith("data/releases/")
+    ):
         return True
     if path.name in EXCLUDE_NAMES:
         return True
@@ -98,7 +100,9 @@ def build(with_data: bool) -> Path:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     if with_data:
         _checkpoint_database()
-    target = OUT_DIR / "edu-math-deploy.zip"
+    target = OUT_DIR / (
+        "edu-math-deploy-with-data.zip" if with_data else "edu-math-deploy.zip"
+    )
     count = 0
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for path in sorted(ROOT.rglob("*")):

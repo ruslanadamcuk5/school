@@ -128,8 +128,28 @@ CSRF для `/api/v1/*` не применяется: токен передаёт
 | Метод | Путь | Описание |
 |---|---|---|
 | GET | `/health` | проверка БД, версия API |
+| GET | `/app/version` | публичные метаданные APK и ссылка на скачивание |
 | GET | `/meta` | приложение, классы 1–11, предметы, статус ИИ |
 | GET | `/topics?grade=&subject_id=&search=` | каталог тем (метаданные, без прогресса) |
+
+`/app/version` не требует токена. Если релиз не опубликован — `404` с
+`{"ok": false, "error": "app_not_published"}`. Ответ для опубликованного APK:
+
+```json
+{
+  "ok": true,
+  "version_code": 2,
+  "version_name": "1.1",
+  "download_url": "https://<логин>.alwaysdata.net/download/android",
+  "size": 19238488,
+  "sha256": "…",
+  "notes": "Что нового",
+  "published_at": "2026-10-26T12:00:00+00:00"
+}
+```
+
+Android-приложение сравнивает `version_code` со своим `BuildConfig.VERSION_CODE`
+и предлагает обновление, если серверная версия больше.
 
 `/meta`:
 

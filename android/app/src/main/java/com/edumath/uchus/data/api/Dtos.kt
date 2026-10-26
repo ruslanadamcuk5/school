@@ -28,6 +28,17 @@ data class HealthDto(
     @SerializedName("time") val time: String? = null,
 )
 
+data class AppVersionDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("version_code") val versionCode: Int = 0,
+    @SerializedName("version_name") val versionName: String? = null,
+    @SerializedName("download_url") val downloadUrl: String? = null,
+    @SerializedName("size") val size: Long = 0,
+    @SerializedName("sha256") val sha256: String? = null,
+    @SerializedName("notes") val notes: String? = null,
+    @SerializedName("published_at") val publishedAt: String? = null,
+)
+
 // ------------------------------------------------------------------ люди
 
 data class UserDto(

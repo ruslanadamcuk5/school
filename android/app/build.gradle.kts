@@ -12,8 +12,8 @@ android {
         applicationId = "com.edumath.uchus"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
 
         vectorDrawables { useSupportLibrary = true }
 
@@ -26,7 +26,23 @@ android {
         buildConfigField("String", "DEFAULT_SERVER_URL", "\"$serverUrl\"")
     }
 
+    signingConfigs {
+        // Единый debug-ключ для локальной сборки и GitHub Actions.
+        // Нужен, чтобы APK с сайта устанавливался поверх ранее установленного
+        // приложения как обновление (одинаковая подпись). Это не ключ для
+        // публикации в Google Play — для магазина нужен отдельный release-ключ.
+        create("siteDebug") {
+            storeFile = rootProject.file("keystore/uchus-debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("siteDebug")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(

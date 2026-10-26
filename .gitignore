@@ -18,6 +18,7 @@ data/uploads/
 data/.secret_key
 data/covers/
 data/page_cache/
+data/releases/
 
 # Сборки и архивы
 dist/

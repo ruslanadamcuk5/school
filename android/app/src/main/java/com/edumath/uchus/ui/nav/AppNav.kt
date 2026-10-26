@@ -1,6 +1,8 @@
 package com.edumath.uchus.ui.nav
 
 import android.net.Uri
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -15,6 +17,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.compose.ui.Modifier
 import com.edumath.uchus.core.AppContainer
 import com.edumath.uchus.core.appViewModelFactory
 import com.edumath.uchus.data.api.MetaDto
@@ -50,6 +53,7 @@ import com.edumath.uchus.ui.teacher.TeacherResultsScreen
 import com.edumath.uchus.ui.teacher.TeacherScheduleScreen
 import com.edumath.uchus.ui.teacher.TeacherStudentScreen
 import com.edumath.uchus.ui.teacher.TeacherStudentsScreen
+import com.edumath.uchus.ui.update.AppUpdateGate
 import com.google.gson.Gson
 import kotlinx.coroutines.launch
 
@@ -60,15 +64,21 @@ fun AppNav(container: AppContainer) {
 
     LaunchedEffect(Unit) { container.session.hydrate() }
 
-    when {
-        !loaded -> LoadingBox("Проверяем сессию…")
+    Box(Modifier.fillMaxSize()) {
+        when {
+            !loaded -> LoadingBox("Проверяем сессию…")
 
-        current == null -> {
-            val vm: AuthViewModel = viewModel(factory = appViewModelFactory(container))
-            LoginScreen(vm)
+            current == null -> {
+                val vm: AuthViewModel = viewModel(factory = appViewModelFactory(container))
+                LoginScreen(vm)
+            }
+
+            else -> LoggedInNav(container, current!!)
         }
 
-        else -> LoggedInNav(container, current!!)
+        if (loaded) {
+            AppUpdateGate(container)
+        }
     }
 }
 

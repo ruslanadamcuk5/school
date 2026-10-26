@@ -479,8 +479,54 @@ gradle assembleDebug -PserverUrl=https://<логин>.alwaysdata.net
 > один раз выполните `gradle wrapper` в каталоге `android/` — студия сама
 > предложит это сделать. В GitHub Actions Gradle ставится автоматически.
 
+Для совместимости обновлений локальная сборка и CI используют общий
+debug-ключ [android/keystore/uchus-debug.keystore](android/keystore/uchus-debug.keystore).
+Не заменяйте его без необходимости: APK с другой подписью Android не установит
+поверх уже установленного приложения. Это отладочный ключ, а не ключ Google Play.
+Если раньше было установлено приложение, подписанное другим ключом, один раз
+удалите его и установите APK с сайта заново — дальше обновления будут
+устанавливаться поверх.
+
 Для публикации в Google Play нужен release-ключ и `signingConfig` — debug-APK
 подходит для установки вручную и тестирования.
+
+### Публикация APK на сайте и автообновление
+
+На главной странице сайта есть кнопка **«Скачать APK»**. Она ведёт на постоянный
+адрес `/download/android`, а приложение при каждом запуске проверяет
+`GET /api/v1/app/version` и предлагает обновление, если на сервере версия новее.
+
+Файлы релиза лежат на сервере в `data/releases/` (в Git не попадают):
+
+```text
+data/releases/uchus-debug.apk
+data/releases/version.json
+```
+
+`version.json`:
+
+```json
+{
+  "version_code": 2,
+  "version_name": "1.1",
+  "file_name": "uchus-debug.apk",
+  "sha256": "…",
+  "notes": "Что нового",
+  "published_at": "2026-10-26T12:00:00+00:00"
+}
+```
+
+Чтобы выпустить обновление:
+
+1. Увеличьте `versionCode` и `versionName` в
+   [android/app/build.gradle.kts](android/app/build.gradle.kts).
+2. Соберите APK и замените `data/releases/uchus-debug.apk`.
+3. Увеличьте `version_code`, обновите `version_name`, `sha256` и `size` в
+   `version.json`.
+4. Загрузите оба файла на сервер в `~/edu-math/data/releases/`.
+
+Старые установленные приложения увидят новый `version_code` и покажут диалог
+«Доступно обновление» с кнопкой «Скачать».
 
 ---
 
