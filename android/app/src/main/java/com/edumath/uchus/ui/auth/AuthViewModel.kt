@@ -4,12 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.edumath.uchus.core.AppContainer
 import com.edumath.uchus.data.api.ApiException
+import com.edumath.uchus.data.api.ApiJson
 import com.edumath.uchus.data.api.CreateLearnerRequest
 import com.edumath.uchus.data.api.LearnerDto
 import com.edumath.uchus.data.api.LoginRequest
 import com.edumath.uchus.data.api.SessionDto
 import com.edumath.uchus.data.api.apiCall
-import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -27,8 +27,6 @@ class AuthViewModel(private val container: AppContainer) : ViewModel() {
 
     private val _state = MutableStateFlow(UiState(server = container.session.baseUrl))
     val state = _state.asStateFlow()
-
-    private val gson = Gson()
 
     fun setServer(value: String) = _state.update { it.copy(server = value) }
 
@@ -115,7 +113,7 @@ class AuthViewModel(private val container: AppContainer) : ViewModel() {
             _state.update { it.copy(busy = false, error = "Сервер не вернул токен") }
             return
         }
-        container.session.save(server, token, gson.toJson(session))
+        container.session.save(server, token, ApiJson.gson.toJson(session))
         _state.update { it.copy(busy = false, error = null) }
     }
 

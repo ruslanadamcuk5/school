@@ -32,7 +32,7 @@ import com.edumath.uchus.ui.common.EmptyBox
 import com.edumath.uchus.ui.common.InfoBox
 import com.edumath.uchus.ui.common.Load
 import com.edumath.uchus.ui.common.ScreenScaffold
-import com.google.gson.Gson
+import com.edumath.uchus.data.api.ApiJson
 import kotlinx.coroutines.launch
 
 @Composable
@@ -44,7 +44,7 @@ fun ReadScreen(
     onQuiz: (String) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    val gson = remember { Gson() }
+    val gson = remember { ApiJson.gson }
     var message by remember { mutableStateOf<String?>(null) }
 
     ScreenScaffold(title = "Чтение", onBack = onBack) { padding ->

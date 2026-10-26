@@ -168,7 +168,11 @@ def row_dict(row, *, exclude: Iterable[str] = ()) -> dict[str, Any] | None:
 
 def user_payload(user) -> dict[str, Any] | None:
     """Публичные поля пользователя."""
-    return row_dict(user, exclude={"child_code"})
+    data = row_dict(user, exclude={"child_code"})
+    if data is not None:
+        # В SQLite флаг хранится числом 0/1, а клиенты ждут JSON-логическое.
+        data["is_active"] = bool(data.get("is_active"))
+    return data
 
 
 def learner_payload(learner) -> dict[str, Any] | None:

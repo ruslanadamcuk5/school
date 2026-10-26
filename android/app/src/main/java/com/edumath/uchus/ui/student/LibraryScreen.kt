@@ -44,7 +44,7 @@ import com.edumath.uchus.ui.common.SectionTitle
 import com.edumath.uchus.ui.common.StatsRow
 import com.edumath.uchus.ui.common.Tag
 import com.edumath.uchus.ui.teacher.TeacherLibraryScreen
-import com.google.gson.Gson
+import com.edumath.uchus.data.api.ApiJson
 import kotlinx.coroutines.launch
 
 @Composable
@@ -68,7 +68,7 @@ private fun StudentLibraryScreen(
     onBook: (Int, Int) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    val gson = remember { Gson() }
+    val gson = remember { ApiJson.gson }
 
     ScreenScaffold(title = "Библиотека", onBack = onBack) { padding ->
         Load(
@@ -101,7 +101,7 @@ private fun ParentLibraryScreen(
     onBook: (Int, Int) -> Unit,
 ) {
     var childId by remember { mutableStateOf<Int?>(null) }
-    val gson = remember { Gson() }
+    val gson = remember { ApiJson.gson }
 
     ScreenScaffold(title = "Библиотека ребёнка", onBack = onBack) { padding ->
         Load(

@@ -2,8 +2,6 @@ package com.edumath.uchus.data.api
 
 import com.edumath.uchus.BuildConfig
 import com.edumath.uchus.data.session.SessionStore
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -22,15 +20,13 @@ class ApiException(
     val status: Int = 0,
 ) : Exception(message)
 
-private val errorGson = Gson()
-
 /** Выполнить запрос, превратив сетевые ошибки в ApiException. */
 suspend fun <T> apiCall(block: suspend () -> T): T {
     try {
         return block()
     } catch (e: HttpException) {
         val raw = runCatching { e.response()?.errorBody()?.string() }.getOrNull()
-        val parsed = runCatching { errorGson.fromJson(raw, ApiErrorDto::class.java) }.getOrNull()
+        val parsed = runCatching { ApiJson.gson.fromJson(raw, ApiErrorDto::class.java) }.getOrNull()
         throw ApiException(
             code = parsed?.error ?: "http_${e.code()}",
             message = parsed?.message ?: "Ошибка сервера (${e.code()})",
@@ -87,12 +83,11 @@ object ApiClient {
     }
 
     fun create(session: SessionStore): ApiService {
-        val gson: Gson = GsonBuilder().setLenient().create()
         return Retrofit.Builder()
             // Реальный адрес подставляется перехватчиком из настроек сессии.
             .baseUrl("https://placeholder.invalid/api/v1/")
             .client(httpClient(session))
-            .addConverterFactory(GsonConverterFactory.create(gson))
+            .addConverterFactory(GsonConverterFactory.create(ApiJson.gson))
             .build()
             .create(ApiService::class.java)
     }

@@ -507,10 +507,11 @@ data/releases/version.json
 
 ```json
 {
-  "version_code": 2,
-  "version_name": "1.1",
+  "version_code": 3,
+  "version_name": "1.2",
   "file_name": "uchus-debug.apk",
-  "sha256": "…",
+  "size": 19238488,
+  "sha256": "5fc25a86a440ba0ecefbd92a1e28927de793c5b87237a028eb382d9d9b60919a",
   "notes": "Что нового",
   "published_at": "2026-10-26T12:00:00+00:00"
 }

@@ -1117,6 +1117,8 @@ class TestApiV1(unittest.TestCase):
         body = me.get_json()
         self.assertEqual(body["user"]["role"], "teacher")
         self.assertEqual(body["theme"], "adult")
+        self.assertIsInstance(body["user"]["is_active"], bool)
+        self.assertTrue(body["user"]["is_active"])
 
         self.assertEqual(
             self.client.post(
@@ -1130,6 +1132,16 @@ class TestApiV1(unittest.TestCase):
             ).status_code,
             401,
         )
+
+    def test_login_returns_boolean_user_flags(self):
+        login, password = self._user("api_flags", "teacher")
+        response = self.client.post(
+            "/api/v1/auth/login", json={"login": login, "password": password}
+        )
+        self.assertEqual(response.status_code, 200, response.get_data(as_text=True))
+        user = response.get_json()["user"]
+        self.assertIsInstance(user["is_active"], bool)
+        self.assertTrue(user["is_active"])
 
     def test_family_profiles_are_device_scoped_and_pin_protected(self):
         created = self._family("Семейный", pin="4321")
@@ -1200,6 +1212,8 @@ class TestApiV1(unittest.TestCase):
         round_id = body["round_id"]
         self.assertTrue(body["task"]["question"])
         self.assertNotIn("answer", body["task"])
+        widget = body["task"]["widget"]
+        self.assertTrue(widget is None or isinstance(widget, dict))
 
         correct = 0
         for _ in range(14):
@@ -1239,6 +1253,19 @@ class TestApiV1(unittest.TestCase):
             f"/api/v1/play/{round_id}/result", headers=headers
         ).get_json()
         self.assertEqual(again["stars"], result_body["stars"])
+
+    def test_play_widget_serializes_as_object(self):
+        """Android ждёт widget объектом; строка или число ломают запуск теста."""
+        token = self._family("Виджет")["token"]
+        start = self.client.post(
+            "/api/v1/play/start",
+            headers=self._headers(token),
+            json={"topic_slug": "numbers_1000", "method": "compare_by_place"},
+        )
+        self.assertEqual(start.status_code, 200, start.get_data(as_text=True))
+        widget = start.get_json()["task"]["widget"]
+        self.assertIsInstance(widget, dict)
+        self.assertTrue(widget.get("type"))
 
     def test_teacher_assignment_and_student_submission(self):
         from content.curriculum import TOPICS

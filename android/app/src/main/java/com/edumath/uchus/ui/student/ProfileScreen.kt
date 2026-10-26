@@ -35,7 +35,7 @@ import com.edumath.uchus.ui.common.ScreenScaffold
 import com.edumath.uchus.ui.common.SectionTitle
 import com.edumath.uchus.ui.common.StatsRow
 import com.edumath.uchus.ui.common.Tag
-import com.google.gson.Gson
+import com.edumath.uchus.data.api.ApiJson
 
 @Composable
 fun ProfileScreen(
@@ -53,7 +53,7 @@ fun ProfileScreen(
     }
 
     ScreenScaffold(title = "Профиль", onBack = onBack) { padding ->
-        val gson = remember { Gson() }
+        val gson = remember { ApiJson.gson }
         Load(
             key = "profile:stats",
             cache = container.cache,
@@ -239,7 +239,7 @@ fun ScheduleScreen(
     onBack: () -> Unit,
 ) {
     ScreenScaffold(title = "Расписание", onBack = onBack) { padding ->
-        val gson = remember { Gson() }
+        val gson = remember { ApiJson.gson }
         Load(
             key = "schedule",
             cache = container.cache,

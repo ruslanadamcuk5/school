@@ -37,8 +37,8 @@ import com.edumath.uchus.ui.common.Load
 import com.edumath.uchus.ui.common.ScreenScaffold
 import com.edumath.uchus.ui.common.SectionTitle
 import com.edumath.uchus.ui.common.StatsRow
+import com.edumath.uchus.data.api.ApiJson
 import com.edumath.uchus.ui.common.Tag
-import com.google.gson.Gson
 
 @Composable
 fun MapScreen(
@@ -48,7 +48,7 @@ fun MapScreen(
     onDaily: (String) -> Unit,
 ) {
     var subject by remember { mutableStateOf<String?>(null) }
-    val gson = remember { Gson() }
+    val gson = remember { ApiJson.gson }
 
     ScreenScaffold(title = "Карта тем", onBack = onBack) { padding ->
         Load(

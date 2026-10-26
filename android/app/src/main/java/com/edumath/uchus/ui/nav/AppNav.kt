@@ -20,6 +20,7 @@ import androidx.navigation.navArgument
 import androidx.compose.ui.Modifier
 import com.edumath.uchus.core.AppContainer
 import com.edumath.uchus.core.appViewModelFactory
+import com.edumath.uchus.data.api.ApiJson
 import com.edumath.uchus.data.api.MetaDto
 import com.edumath.uchus.data.api.SessionDto
 import com.edumath.uchus.data.api.apiCall
@@ -54,7 +55,6 @@ import com.edumath.uchus.ui.teacher.TeacherScheduleScreen
 import com.edumath.uchus.ui.teacher.TeacherStudentScreen
 import com.edumath.uchus.ui.teacher.TeacherStudentsScreen
 import com.edumath.uchus.ui.update.AppUpdateGate
-import com.google.gson.Gson
 import kotlinx.coroutines.launch
 
 @Composable
@@ -106,7 +106,7 @@ private val homeRoutes = setOf(
 @Composable
 private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
     val session: SessionDto? = remember(stored.sessionJson) {
-        runCatching { Gson().fromJson(stored.sessionJson, SessionDto::class.java) }.getOrNull()
+        runCatching { ApiJson.gson.fromJson(stored.sessionJson, SessionDto::class.java) }.getOrNull()
     }
     val nav = rememberNavController()
     val scope = rememberCoroutineScope()

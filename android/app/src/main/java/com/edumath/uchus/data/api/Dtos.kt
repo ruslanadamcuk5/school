@@ -1,5 +1,6 @@
 package com.edumath.uchus.data.api
 
+import com.google.gson.JsonElement
 import com.google.gson.annotations.SerializedName
 
 // ------------------------------------------------------------------ общие
@@ -52,7 +53,10 @@ data class UserDto(
     @SerializedName("phone") val phone: String? = null,
     @SerializedName("city_id") val cityId: Int? = null,
     @SerializedName("school_id") val schoolId: Int? = null,
-    @SerializedName("is_active") val isActive: Boolean = true,
+    @SerializedName(
+        value = "is_active",
+        alternate = ["is_Active", "isActive"],
+    ) val isActive: Boolean = true,
     @SerializedName("city_name") val cityName: String? = null,
     @SerializedName("school_name") val schoolName: String? = null,
     @SerializedName("child_code") val childCode: String? = null,
@@ -311,7 +315,7 @@ data class TaskDto(
     @SerializedName("question") val question: String = "",
     @SerializedName("answer_type") val answerType: String? = null,
     @SerializedName("choices") val choices: List<String> = emptyList(),
-    @SerializedName("widget") val widget: String? = null,
+    @SerializedName("widget") val widget: JsonElement? = null,
     @SerializedName("difficulty") val difficulty: Int = 1,
     @SerializedName("generator") val generator: String? = null,
     @SerializedName("index") val index: Int = 0,
