@@ -7,11 +7,13 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import secrets
 import sys
 
 from content.curriculum import TOPICS
 from database import execute, init_db, query_all, query_one
+
+# Пароль администратора, если он не задан через переменную окружения ADMIN_PASSWORD.
+DEFAULT_ADMIN_PASSWORD = "math2025"
 
 # Предметы платформы. Ключ — стабильный код для адресов и импорта.
 DEFAULT_SUBJECTS: list[tuple[str, str, str, str, str]] = [
@@ -123,7 +125,7 @@ def ensure_admin() -> str:
     if row:
         return ""
     login = os.environ.get("ADMIN_LOGIN", "admin")
-    password = os.environ.get("ADMIN_PASSWORD") or secrets.token_urlsafe(9)
+    password = os.environ.get("ADMIN_PASSWORD") or DEFAULT_ADMIN_PASSWORD
     auth.create_user(login, password, auth.ROLE_ADMIN, "Администратор", "платформы",
                      email=os.environ.get("ADMIN_EMAIL") or None, avatar="🛠")
     return password
