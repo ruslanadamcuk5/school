@@ -397,12 +397,15 @@ def quiz_start(slug: str):
     if int(topic["grade"]) != int(profile["grade"]):
         fail(403, "grade_mismatch", "Тема другого класса")
 
-    questions = reading_quiz.build_questions(topic, 8)
+    questions = reading_quiz.build_questions(
+        topic, 8, user_id=int(profile["user_id"]) if profile["user_id"] else None
+    )
     if not questions:
         fail(
             409,
             "no_questions",
-            "По этой теме не удалось составить вопросы: нет текста пособия.",
+            "По этой теме не удалось составить вопросы: нет читаемого текста "
+            "пособия. Включите ИИ в админке или загрузите пособие с текстом.",
         )
 
     items = [

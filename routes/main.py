@@ -343,11 +343,14 @@ def topic_quiz(slug: str):
         abort(403)
 
     if request.method == "GET":
-        questions = reading_quiz.build_questions(topic, 8)
+        questions = reading_quiz.build_questions(
+            topic, 8, user_id=int(learner["user_id"]) if learner["user_id"] else None
+        )
         if not questions:
             flash(
                 "По этой теме пока не удалось составить вопросы. "
-                "Проверьте, что к ней привязано пособие с текстом.",
+                "Проверьте, что к ней привязано пособие с текстом, "
+                "или включите ИИ в разделе «Админ → ИИ».",
                 "error",
             )
             return redirect(url_for("main.topic_page", slug=slug))

@@ -12,6 +12,9 @@
   </div>
   <div class="row" style="gap:8px;">
     <a class="btn btn--ghost" href="{{ url_for('main.topic_page', slug=info.slug) }}">← К теме</a>
+    {% if content_html %}
+      <button class="btn btn--ghost" type="button" id="speak-btn">🔊 Прослушать</button>
+    {% endif %}
     <form method="post" action="{{ url_for('ai.refresh_explanation', slug=info.slug) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="btn btn--ghost" type="submit">🔄 Обновить объяснение</button>
@@ -43,4 +46,47 @@
   <p class="muted small mt-1">Прочитайте объяснение, разберите примеры и ответьте на вопросы
     самопроверки. Затем вернитесь к теме и пройдите тренировку или тест.</p>
 </div>
+
+<script>
+(function () {
+  var button = document.getElementById('speak-btn');
+  if (!button) return;
+  if (!('speechSynthesis' in window)) {
+    button.style.display = 'none';
+    return;
+  }
+  var box = document.querySelector('.ai-explain');
+  var speaking = false;
+
+  function reset() {
+    speaking = false;
+    button.textContent = '🔊 Прослушать';
+  }
+
+  button.addEventListener('click', function () {
+    var synth = window.speechSynthesis;
+    if (speaking) {
+      synth.cancel();
+      reset();
+      return;
+    }
+    var text = (box ? box.innerText : '').replace(/\s+/g, ' ').trim();
+    if (!text) return;
+    synth.cancel();
+    var sample = text.slice(0, 200);
+    var utterance = new SpeechSynthesisUtterance(text.slice(0, 3000));
+    utterance.lang = /[А-Яа-яЁё]/.test(sample) ? 'ru-RU' : 'en-US';
+    utterance.rate = 0.95;
+    utterance.onend = reset;
+    utterance.onerror = reset;
+    speaking = true;
+    button.textContent = '⏹ Остановить';
+    synth.speak(utterance);
+  });
+
+  window.addEventListener('beforeunload', function () {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  });
+})();
+</script>
 {% endblock %}

@@ -1,8 +1,10 @@
-"""Задания для тем-чтения: cloze по тексту пособия и вопросы по теме.
+"""Задания для тем-чтения: вопросы ИИ по теме и cloze по тексту пособия.
 
-Генерация полностью офлайн. Если у PDF есть текстовый слой, задания
-составляются по предложениям из указанных страниц. Для сканов остаются
-вопросы по теме, предмету и страницам пособия.
+Основной источник вопросов — модель ИИ: она составляет проверочные вопросы
+по выбранной теме (название, предмет, класс, описание и читаемый текст
+пособия). Если ИИ не настроен, остаются офлайн-задания: пропущенное слово
+по тексту страниц. Вопросы «на какой странице» и «к какому предмету»
+больше не задаются — они проверяли оформление пособия, а не знания.
 """
 from __future__ import annotations
 
@@ -12,9 +14,10 @@ import re
 from functools import lru_cache
 from typing import Any
 
+from content.answer import normalize_text
 from content.generators.base import shuffle_options, task
 from database import execute, query_all
-from services import pdf_text, textbooks
+from services import ai_quiz, pdf_text, text_quality, textbooks
 
 _STOPWORDS = {
     "это", "этот", "эта", "эти", "как", "что", "чтобы", "когда", "тогда",
@@ -217,25 +220,12 @@ def _cloze_questions(
     return questions
 
 
-def _subject_question(topic: Any) -> dict[str, Any] | None:
-    rows = query_all("SELECT name FROM subjects WHERE is_active = 1 ORDER BY order_index, id")
-    names = [row["name"] for row in rows]
-    correct = topic["subject_name"] if "subject_name" in topic.keys() else ""
-    if not correct or correct not in names or len(names) < 2:
-        return None
-    distractors = [name for name in names if name != correct]
-    chosen = random.sample(distractors, min(3, len(distractors)))
-    return task(
-        f"К какому предмету относится тема «{topic['title']}»?",
-        correct,
-        answer_type="choice",
-        choices=shuffle_options([correct, *chosen]),
-        solution=f"Тема «{topic['title']}» — предмет «{correct}».",
-        difficulty=1,
-    )
-
-
 def _description_question(topic: Any) -> dict[str, Any] | None:
+    """Запасной вопрос, если ИИ недоступен и текста пособия нет.
+
+    Сопоставление описания и темы — единственное, что можно составить
+    полностью офлайн, не выдумывая фактов.
+    """
     description = str(topic["description"] or "").strip()
     if len(description) < 20:
         return None
@@ -246,7 +236,7 @@ def _description_question(topic: Any) -> dict[str, Any] | None:
         (topic["subject_id"], topic["grade"], topic["slug"]),
     )
     others = [row["title"] for row in rows]
-    if len(others) < 2:
+    if not others:
         return None
     chosen = random.sample(others, min(3, len(others)))
     return task(
@@ -259,62 +249,60 @@ def _description_question(topic: Any) -> dict[str, Any] | None:
     )
 
 
-def _page_question(topic: Any, books: list[Any]) -> dict[str, Any] | None:
-    if not books:
-        return None
-    book = books[0]
-    page = int(book["page"] or 1)
-    total = int(book["pages"] or 2000)
-    values = {page}
-    attempts = 0
-    while len(values) < 4 and attempts < 40:
-        attempts += 1
-        candidate = max(1, min(total, page + random.choice([-8, -5, -3, 3, 5, 8, 12])))
-        values.add(candidate)
-    if len(values) < 2:
-        return None
-    choices = [str(value) for value in sorted(values)]
-    return task(
-        f"На какой странице пособия «{book['title']}» начинается тема "
-        f"«{topic['title']}»?",
-        str(page),
-        answer_type="choice",
-        choices=choices,
-        solution=f"Тема начинается на странице {page}.",
-        hints=["Открой оглавление или карточку темы"],
-        difficulty=1,
-    )
+def _excerpt(pages: list[tuple[int | None, str]], limit: int = 6000) -> str:
+    """Фрагмент читаемого текста пособия для модели ИИ."""
+    parts: list[str] = []
+    total = 0
+    for _, text in pages:
+        text = re.sub(r"\s+", " ", text or "").strip()
+        if not text:
+            continue
+        parts.append(text)
+        total += len(text)
+        if total >= limit:
+            break
+    return "\n".join(parts)[:limit]
 
 
-def build_questions(topic: Any, count: int = 5) -> list[dict[str, Any]]:
-    """Сгенерировать до `count` заданий по теме-чтению."""
+def build_questions(
+    topic: Any, count: int = 5, *, user_id: int | None = None
+) -> list[dict[str, Any]]:
+    """Сгенерировать до `count` заданий по теме.
+
+    Сначала — вопросы по теме от ИИ (если он настроен), затем — пропущенные
+    слова по читаемому тексту пособия. Битый текст сканов не используется.
+    """
     if not topic or count <= 0:
         return []
-    books: list[Any] = []
-    try:
-        books = textbooks.textbooks_for_topic(
-            topic["slug"],
-            subject_id=topic["subject_id"],
-            grade=topic["grade"],
-        )
-    except Exception:  # noqa: BLE001
-        pass
     subject_slug = topic["subject_slug"] if "subject_slug" in topic.keys() else ""
     script = "lat" if subject_slug in {"english", "angl"} else "cyr"
+    pages = topic_pages(topic)
+    readable_pages = [
+        (page, text) for page, text in pages
+        if text_quality.readable(text, script)
+    ]
+
     pool: list[dict[str, Any]] = []
-    pool.extend(_cloze_questions(topic_pages(topic), count * 2, script))
-    for extra in (
-        _description_question(topic),
-        _page_question(topic, books),
-        _subject_question(topic),
-    ):
-        if extra:
-            pool.append(extra)
-    random.shuffle(pool)
+    pool.extend(ai_quiz.questions(
+        topic,
+        count,
+        text=_excerpt(readable_pages),
+        script=script,
+        user_id=user_id,
+    ))
+    if len(pool) < count and readable_pages:
+        pool.extend(
+            _cloze_questions(readable_pages, (count - len(pool)) * 2, script)
+        )
+    if not pool:
+        fallback = _description_question(topic)
+        if fallback:
+            pool.append(fallback)
+
     result: list[dict[str, Any]] = []
     seen: set[str] = set()
     for item in pool:
-        key = item["question"]
+        key = normalize_text(item["question"])
         if key in seen:
             continue
         seen.add(key)

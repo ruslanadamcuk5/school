@@ -696,8 +696,15 @@ def ai_settings():
             )
         elif action == "clear_cache":
             removed = ai_service.clear_explanations()
+            from services import ai_quiz as ai_quiz_service
+
+            ai_quiz_service.clear_cache()
             _log("ai_clear_cache", "ai", "", f"удалено {removed}")
-            flash(f"Очищено готовых объяснений: {removed}", "info")
+            flash(
+                f"Очищено готовых объяснений: {removed}. "
+                "Вопросы по темам будут составлены заново.",
+                "info",
+            )
         else:
             current = ai_service.get_settings()
             raw_key = (request.form.get("api_key") or "").strip()

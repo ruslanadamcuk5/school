@@ -492,6 +492,15 @@ CREATE TABLE IF NOT EXISTS ai_explanations (
 
 CREATE INDEX IF NOT EXISTS idx_ai_explanations_slug ON ai_explanations(topic_slug);
 
+-- Вопросы по теме, составленные ИИ. Кэш на тему: один запрос на всех учеников.
+CREATE TABLE IF NOT EXISTS ai_quizzes (
+    topic_slug  TEXT    PRIMARY KEY,
+    grade       INTEGER,
+    model       TEXT,
+    payload     TEXT    NOT NULL,
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Журнал обращений к ИИ: помогает администратору видеть ошибки и активность.
 CREATE TABLE IF NOT EXISTS ai_requests (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,

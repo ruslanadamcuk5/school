@@ -138,11 +138,11 @@ CSRF для `/api/v1/*` не применяется: токен передаёт
 ```json
 {
   "ok": true,
-  "version_code": 3,
-  "version_name": "1.2",
+  "version_code": 4,
+  "version_name": "1.3",
   "download_url": "https://<логин>.alwaysdata.net/download/android",
-  "size": 19238488,
-  "sha256": "5fc25a86a440ba0ecefbd92a1e28927de793c5b87237a028eb382d9d9b60919a",
+  "size": 19648212,
+  "sha256": "8cb34aa230832dacaa2c20f635ff59b888ad37506a72573f525e414b13298297",
   "notes": "Что нового",
   "published_at": "2026-10-26T12:00:00+00:00"
 }

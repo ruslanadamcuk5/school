@@ -18,6 +18,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,6 +27,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,7 +40,9 @@ import com.edumath.uchus.ui.common.InfoBox
 import com.edumath.uchus.ui.common.Load
 import com.edumath.uchus.ui.common.ScreenScaffold
 import com.edumath.uchus.ui.common.SectionTitle
+import com.edumath.uchus.ui.common.Speaker
 import com.edumath.uchus.ui.common.Tag
+import com.edumath.uchus.ui.common.plainAiText
 import kotlinx.coroutines.launch
 
 @Composable
@@ -52,7 +57,50 @@ fun TopicScreen(
     onTopic: (String) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val speaker = remember { Speaker(context) }
     var message by remember { mutableStateOf<String?>(null) }
+    var aiEnabled by remember { mutableStateOf(false) }
+    var explanation by remember { mutableStateOf<String?>(null) }
+    var aiBusy by remember { mutableStateOf(false) }
+    var aiError by remember { mutableStateOf<String?>(null) }
+
+    DisposableEffect(Unit) {
+        onDispose { speaker.shutdown() }
+    }
+
+    LaunchedEffect(slug) {
+        aiEnabled = runCatching {
+            apiCall { container.api.aiStatus() }.ai?.enabled == true
+        }.getOrDefault(false)
+    }
+
+    val explain: (Boolean) -> Unit = { refresh ->
+        if (!aiBusy) {
+            aiBusy = true
+            aiError = null
+            scope.launch {
+                runCatching {
+                    if (refresh) {
+                        container.api.aiExplainRefresh(slug)
+                    } else {
+                        container.api.aiExplain(slug)
+                    }
+                }.onSuccess { data ->
+                    val text = plainAiText(data.content.orEmpty())
+                    if (text.isNotEmpty()) {
+                        explanation = text
+                        speaker.speak(text)
+                    } else {
+                        aiError = "ИИ не вернул объяснение. Попробуйте позже."
+                    }
+                }.onFailure {
+                    aiError = it.message ?: "Не удалось получить объяснение."
+                }
+                aiBusy = false
+            }
+        }
+    }
 
     ScreenScaffold(title = "Тема", onBack = onBack) { padding ->
         Load(
@@ -106,6 +154,22 @@ fun TopicScreen(
                     }
                 }
 
+                if (aiEnabled) {
+                    item {
+                        AiExplainCard(
+                            explanation = explanation,
+                            busy = aiBusy,
+                            error = aiError,
+                            speaking = speaker.speaking,
+                            speechError = speaker.error,
+                            onExplain = { explain(false) },
+                            onRefresh = { explain(true) },
+                            onSpeak = { explanation?.let { speaker.speak(it) } },
+                            onStop = { speaker.stop() },
+                        )
+                    }
+                }
+
                 if (data.canRead) {
                     item {
                         Button(
@@ -156,6 +220,71 @@ fun TopicScreen(
                 }
 
                 item { Spacer(Modifier.height(16.dp)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AiExplainCard(
+    explanation: String?,
+    busy: Boolean,
+    error: String?,
+    speaking: Boolean,
+    speechError: String?,
+    onExplain: () -> Unit,
+    onRefresh: () -> Unit,
+    onSpeak: () -> Unit,
+    onStop: () -> Unit,
+) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(
+            Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("🤖", fontSize = 22.sp)
+                Spacer(Modifier.width(8.dp))
+                Text("Объяснение с ИИ", fontWeight = FontWeight.SemiBold)
+            }
+            if (explanation == null) {
+                Text(
+                    "ИИ объяснит тему простыми словами и прочитает объяснение вслух.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Button(
+                    onClick = onExplain,
+                    enabled = !busy,
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(if (busy) "Составляю объяснение…" else "Объяснить с ИИ") }
+            } else {
+                Text(explanation, style = MaterialTheme.typography.bodyMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = { if (speaking) onStop() else onSpeak() },
+                        modifier = Modifier.weight(1f),
+                    ) { Text(if (speaking) "Остановить" else "Озвучить") }
+                    OutlinedButton(
+                        onClick = onRefresh,
+                        enabled = !busy,
+                        modifier = Modifier.weight(1f),
+                    ) { Text(if (busy) "…" else "Обновить") }
+                }
+                if (!speechError.isNullOrBlank()) {
+                    Text(
+                        speechError,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+            if (!error.isNullOrBlank()) {
+                Text(
+                    error,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
             }
         }
     }
