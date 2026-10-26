@@ -12,7 +12,7 @@ from services import textbooks as textbooks_service
 from services import topics as topics_service
 
 from . import bp
-from .deps import current_user, fail, json_body, require_user, row_dict
+from .deps import current_user, fail, json_body, require_user, row_dict, user_payload
 
 ROLES = (
     auth_service.ROLE_ADMIN,
@@ -77,7 +77,7 @@ def stats():
             "by_role": by_role,
             "ai": ai_stats,
             "recent_users": [
-                row_dict(row, exclude={"password_hash"})
+                user_payload(row)
                 for row in query_all(
                     "SELECT * FROM users ORDER BY id DESC LIMIT 8"
                 )
@@ -104,7 +104,7 @@ def users():
     return jsonify(
         {
             "ok": True,
-            "users": [row_dict(row, exclude={"password_hash"}) for row in rows],
+            "users": [user_payload(row) for row in rows],
             "roles": ROLES,
         }
     )
@@ -145,7 +145,7 @@ def create_user():
             orgs.add_student_to_class(class_id, user_id)
     _log("create", "user", str(user_id), login)
     return jsonify(
-        {"ok": True, "user": row_dict(auth_service.get_user(user_id), exclude={"password_hash"})}
+        {"ok": True, "user": user_payload(auth_service.get_user(user_id))}
     ), 201
 
 
@@ -189,7 +189,7 @@ def update_user(user_id: int):
         auth_service.update_user(user_id, **fields)
     _log("update", "user", str(user_id), ", ".join(fields))
     return jsonify(
-        {"ok": True, "user": row_dict(auth_service.get_user(user_id), exclude={"password_hash"})}
+        {"ok": True, "user": user_payload(auth_service.get_user(user_id))}
     )
 
 
@@ -246,7 +246,7 @@ def orgs_view():
             "classes": classes,
             "subjects": [row_dict(row) for row in orgs.list_subjects()],
             "teachers": [
-                row_dict(row, exclude={"password_hash"})
+                user_payload(row)
                 for row in auth_service.list_users(role=auth_service.ROLE_TEACHER)
             ],
         }

@@ -18,6 +18,7 @@ from .deps import (
     json_body,
     require_user,
     row_dict,
+    user_payload,
 )
 
 MAX_QUESTIONS = 40
@@ -361,7 +362,7 @@ def teacher_results(assignment_id: int):
             "assignment": row_dict(assignment),
             "results": [
                 {
-                    "student": row_dict(item.get("student")),
+                    "student": user_payload(item.get("student")),
                     "result": row_dict(item.get("result")),
                     "percent": item.get("percent"),
                     "grade": item.get("grade"),

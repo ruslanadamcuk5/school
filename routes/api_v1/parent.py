@@ -10,7 +10,7 @@ from services import orgs
 from services import progress as progress_service
 
 from . import bp
-from .deps import current_user, fail, json_body, require_user, row_dict
+from .deps import current_user, fail, json_body, require_user, row_dict, user_payload
 
 MAX_GRADE = 11
 
@@ -40,7 +40,7 @@ def _children(user) -> list[dict]:
         stats = progress_service.learner_stats(int(learner["id"])) if learner else {}
         out.append(
             {
-                "user": row_dict(child, exclude={"password_hash"}),
+                "user": user_payload(child),
                 "learner": row_dict(learner) if learner else None,
                 "classes": [row_dict(klass) for klass in classes],
                 "grade": grade,
@@ -136,7 +136,7 @@ def child_detail(learner_id: int):
         {
             "ok": True,
             "learner": row_dict(learner),
-            "user": row_dict(child_user, exclude={"password_hash"}) if child_user else None,
+            "user": user_payload(child_user) if child_user else None,
             "classes": [row_dict(klass) for klass in orgs.classes_of_student(int(child_user["id"]))]
             if child_user
             else [],
@@ -235,7 +235,7 @@ def link_child():
     return jsonify(
         {
             "ok": True,
-            "child": row_dict(child, exclude={"password_hash"}),
+            "child": user_payload(child),
             "children": _children(user),
         }
     )

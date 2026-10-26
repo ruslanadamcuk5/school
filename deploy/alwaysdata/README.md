@@ -214,6 +214,12 @@ pip install -r requirements.txt
 Затем в панели: **Web → Sites → <сайт> → Restart**.
 Миграции базы применяются автоматически при старте.
 
+> Если после обновления файлов API всё ещё отвечает по-старому, откройте
+> **Advanced → Processes**, найдите `uWSGI worker` и завершите его. Следующий
+> запрос поднимет worker с новым кодом. Проверить контракт можно так:
+> `GET /api/v1/auth/login` должен возвращать `"is_active": true/false`,
+> а не `1/0`.
+
 ### Обновление Android APK
 
 APK и метаданные лежат в `~/edu-math/data/releases/`:

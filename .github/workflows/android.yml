@@ -52,6 +52,11 @@ jobs:
         with:
           gradle-version: "8.9"
 
+      - name: Тесты JSON-разбора
+        working-directory: android
+        shell: bash
+        run: gradle :app:testDebugUnitTest --no-daemon
+
       - name: Собрать APK
         working-directory: android
         shell: bash

@@ -20,6 +20,7 @@ from .deps import (
     require_learner,
     require_user,
     row_dict,
+    user_payload,
 )
 
 
@@ -222,8 +223,8 @@ def parent_library():
         fail(403, "forbidden", "Ребёнок не найден")
 
     payload = _student_library_payload(int(child["id"]))
-    payload["children"] = [row_dict(item) for item in children]
-    payload["child"] = row_dict(child)
+    payload["children"] = [user_payload(item) for item in children]
+    payload["child"] = user_payload(child)
     return jsonify(payload)
 
 
@@ -252,7 +253,7 @@ def teacher_library():
             "books": [_book_payload(book) for book in books],
             "stats": stats,
             "classes": [row_dict(klass) for klass in _class_list(user)],
-            "students": [row_dict(student) for student in _student_list(user)],
+            "students": [user_payload(student) for student in _student_list(user)],
             "subjects": [row_dict(subject) for subject in orgs.list_subjects(active_only=True)],
         }
     )

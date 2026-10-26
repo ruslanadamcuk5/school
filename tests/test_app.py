@@ -1143,6 +1143,21 @@ class TestApiV1(unittest.TestCase):
         self.assertIsInstance(user["is_active"], bool)
         self.assertTrue(user["is_active"])
 
+    def test_admin_user_payloads_use_boolean_flags(self):
+        login, password = self._user("api_admin", "admin")
+        token = self._login(login, password)
+        headers = self._headers(token)
+
+        users = self.client.get("/api/v1/admin/users", headers=headers)
+        self.assertEqual(users.status_code, 200, users.get_data(as_text=True))
+        for user in users.get_json()["users"]:
+            self.assertIsInstance(user["is_active"], bool)
+
+        stats = self.client.get("/api/v1/admin/stats", headers=headers)
+        self.assertEqual(stats.status_code, 200, stats.get_data(as_text=True))
+        for user in stats.get_json()["recent_users"]:
+            self.assertIsInstance(user["is_active"], bool)
+
     def test_family_profiles_are_device_scoped_and_pin_protected(self):
         created = self._family("Семейный", pin="4321")
         learner_id = created["learner"]["id"]
@@ -1331,6 +1346,60 @@ class TestApiV1(unittest.TestCase):
         self.assertEqual(results.status_code, 200)
         rows = results.get_json()["results"]
         self.assertTrue(any(row["result"] for row in rows))
+        self.assertIsInstance(rows[0]["student"]["is_active"], bool)
+
+        student_detail = self.client.get(
+            f"/api/v1/teacher/students/{student['id']}",
+            headers=self._headers(teacher_token),
+        )
+        self.assertEqual(student_detail.status_code, 200)
+        self.assertIsInstance(student_detail.get_json()["student"]["is_active"], bool)
+
+    def test_parent_payloads_use_boolean_flags(self):
+        from services import learners as learners_service
+
+        parent_login, parent_password = self._user("api_parent", "parent")
+        student_login, student_password = self._user("api_child", "student")
+        parent = self.auth.get_user_by_login(parent_login)
+        student = self.auth.get_user_by_login(student_login)
+        self.auth.link_parent_child(parent["id"], student["id"])
+        learner_id = learners_service.ensure_learner_for_user(student)
+        parent_token = self._login(parent_login, parent_password)
+
+        dashboard = self.client.get(
+            "/api/v1/parent/dashboard", headers=self._headers(parent_token)
+        )
+        self.assertEqual(dashboard.status_code, 200, dashboard.get_data(as_text=True))
+        children = dashboard.get_json()["children"]
+        self.assertTrue(children)
+        self.assertIsInstance(children[0]["user"]["is_active"], bool)
+
+        detail = self.client.get(
+            f"/api/v1/parent/children/{learner_id}",
+            headers=self._headers(parent_token),
+        )
+        self.assertEqual(detail.status_code, 200, detail.get_data(as_text=True))
+        self.assertIsInstance(detail.get_json()["user"]["is_active"], bool)
+
+        second_login, _ = self._user("api_child2", "student")
+        second = self.auth.get_user_by_login(second_login)
+        learners_service.ensure_learner_for_user(second)
+        linked = self.client.post(
+            "/api/v1/parent/link",
+            headers=self._headers(parent_token),
+            json={"code": second["child_code"]},
+        )
+        self.assertEqual(linked.status_code, 200, linked.get_data(as_text=True))
+        self.assertIsInstance(linked.get_json()["child"]["is_active"], bool)
+
+        library = self.client.get(
+            "/api/v1/parent/library", headers=self._headers(parent_token)
+        )
+        self.assertEqual(library.status_code, 200, library.get_data(as_text=True))
+        library_body = library.get_json()
+        self.assertIsInstance(library_body["child"]["is_active"], bool)
+        for child in library_body["children"]:
+            self.assertIsInstance(child["is_active"], bool)
 
     def test_roles_and_guest_access(self):
         token = self._family()["token"]

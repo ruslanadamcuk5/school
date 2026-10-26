@@ -11,7 +11,7 @@ from services import orgs
 from services import progress as progress_service
 
 from . import bp
-from .deps import current_user, fail, json_body, require_user, row_dict
+from .deps import current_user, fail, json_body, require_user, row_dict, user_payload
 
 WEEKDAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
 
@@ -26,7 +26,7 @@ def _learner_of(user_id: int):
 
 
 def _student_card(student) -> dict:
-    data = row_dict(student)
+    data = user_payload(student)
     learner = _learner_of(int(student["id"]))
     if learner is None:
         data["learner"] = None
@@ -208,7 +208,7 @@ def student_detail(student_id: int):
     return jsonify(
         {
             "ok": True,
-            "student": row_dict(student, exclude={"password_hash"}),
+            "student": user_payload(student),
             "learner": row_dict(learner) if learner else None,
             "classes": [row_dict(klass) for klass in orgs.classes_of_student(student_id)],
             "stats": stats,
