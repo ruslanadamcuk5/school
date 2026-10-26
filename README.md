@@ -61,8 +61,10 @@ python tools/set_admin_password.py admin math2025   # восстановить �
 python tools/check_templates.py    # синтаксис всех Jinja-шаблонов
 ```
 
-Демо-доступы (пароль у всех `math2025`): `admin`, `petrova` (учитель),
-`ivanov`, `masha`, `sidorov`, `koval`, `molot` (ученики), `mama_ivanova` (родитель).
+Демо-доступы (пароль `math2025`): `petrova` (учитель), `ivanov`, `masha`,
+`sidorov`, `koval`, `molot` (ученики), `mama_ivanova` (родитель). Пароль
+администратора `admin` при деплое изменён — он хранится только локально и не
+публикуется. Для боевого сервера смените и демо-пароли.
 
 ---
 
