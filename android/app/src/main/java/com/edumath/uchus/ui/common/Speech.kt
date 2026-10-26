@@ -19,6 +19,7 @@ fun plainAiText(text: String): String = text
     .replace(Regex("(?m)^\\s*[-*]\\s+"), "• ")
     .replace(Regex("`+"), "")
     .trim()
+
 /**
  * Озвучивание текста системным синтезатором речи.
  *
