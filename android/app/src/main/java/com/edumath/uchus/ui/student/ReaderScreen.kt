@@ -1,21 +1,26 @@
 package com.edumath.uchus.ui.student
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -25,7 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import androidx.compose.ui.unit.sp
+import coil.compose.SubcomposeAsyncImage
 import com.edumath.uchus.core.AppContainer
 import com.edumath.uchus.ui.common.EmptyBox
 import com.edumath.uchus.ui.common.Load
@@ -40,6 +46,7 @@ fun ReaderScreen(
     onBack: () -> Unit,
 ) {
     var page by remember { mutableIntStateOf(startPage.coerceAtLeast(1)) }
+    var attempt by remember(page) { mutableIntStateOf(0) }
 
     ScreenScaffold(title = "Учебник", onBack = onBack) { padding ->
         Load(
@@ -49,7 +56,23 @@ fun ReaderScreen(
             val book = info.book
             val pages = book?.pages ?: 0
             val base = container.session.baseUrl.trimEnd('/')
-            val url = "$base/api/v1/books/$textbookId/page/$page.png"
+            val url = buildString {
+                append(base)
+                append("/api/v1/books/")
+                append(textbookId)
+                append("/page/")
+                append(page)
+                append(".png")
+                // После ошибки меняем URL, чтобы Coil не взял закэшированный сбой.
+                if (attempt > 0) {
+                    append("?attempt=")
+                    append(attempt)
+                }
+            }
+
+            LaunchedEffect(pages) {
+                if (pages > 0 && page > pages) page = pages
+            }
 
             Column(
                 Modifier
@@ -84,12 +107,26 @@ fun ReaderScreen(
                     if (pages == 0) {
                         EmptyBox("В этом пособии нет страниц для показа.", "📄")
                     } else {
-                        AsyncImage(
+                        SubcomposeAsyncImage(
                             model = url,
                             imageLoader = container.imageLoader,
                             contentDescription = "Страница $page",
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Fit,
+                            loading = {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            },
+                            error = {
+                                PageLoadError(
+                                    page = page,
+                                    onRetry = { attempt += 1 },
+                                )
+                            },
                         )
                     }
                 }
@@ -111,5 +148,32 @@ fun ReaderScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun PageLoadError(page: Int, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text("📄", fontSize = 42.sp)
+        Spacer(Modifier.height(10.dp))
+        Text(
+            text = "Не удалось загрузить страницу $page",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = "Проверьте подключение к интернету и попробуйте ещё раз.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(12.dp))
+        OutlinedButton(onClick = onRetry) { Text("Повторить") }
     }
 }

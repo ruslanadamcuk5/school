@@ -581,30 +581,38 @@ def mark_read(slug: str):
 def _can_read_textbook(textbook_id: int) -> bool:
     """Доступ к файлу пособия.
 
-    * администратор — всегда;
-    * учитель/ученик — если книга есть в доступной ему библиотеке;
-    * семейный профиль без аккаунта — пособия своего класса.
+    Та же логика, что и на сайте (``routes/admin.py:textbook_open``):
+
+    * администратор, учитель и родитель — любое пособие;
+    * ученик и семейный профиль — пособия своего класса;
+    * дополнительно — книга из доступной библиотеки (даже другого класса).
+
+    Раньше ученику разрешались только книги из библиотеки, поэтому ссылка
+    «В учебнике» из темы открывала пустую страницу (API отвечал 403).
     """
     from database import query_all
 
     from .deps import current_user
 
     user = current_user()
+    profile = learner_for_request()
+    if user is None and profile is None:
+        return False
+
+    row = textbooks_service.get_textbook(textbook_id)
+    if row is None:
+        return False
+
     if user is not None:
-        if user["role"] == "admin":
-            return True
         for book in query_all(
             "SELECT id FROM library_books WHERE textbook_id = ?", (textbook_id,)
         ):
             if library_service.can_access_book(user, int(book["id"])):
                 return True
-        return False
+        if user["role"] in ("admin", "teacher", "parent"):
+            return True
 
-    profile = learner_for_request()
-    if profile is None:
-        return False
-    row = textbooks_service.get_textbook(textbook_id)
-    return bool(row and int(row["grade"]) == int(profile["grade"]))
+    return bool(profile and int(row["grade"]) == int(profile["grade"]))
 
 
 @bp.get("/books/<int:textbook_id>")

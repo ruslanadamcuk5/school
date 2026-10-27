@@ -1109,6 +1109,78 @@ class TestApiV1(unittest.TestCase):
             self.assertEqual(book["grade"], 3)
             self.assertGreater(book["textbook_id"], 0)
 
+    def test_student_reads_textbook_of_own_grade(self):
+        """Ученик читает пособие своего класса, но не чужого.
+
+        Ссылка «В учебнике» из темы ведёт на /books/<id>/page/<n>.png.
+        Раньше для ученика без книги в библиотеке API отвечал 403.
+        """
+        from database import execute, query_one
+
+        subject = query_one("SELECT id FROM subjects ORDER BY id LIMIT 1")
+        if subject is None:
+            self.skipTest("в тестовой базе нет предметов")
+        own_id = execute(
+            """INSERT INTO textbooks (subject_id, grade, title, filename, pages)
+               VALUES (?, 3, ?, ?, 10)""",
+            (subject["id"], f"Свой класс {self.suffix}", f"own_{self.suffix}.pdf"),
+        )
+        other_id = execute(
+            """INSERT INTO textbooks (subject_id, grade, title, filename, pages)
+               VALUES (?, 4, ?, ?, 10)""",
+            (subject["id"], f"Другой класс {self.suffix}", f"other_{self.suffix}.pdf"),
+        )
+        student_login, student_password = self._user("api_reader_student", "student")
+        teacher_login, teacher_password = self._user("api_reader_teacher", "teacher")
+        student_row = query_one(
+            "SELECT id FROM users WHERE login = ?", (student_login,)
+        )
+        try:
+            student_token = self._login(student_login, student_password)
+            own = self.client.get(
+                f"/api/v1/books/{own_id}", headers=self._headers(student_token)
+            )
+            self.assertEqual(own.status_code, 200, own.get_data(as_text=True))
+            other = self.client.get(
+                f"/api/v1/books/{other_id}", headers=self._headers(student_token)
+            )
+            self.assertEqual(other.status_code, 403)
+            page = self.client.get(
+                f"/api/v1/books/{own_id}/page/1.png",
+                headers=self._headers(student_token),
+            )
+            self.assertNotEqual(page.status_code, 403, page.get_data(as_text=True))
+
+            teacher_token = self._login(teacher_login, teacher_password)
+            teacher_other = self.client.get(
+                f"/api/v1/books/{other_id}", headers=self._headers(teacher_token)
+            )
+            self.assertEqual(
+                teacher_other.status_code, 200, teacher_other.get_data(as_text=True)
+            )
+
+            family = self._family("Читатель")
+            family_own = self.client.get(
+                f"/api/v1/books/{own_id}", headers=self._headers(family["token"])
+            )
+            self.assertEqual(
+                family_own.status_code, 200, family_own.get_data(as_text=True)
+            )
+        finally:
+            execute("DELETE FROM textbooks WHERE id IN (?, ?)", (own_id, other_id))
+            if student_row:
+                execute(
+                    "DELETE FROM learner_accounts WHERE user_id = ?",
+                    (student_row["id"],),
+                )
+                execute(
+                    "DELETE FROM learners WHERE user_id = ?", (student_row["id"],)
+                )
+            execute(
+                "DELETE FROM users WHERE login IN (?, ?)",
+                (student_login, teacher_login),
+            )
+
     def test_login_me_logout(self):
         login, password = self._user("api_teacher", "teacher")
         token = self._login(login, password)
