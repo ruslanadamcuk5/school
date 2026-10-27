@@ -113,6 +113,16 @@ def migrate(path: str | None = None) -> None:
             if column not in names:
                 conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
         _backfill_topic_subjects(conn)
+        # Старым заданиям проставляем автора по роли создателя (учитель/родитель).
+        try:
+            conn.execute(
+                """UPDATE assignments
+                      SET author_role = (SELECT role FROM users
+                                          WHERE users.id = assignments.teacher_id)
+                    WHERE author_role IS NULL AND teacher_id IS NOT NULL"""
+            )
+        except sqlite3.OperationalError:
+            pass
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_topics_subject "
             "ON topics(subject_id, grade, order_index)"
