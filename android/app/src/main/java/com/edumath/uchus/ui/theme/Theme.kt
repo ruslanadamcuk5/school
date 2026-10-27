@@ -9,6 +9,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Stable
+import androidx.compose.ui.unit.dp
 
 enum class DesignMode {
     PLAYFUL,
@@ -93,18 +94,18 @@ fun UchusTheme(
     }
     val shapes = when (designMode) {
         DesignMode.PLAYFUL -> androidx.compose.material3.Shapes(
-            extraSmall = androidx.compose.ui.unit.dp(8),
-            small = androidx.compose.ui.unit.dp(12),
-            medium = androidx.compose.ui.unit.dp(16),
-            large = androidx.compose.ui.unit.dp(24),
-            extraLarge = androidx.compose.ui.unit.dp(32),
+            extraSmall = 8.dp,
+            small = 12.dp,
+            medium = 16.dp,
+            large = 24.dp,
+            extraLarge = 32.dp,
         )
         DesignMode.STRICT -> androidx.compose.material3.Shapes(
-            extraSmall = androidx.compose.ui.unit.dp(6),
-            small = androidx.compose.ui.unit.dp(8),
-            medium = androidx.compose.ui.unit.dp(10),
-            large = androidx.compose.ui.unit.dp(12),
-            extraLarge = androidx.compose.ui.unit.dp(14),
+            extraSmall = 6.dp,
+            small = 8.dp,
+            medium = 10.dp,
+            large = 12.dp,
+            extraLarge = 14.dp,
         )
     }
     CompositionLocalProvider(LocalDesignMode provides designMode) {
