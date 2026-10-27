@@ -40,6 +40,7 @@ import com.edumath.uchus.core.AppContainer
 import com.edumath.uchus.data.api.AdminTopicDto
 import com.edumath.uchus.data.api.ChildDto
 import com.edumath.uchus.data.api.CreateAssignmentRequest
+import com.edumath.uchus.data.api.SubjectDto
 import com.edumath.uchus.data.api.UpdateChildRequest
 import com.edumath.uchus.data.api.apiCall
 import com.edumath.uchus.ui.common.EmptyBox
@@ -52,6 +53,7 @@ import com.edumath.uchus.ui.common.ScreenScaffold
 import com.edumath.uchus.ui.common.SectionTitle
 import com.edumath.uchus.ui.common.StatsRow
 import com.edumath.uchus.ui.common.Tag
+import com.edumath.uchus.ui.common.TopicPicker
 import com.edumath.uchus.ui.teacher.starsText
 import kotlinx.coroutines.launch
 
@@ -457,11 +459,13 @@ fun ParentCreateAssignmentScreen(
     val scope = rememberCoroutineScope()
     var children by remember { mutableStateOf<List<ChildDto>>(emptyList()) }
     var topics by remember { mutableStateOf<List<AdminTopicDto>>(emptyList()) }
+    var subjects by remember { mutableStateOf<List<SubjectDto>>(emptyList()) }
     var child by remember { mutableStateOf<ChildDto?>(null) }
     var title by remember { mutableStateOf("") }
     var questions by remember { mutableStateOf(10) }
     var kind by remember { mutableStateOf("домашняя") }
     var busy by remember { mutableStateOf(false) }
+    var loadingTopics by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val selectedTopics = remember { mutableStateListOf<String>() }
 
@@ -476,10 +480,18 @@ fun ParentCreateAssignmentScreen(
 
     LaunchedEffect(child?.learner?.id) {
         val grade = child?.grade ?: return@LaunchedEffect
+        loadingTopics = true
         selectedTopics.clear()
+        topics = emptyList()
+        subjects = emptyList()
+        error = null
         runCatching { apiCall { container.api.topics(grade, null, null) } }
-            .onSuccess { topics = it.topics }
+            .onSuccess {
+                topics = it.topics
+                subjects = it.subjects
+            }
             .onFailure { error = it.message }
+        loadingTopics = false
     }
 
     ScreenScaffold(title = "Новое задание", onBack = onBack) { padding ->
@@ -530,34 +542,21 @@ fun ParentCreateAssignmentScreen(
                 }
             }
 
-            item { SectionTitle("Темы", trailing = "${selectedTopics.size} выбрано") }
-            if (topics.isEmpty()) {
-                item { InfoBox("Для класса ребёнка нет доступных тем.") }
-            }
-            items(topics) { topic ->
-                val checked = topic.slug in selectedTopics
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            if (checked) selectedTopics.remove(topic.slug)
-                            else selectedTopics.add(topic.slug)
-                        },
-                ) {
-                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(if (checked) "✅" else "⬜️")
-                        Spacer(Modifier.width(8.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                (topic.icon ?: "") + " " + (topic.title ?: topic.slug),
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                            Text(
-                                "класс ${topic.grade}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+            if (child != null) {
+                item { SectionTitle("Темы", trailing = "${selectedTopics.size} выбрано") }
+                when {
+                    loadingTopics -> item { LoadingBox() }
+                    topics.isEmpty() -> item { InfoBox("Для класса ребёнка нет доступных тем.") }
+                    else -> item {
+                        TopicPicker(
+                            topics = topics,
+                            subjects = subjects,
+                            selected = selectedTopics.toSet(),
+                            onToggle = { slug ->
+                                if (slug in selectedTopics) selectedTopics.remove(slug)
+                                else selectedTopics.add(slug)
+                            },
+                        )
                     }
                 }
             }
