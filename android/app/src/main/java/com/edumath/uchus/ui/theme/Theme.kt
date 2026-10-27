@@ -1,6 +1,7 @@
 package com.edumath.uchus.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -94,18 +95,18 @@ fun UchusTheme(
     }
     val shapes = when (designMode) {
         DesignMode.PLAYFUL -> androidx.compose.material3.Shapes(
-            extraSmall = 8.dp,
-            small = 12.dp,
-            medium = 16.dp,
-            large = 24.dp,
-            extraLarge = 32.dp,
+            extraSmall = RoundedCornerShape(8.dp),
+            small = RoundedCornerShape(12.dp),
+            medium = RoundedCornerShape(16.dp),
+            large = RoundedCornerShape(24.dp),
+            extraLarge = RoundedCornerShape(32.dp),
         )
         DesignMode.STRICT -> androidx.compose.material3.Shapes(
-            extraSmall = 6.dp,
-            small = 8.dp,
-            medium = 10.dp,
-            large = 12.dp,
-            extraLarge = 14.dp,
+            extraSmall = RoundedCornerShape(6.dp),
+            small = RoundedCornerShape(8.dp),
+            medium = RoundedCornerShape(10.dp),
+            large = RoundedCornerShape(12.dp),
+            extraLarge = RoundedCornerShape(14.dp),
         )
     }
     CompositionLocalProvider(LocalDesignMode provides designMode) {
