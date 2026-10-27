@@ -43,6 +43,8 @@ DATA_EXCLUDES = (
     ".secret_key",
     "covers/",
     "page_cache/",
+    # релиз Android публикуется отдельно и не должен затираться кодом
+    "releases/",
 )
 
 
