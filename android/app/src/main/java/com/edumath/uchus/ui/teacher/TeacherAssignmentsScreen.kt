@@ -51,7 +51,8 @@ import com.edumath.uchus.ui.common.LoadingBox
 import com.edumath.uchus.ui.common.ScreenScaffold
 import com.edumath.uchus.ui.common.SectionTitle
 import com.edumath.uchus.ui.common.Tag
-import com.edumath.uchus.ui.common.TopicPicker
+import com.edumath.uchus.ui.common.rememberTopicPickerState
+import com.edumath.uchus.ui.common.topicPicker
 import kotlinx.coroutines.launch
 
 @Composable
@@ -197,6 +198,7 @@ fun CreateAssignmentScreen(
     var selectedClass by remember { mutableStateOf<ClassDto?>(null) }
     val selectedTopics = remember { mutableStateListOf<String>() }
     var busy by remember { mutableStateOf(false) }
+    val topicPickerState = rememberTopicPickerState(topics, subjects)
 
     LaunchedEffect(Unit) {
         runCatching { apiCall { container.api.teacherClasses() } }
@@ -278,17 +280,14 @@ fun CreateAssignmentScreen(
                 } else if (topics.isEmpty()) {
                     item { InfoBox("Для этого класса нет доступных тем.") }
                 } else {
-                    item {
-                        TopicPicker(
-                            topics = topics,
-                            subjects = subjects,
-                            selected = selectedTopics.toSet(),
-                            onToggle = { slug ->
-                                if (slug in selectedTopics) selectedTopics.remove(slug)
-                                else selectedTopics.add(slug)
-                            },
-                        )
-                    }
+                    topicPicker(
+                        state = topicPickerState,
+                        selected = selectedTopics.toSet(),
+                        onToggle = { slug ->
+                            if (slug in selectedTopics) selectedTopics.remove(slug)
+                            else selectedTopics.add(slug)
+                        },
+                    )
                 }
             }
 

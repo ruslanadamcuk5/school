@@ -1,19 +1,20 @@
 package com.edumath.uchus.ui.common
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,33 +28,73 @@ import com.edumath.uchus.data.api.AdminTopicDto
 import com.edumath.uchus.data.api.SubjectDto
 
 /**
- * Выбор тем для задания: темы сгруппированы по предметам.
+ * Состояние выбора тем: темы сгруппированы по предметам, предметы раскрываются.
  *
- * Предметы свёрнуты, по нажатию раскрываются и показывают свои темы.
- * Это убирает «кашу» из тем разных предметов и ускоряет выбор.
+ * Используется вместе с [topicPicker], чтобы список оставался «ленивым»
+ * и не создавал сотни строк одновременно.
  */
-@Composable
-fun TopicPicker(
-    topics: List<AdminTopicDto>,
-    subjects: List<SubjectDto>,
-    selected: Set<String>,
-    onToggle: (String) -> Unit,
-    modifier: Modifier = Modifier,
+@Stable
+class TopicPickerState internal constructor(
+    internal val groups: List<SubjectGroup>,
+    initialExpanded: Set<Int>,
 ) {
-    val groups = remember(topics, subjects) { groupTopics(topics, subjects) }
-    // При смене класса/ребёнка раскрываем первый предмет заново.
-    var expandedIds by remember(groups) {
-        mutableStateOf(if (groups.isEmpty()) emptySet() else setOf(groups.first().id))
+    var expandedIds by mutableStateOf(initialExpanded)
+        private set
+
+    val allExpanded: Boolean
+        get() = groups.isNotEmpty() && expandedIds.size == groups.size
+
+    fun toggle(subjectId: Int) {
+        expandedIds = if (subjectId in expandedIds) {
+            expandedIds - subjectId
+        } else {
+            expandedIds + subjectId
+        }
     }
 
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (groups.isEmpty()) {
-            InfoBox("Для этого класса нет доступных тем.")
-            return@Column
-        }
+    fun expandAll() {
+        expandedIds = groups.map { it.id }.toSet()
+    }
 
-        if (groups.size > 1) {
-            val allExpanded = expandedIds.size == groups.size
+    fun collapseAll() {
+        expandedIds = emptySet()
+    }
+}
+
+/**
+ * Создаёт состояние выбора тем. При смене класса или ребёнка состояние
+ * сбрасывается: все предметы свёрнуты, виден только их список.
+ */
+@Composable
+fun rememberTopicPickerState(
+    topics: List<AdminTopicDto>,
+    subjects: List<SubjectDto>,
+): TopicPickerState {
+    val groups = remember(topics, subjects) { groupTopics(topics, subjects) }
+    return remember(groups) {
+        TopicPickerState(groups = groups, initialExpanded = emptySet())
+    }
+}
+
+/**
+ * Добавляет в LazyColumn список предметов с раскрывающимися темами.
+ *
+ * Каждый предмет — отдельный элемент списка, поэтому свёрнутые предметы
+ * не создают строк с темами и экран не тормозит даже на больших каталогах.
+ */
+fun LazyListScope.topicPicker(
+    state: TopicPickerState,
+    selected: Set<String>,
+    onToggle: (String) -> Unit,
+) {
+    val groups = state.groups
+    if (groups.isEmpty()) {
+        item(key = "topic-picker-empty") { InfoBox("Для этого класса нет доступных тем.") }
+        return
+    }
+
+    if (groups.size > 1) {
+        item(key = "topic-picker-header") {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     "Предметы",
@@ -63,26 +104,22 @@ fun TopicPicker(
                 Spacer(Modifier.weight(1f))
                 TextButton(
                     onClick = {
-                        expandedIds = if (allExpanded) emptySet() else groups.map { it.id }.toSet()
+                        if (state.allExpanded) state.collapseAll() else state.expandAll()
                     },
                 ) {
-                    Text(if (allExpanded) "Свернуть всё" else "Развернуть всё")
+                    Text(if (state.allExpanded) "Свернуть всё" else "Развернуть всё")
                 }
             }
         }
+    }
 
-        groups.forEach { group ->
+    groups.forEach { group ->
+        item(key = "subject-${group.id}") {
             SubjectCard(
                 group = group,
-                expanded = group.id in expandedIds,
+                expanded = group.id in state.expandedIds,
                 selected = selected,
-                onToggleExpanded = {
-                    expandedIds = if (group.id in expandedIds) {
-                        expandedIds - group.id
-                    } else {
-                        expandedIds + group.id
-                    }
-                },
+                onToggleExpanded = { state.toggle(group.id) },
                 onToggleTopic = onToggle,
             )
         }
@@ -216,7 +253,7 @@ private fun TopicRow(
     }
 }
 
-private data class SubjectGroup(
+internal data class SubjectGroup(
     val id: Int,
     val name: String,
     val icon: String,
