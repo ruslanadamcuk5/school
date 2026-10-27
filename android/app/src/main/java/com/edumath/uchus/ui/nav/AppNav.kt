@@ -32,6 +32,9 @@ import com.edumath.uchus.ui.auth.AuthViewModel
 import com.edumath.uchus.ui.auth.LoginScreen
 import com.edumath.uchus.ui.common.LoadingBox
 import com.edumath.uchus.ui.home.HomeScreen
+import com.edumath.uchus.ui.notifications.NotificationsScreen
+import com.edumath.uchus.ui.theme.DesignMode
+import com.edumath.uchus.ui.theme.UchusTheme
 import com.edumath.uchus.ui.parent.ChildDetailScreen
 import com.edumath.uchus.ui.parent.ParentCreateAssignmentScreen
 import com.edumath.uchus.ui.parent.ParentScreen
@@ -108,6 +111,8 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
     val session: SessionDto? = remember(stored.sessionJson) {
         runCatching { ApiJson.gson.fromJson(stored.sessionJson, SessionDto::class.java) }.getOrNull()
     }
+    // Игровой дизайн — только у учеников 1–4 классов; у остальных строгий.
+    val designMode = if (session?.theme == "playful") DesignMode.PLAYFUL else DesignMode.STRICT
     val nav = rememberNavController()
     val scope = rememberCoroutineScope()
     var meta by remember(stored.sessionJson) { mutableStateOf<MetaDto?>(null) }
@@ -127,15 +132,27 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
     val back: () -> Unit = { nav.popBackStack() }
     val openBook: (Int, Int) -> Unit = { id, page -> nav.navigate("book/$id/$page") }
 
+    UchusTheme(designMode = designMode) {
     NavHost(navController = nav, startDestination = "home") {
         composable("home") {
             HomeScreen(
+                container = container,
                 session = session,
                 serverUrl = stored.baseUrl,
                 availableRoutes = homeRoutes,
                 aiEnabled = meta?.ai?.enabled == true,
                 onOpen = { route -> nav.navigate(route) },
+                onOpenAssignment = { id -> nav.navigate("assignment/$id") },
+                onOpenNotifications = { nav.navigate("notifications") },
                 onLogout = logout,
+            )
+        }
+
+        composable("notifications") {
+            NotificationsScreen(
+                container = container,
+                onBack = back,
+                onOpenAssignment = { id -> nav.navigate("assignment/$id") },
             )
         }
 
@@ -398,5 +415,6 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
                 initialTab = entry.arguments?.getInt("tab") ?: 0,
             )
         }
+    }
     }
 }

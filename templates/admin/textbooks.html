@@ -39,8 +39,9 @@
       <div class="field">
         <label for="grade">Класс *</label>
         <select id="grade" name="grade">
-          <option value="3">3 класс</option>
-          <option value="4">4 класс</option>
+          {% for g in grades %}
+            <option value="{{ g }}" {% if selected_grade == g %}selected{% endif %}>{{ g }} класс</option>
+          {% endfor %}
         </select>
       </div>
     </div>

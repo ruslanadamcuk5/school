@@ -455,6 +455,9 @@ data class AssignmentDto(
     @SerializedName("subject_id") val subjectId: Int? = null,
     @SerializedName("class_id") val classId: Int? = null,
     @SerializedName("teacher_id") val teacherId: Int? = null,
+    @SerializedName("author_role") val authorRole: String? = null,
+    @SerializedName("author_label") val authorLabel: String? = null,
+    @SerializedName("author_name") val authorName: String? = null,
     @SerializedName("student_id") val studentId: Int? = null,
     @SerializedName("topic_slugs") val topicSlugs: String? = null,
     @SerializedName("questions_count") val questionsCount: Int = 0,
@@ -465,8 +468,21 @@ data class AssignmentDto(
     @SerializedName("published_at") val publishedAt: String? = null,
     @SerializedName("result") val result: ResultSummaryDto? = null,
     @SerializedName("results") val results: List<ChildResultDto> = emptyList(),
+    @SerializedName("overdue") val overdue: Boolean = false,
+    @SerializedName("missed") val missed: Boolean = false,
 ) {
     val displayTitle: String get() = title ?: "Работа"
+    val authorDisplay: String
+        get() {
+            val label = authorLabel ?: when (authorRole) {
+                "parent" -> "родителя"
+                "admin" -> "администратора"
+                else -> "учителя"
+            }
+            val name = authorName?.takeIf { it.isNotBlank() }
+            return if (name != null) "от $label $name" else "от $label"
+        }
+    val isPending: Boolean get() = status == "опубликована" && result == null
 }
 
 data class QuestionDto(
@@ -480,6 +496,23 @@ data class QuestionDto(
 data class AssignmentsDto(
     @SerializedName("ok") val ok: Boolean = false,
     @SerializedName("assignments") val assignments: List<AssignmentDto> = emptyList(),
+)
+
+data class NotificationDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("kind") val kind: String? = null,
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("body") val body: String? = null,
+    @SerializedName("assignment_id") val assignmentId: Int = 0,
+    @SerializedName("student_id") val studentId: Int = 0,
+    @SerializedName("is_read") val isRead: Boolean = false,
+    @SerializedName("created_at") val createdAt: String? = null,
+)
+
+data class NotificationsDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("unread") val unread: Int = 0,
+    @SerializedName("notifications") val notifications: List<NotificationDto> = emptyList(),
 )
 
 data class AssignmentDetailDto(

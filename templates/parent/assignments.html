@@ -147,6 +147,33 @@
                 </td>
                 <td class="muted">{{ assignment.created_at }}</td>
               </tr>
+              {% if item.details %}
+                <tr>
+                  <td colspan="6" style="background:#fafbfc;">
+                    <details>
+                      <summary style="cursor:pointer; font-weight:700;">
+                        Разбор: {{ item.details|selectattr('correct')|list|length }} верно,
+                        {{ item.details|rejectattr('correct')|list|length }} с ошибкой
+                      </summary>
+                      <div class="mt-2">
+                        {% for detail in item.details %}
+                          <div class="review-item">
+                            <span class="review-item__icon">{% if detail.correct %}✅{% else %}❌{% endif %}</span>
+                            <div class="review-item__body">
+                              <div>{{ loop.index }}. {{ detail.question }}</div>
+                              <div class="review-item__answer">
+                                {% if detail.correct %}Ответ: {{ detail.given }}
+                                {% else %}Ответ ребёнка: {{ detail.given or '—' }} · Правильный: {{ detail.answer }}{% endif %}
+                              </div>
+                              {% if detail.solution %}<div class="review-item__answer">{{ detail.solution }}</div>{% endif %}
+                            </div>
+                          </div>
+                        {% endfor %}
+                      </div>
+                    </details>
+                  </td>
+                </tr>
+              {% endif %}
             {% endfor %}
           </tbody>
         </table>

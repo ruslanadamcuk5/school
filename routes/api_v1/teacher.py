@@ -277,8 +277,8 @@ def save_schedule():
         fail(400, "bad_parameter", "Нужны class_id, weekday и lesson_no")
     if _class_owned(user, class_id) is None:
         fail(403, "forbidden", "Класс не ваш")
-    if not 0 <= weekday <= 6:
-        fail(400, "bad_weekday", "День недели — от 0 (Пн) до 6 (Вс)")
+    if not 1 <= weekday <= 7:
+        fail(400, "bad_weekday", "День недели — от 1 (Пн) до 7 (Вс)")
     if not 1 <= lesson_no <= 12:
         fail(400, "bad_lesson", "Номер урока — от 1 до 12")
 

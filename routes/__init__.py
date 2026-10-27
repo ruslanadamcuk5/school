@@ -8,6 +8,7 @@ from .app_release import bp as app_release_bp
 from .auth import bp as auth_bp
 from .library import bp as library_bp
 from .main import bp as main_bp
+from .notifications import bp as notifications_bp
 from .parent import bp as parent_bp
 from .play import bp as play_bp
 from .student import bp as student_bp
@@ -15,6 +16,7 @@ from .teacher import bp as teacher_bp
 
 BLUEPRINTS = (
     main_bp,
+    notifications_bp,
     app_release_bp,
     auth_bp,
     library_bp,

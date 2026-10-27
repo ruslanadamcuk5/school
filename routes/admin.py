@@ -154,6 +154,8 @@ def classes():
             teacher_id = request.form.get("teacher_id", type=int)
             if not school_id:
                 flash("Выберите школу", "error")
+            elif not 1 <= grade <= 11:
+                flash("Класс должен быть от 1 до 11", "error")
             else:
                 class_id = orgs.create_class(
                     school_id, grade, letter, teacher_id,
@@ -179,6 +181,7 @@ def classes():
         schools=orgs.list_schools(),
         teachers=auth.list_users(role=auth.ROLE_TEACHER),
         years=["2025/2026", "2024/2025"],
+        grades=list(range(1, 12)),
     )
 
 
@@ -240,6 +243,8 @@ def subject_topics(subject_id: int):
             grade = request.form.get("grade", type=int) or 3
             if not title:
                 flash("Введите название темы", "error")
+            elif not 1 <= grade <= 11:
+                flash("Класс темы должен быть от 1 до 11", "error")
             else:
                 new_slug = topics_service.create_topic(
                     subject_id, grade, title,
@@ -274,7 +279,7 @@ def subject_topics(subject_id: int):
         "admin/subject_topics.html",
         subject=subject,
         topics=topics,
-        grades=[3, 4],
+        grades=list(range(1, 12)),
     )
 
 
@@ -287,11 +292,14 @@ def courses():
         if action == "add":
             subject_id = request.form.get("subject_id", type=int)
             title = (request.form.get("title") or "").strip()
+            grade = request.form.get("grade", type=int) or 3
             if not subject_id or not title:
                 flash("Укажите предмет и название курса", "error")
+            elif not 1 <= grade <= 11:
+                flash("Класс курса должен быть от 1 до 11", "error")
             else:
                 course_id = orgs.create_course(
-                    subject_id, title, request.form.get("grade", type=int) or 3,
+                    subject_id, title, grade,
                     description=request.form.get("description", ""),
                     teacher_id=request.form.get("teacher_id", type=int),
                     school_id=request.form.get("school_id", type=int),
@@ -493,6 +501,9 @@ def textbooks_page():
             title = (request.form.get("title") or "").strip()
             subject_id = request.form.get("subject_id", type=int)
             grade = request.form.get("grade", type=int) or 3
+            if not 1 <= grade <= 11:
+                flash("Класс должен быть от 1 до 11", "error")
+                return redirect(url_for("admin.textbooks_page"))
             if not file_storage or not file_storage.filename:
                 flash("Выберите файл PDF", "error")
                 return redirect(url_for("admin.textbooks_page"))
@@ -549,7 +560,7 @@ def textbooks_page():
         "admin/textbooks.html",
         textbooks=textbooks.list_textbooks(subject_id=subject_id, grade=grade),
         subjects=orgs.list_subjects(),
-        grades=[3, 4],
+        grades=list(range(1, 12)),
         selected_grade=grade,
         selected_subject=subject_id,
     )

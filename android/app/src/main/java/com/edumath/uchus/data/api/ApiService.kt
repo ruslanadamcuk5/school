@@ -116,6 +116,19 @@ interface ApiService {
     @GET("assignments")
     suspend fun studentAssignments(): AssignmentsDto
 
+    // ---------------------------------------------------------- уведомления
+    @GET("notifications")
+    suspend fun notifications(
+        @Query("limit") limit: Int = 50,
+        @Query("unread_only") unreadOnly: Boolean = false,
+    ): NotificationsDto
+
+    @POST("notifications/{id}/read")
+    suspend fun notificationRead(@Path("id") id: Int): SimpleOkDto
+
+    @POST("notifications/read-all")
+    suspend fun notificationsReadAll(): SimpleOkDto
+
     @GET("assignments/{id}")
     suspend fun assignment(@Path("id") id: Int): AssignmentDetailDto
 

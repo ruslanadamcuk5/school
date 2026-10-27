@@ -321,6 +321,7 @@ CREATE TABLE IF NOT EXISTS assignments (
     subject_id      INTEGER,
     class_id        INTEGER,
     teacher_id      INTEGER,
+    author_role     TEXT,
     student_id      INTEGER,
     topic_slugs     TEXT NOT NULL DEFAULT '[]',
     questions_json  TEXT NOT NULL DEFAULT '[]',
@@ -338,6 +339,24 @@ CREATE TABLE IF NOT EXISTS assignments (
 
 CREATE INDEX IF NOT EXISTS idx_assignments_class ON assignments(class_id, status);
 CREATE INDEX IF NOT EXISTS idx_assignments_teacher ON assignments(teacher_id);
+
+-- Уведомления (доставляются в веб-кабинет и в Android-приложение).
+CREATE TABLE IF NOT EXISTS app_notifications (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id         INTEGER NOT NULL,
+    kind            TEXT    NOT NULL,
+    title           TEXT    NOT NULL,
+    body            TEXT    NOT NULL,
+    assignment_id   INTEGER NOT NULL DEFAULT 0,
+    student_id      INTEGER NOT NULL DEFAULT 0,
+    is_read         INTEGER NOT NULL DEFAULT 0,
+    created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (user_id, kind, assignment_id, student_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user
+    ON app_notifications(user_id, is_read, created_at);
 
 -- Выполненные работы
 CREATE TABLE IF NOT EXISTS assignment_results (

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from datetime import date
 
 from flask import jsonify, request
 
@@ -26,6 +27,40 @@ STUDENT_ROLE = "student"
 
 
 # ------------------------------------------------------------------ helpers
+AUTHOR_LABEL = {"teacher": "учителя", "parent": "родителя", "admin": "администратора"}
+
+
+def _assignment_payload(row) -> dict:
+    """Безопасное представление работы для мобильного клиента."""
+    item = row_dict(row)
+    item.pop("questions_json", None)
+    role = item.get("author_role") or item.get("teacher_role") or "teacher"
+    item["author_role"] = role
+    item["author_label"] = AUTHOR_LABEL.get(role, "учителя")
+    name = " ".join(
+        part for part in (item.get("teacher_first") or "", item.get("teacher_last") or "")
+        if part
+    ).strip()
+    if role == "parent":
+        item["author_name"] = name or "Родитель"
+    elif role == "admin":
+        item["author_name"] = name or "Администрация школы"
+    else:
+        item["author_name"] = name or "Учитель"
+    due = (item.get("due_date") or "").strip()
+    item["overdue"] = bool(due) and due[:10] < date.today().isoformat()
+    return item
+
+
+def _details_of(result) -> list[dict]:
+    if result is None:
+        return []
+    try:
+        return json.loads(result["answers"] or "[]")
+    except (ValueError, TypeError, KeyError):
+        return []
+
+
 def _result_summary(result) -> dict | None:
     if result is None:
         return None
@@ -85,10 +120,10 @@ def student_assignments():
     )
     result = []
     for row in rows:
-        item = row_dict(row)
-        item["result"] = _result_summary(
-            assignments_service.get_result(row["id"], user["id"])
-        )
+        item = _assignment_payload(row)
+        saved = assignments_service.get_result(row["id"], user["id"])
+        item["result"] = _result_summary(saved)
+        item["missed"] = bool(item.get("overdue")) and saved is None
         result.append(item)
     return jsonify({"ok": True, "assignments": result})
 
@@ -108,7 +143,7 @@ def student_assignment(assignment_id: int):
         return jsonify(
             {
                 "ok": True,
-                "assignment": row_dict(assignment),
+                "assignment": _assignment_payload(assignment),
                 "submitted": True,
                 "result": _result_summary(result),
                 "details": json.loads(result["answers"] or "[]"),
@@ -120,7 +155,7 @@ def student_assignment(assignment_id: int):
     return jsonify(
         {
             "ok": True,
-            "assignment": row_dict(assignment),
+            "assignment": _assignment_payload(assignment),
             "submitted": False,
             "result": None,
             "questions": _public_questions(tasks),
@@ -197,7 +232,7 @@ def student_result(assignment_id: int):
     return jsonify(
         {
             "ok": True,
-            "assignment": row_dict(assignment),
+            "assignment": _assignment_payload(assignment),
             "result": _result_summary(result),
             "details": json.loads(result["answers"] or "[]"),
         }
@@ -212,7 +247,7 @@ def teacher_assignments():
     teacher_id = None if user["role"] == auth_service.ROLE_ADMIN else user["id"]
     rows = assignments_service.list_assignments(teacher_id=teacher_id)
     return jsonify(
-        {"ok": True, "assignments": [row_dict(row) for row in rows]}
+        {"ok": True, "assignments": [_assignment_payload(row) for row in rows]}
     )
 
 
@@ -265,7 +300,7 @@ def teacher_create():
         tasks=tasks,
     )
     assignment = assignments_service.get_assignment(assignment_id)
-    return jsonify({"ok": True, "assignment": row_dict(assignment)}), 201
+    return jsonify({"ok": True, "assignment": _assignment_payload(assignment)}), 201
 
 
 @bp.patch("/teacher/assignments/<int:assignment_id>")
@@ -303,7 +338,7 @@ def teacher_update(assignment_id: int):
         assignments_service.regenerate_tasks(assignment_id)
 
     return jsonify(
-        {"ok": True, "assignment": row_dict(assignments_service.get_assignment(assignment_id))}
+        {"ok": True, "assignment": _assignment_payload(assignments_service.get_assignment(assignment_id))}
     )
 
 
@@ -359,13 +394,14 @@ def teacher_results(assignment_id: int):
     return jsonify(
         {
             "ok": True,
-            "assignment": row_dict(assignment),
+            "assignment": _assignment_payload(assignment),
             "results": [
                 {
                     "student": user_payload(item.get("student")),
                     "result": row_dict(item.get("result")),
                     "percent": item.get("percent"),
                     "grade": item.get("grade"),
+                    "details": _details_of(item.get("result")),
                 }
                 for item in rows
             ],
@@ -381,14 +417,21 @@ def parent_assignments():
     rows = assignments_service.list_assignments(teacher_id=user["id"])
     out = []
     for row in rows:
-        item = row_dict(row)
+        item = _assignment_payload(row)
         results = assignments_service.results_of(row["id"])
         item["results"] = [
             {
                 "student_id": result["student_id"],
+                "student_name": " ".join(
+                    part for part in (result["first_name"] or "", result["last_name"] or "")
+                    if part
+                ).strip() or "Ученик",
                 "score": result["score"],
                 "max_score": result["max_score"],
+                "percent": round(result["score"] / result["max_score"] * 100)
+                if result["max_score"] else 0,
                 "completed_at": result["completed_at"],
+                "details": _details_of(result),
             }
             for result in results
         ]

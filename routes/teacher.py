@@ -473,7 +473,7 @@ def textbooks_page():
         user=user,
         textbooks=rows,
         subjects=orgs.list_subjects(active_only=True),
-        grades=[3, 4],
+        grades=list(range(1, 12)),
         selected_grade=grade,
         selected_subject=subject_id,
     )

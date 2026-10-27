@@ -86,6 +86,7 @@ MIGRATIONS: list[tuple[str, str, str]] = [
     ("users", "is_active", "INTEGER NOT NULL DEFAULT 1"),
     ("assignments", "questions_json", "TEXT NOT NULL DEFAULT '[]'"),
     ("assignments", "student_id", "INTEGER"),
+    ("assignments", "author_role", "TEXT"),
     # темы теперь привязаны к предмету и могут приходить из содержания пособия
     ("topics", "subject_id", "INTEGER"),
     ("topics", "textbook_id", "INTEGER"),

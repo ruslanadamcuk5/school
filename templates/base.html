@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#6366f1">
   <meta name="theme-mode" content="{{ theme_mode }}">
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  <meta name="description" content="Образовательная платформа 3–4 класса по программе Республики Беларусь: математика, языки, литература и «Человек и мир».">
-  <title>{% block title %}Учусь · 3–4 класс{% endblock %}</title>
+  <meta name="description" content="Школьник — общеобразовательная платформа обучения: 1–11 классы, задания, расписание, учебники и ИИ-помощник.">
+  <title>{% block title %}{{ app_name }} · {{ app_full_name }}{% endblock %}</title>
   <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   {% block head %}{% endblock %}
@@ -17,7 +17,7 @@
   <div class="wrap topbar__inner">
     <a class="brand" href="{{ url_for('main.map_page') if current_learner else url_for('auth.login') }}">
       <span class="brand__logo">📚</span>
-      <span>Учусь<span class="muted" style="font-weight:700"> · 3–4 класс</span></span>
+      <span>Школьник<span class="muted" style="font-weight:700"> · 1–11 классы</span></span>
     </a>
     <span class="topbar__spacer"></span>
 
@@ -29,7 +29,7 @@
       <nav class="row" style="gap:6px;">
         {% if user_role == 'student' %}
           <a class="btn btn--ghost btn--small" href="{{ url_for('student.dashboard') }}">🎒 Мой кабинет</a>
-          <a class="btn btn--ghost btn--small" href="{{ url_for('main.map_page') }}">🗺 Играть</a>
+          <a class="btn btn--ghost btn--small" href="{{ url_for('main.map_page') }}">{% if is_playful %}🗺 Играть{% else %}📖 Обучение{% endif %}</a>
         {% elif user_role == 'teacher' %}
           <a class="btn btn--ghost btn--small" href="{{ url_for('teacher.dashboard') }}">👩‍🏫 Кабинет</a>
         {% elif user_role == 'parent' %}
@@ -41,6 +41,9 @@
         {% if library_url %}
           <a class="btn btn--ghost btn--small" href="{{ library_url }}">📚 Моя библиотека</a>
         {% endif %}
+        <a class="btn btn--ghost btn--small" href="{{ url_for('notifications.page') }}">
+          Уведомления{% if notifications_unread %} <span class="chip chip--amber">{{ notifications_unread }}</span>{% endif %}
+        </a>
         <a class="btn btn--ghost btn--small" href="{{ url_for('auth.account') }}">
           <span aria-hidden="true">{{ current_user.avatar }}</span>
           {{ current_user.first_name or current_user.login }}
@@ -83,8 +86,8 @@
 
 <footer class="footer">
   <div class="wrap">
-    <p>Учебная программа 3–4 класса · Республика Беларусь ·
-      математика, русский и белорусский язык и литература, английский язык, «Человек и мир»</p>
+    <p>«Школьник» — общеобразовательная платформа обучения · 1–11 классы ·
+      математика, языки и литература, «Человек и мир» и другие предметы</p>
     <p>
       <a href="{{ url_for('main.textbook') }}">📖 Учебные пособия</a> ·
       <a href="{{ url_for('main.family') }}">🏆 Результаты семьи</a> ·

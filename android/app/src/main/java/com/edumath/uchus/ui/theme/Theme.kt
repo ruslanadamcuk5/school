@@ -5,9 +5,23 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.Stable
 
-private val LightColors = lightColorScheme(
+enum class DesignMode {
+    PLAYFUL,
+    STRICT
+}
+
+@Stable
+data class DesignTheme(
+    val mode: DesignMode,
+    val isDark: Boolean = false
+)
+
+private val PlayfulLightColors = lightColorScheme(
     primary = Color(0xFF4F46E5),
     onPrimary = Color.White,
     primaryContainer = Color(0xFFE0E7FF),
@@ -23,7 +37,7 @@ private val LightColors = lightColorScheme(
     error = Color(0xFFDC2626),
 )
 
-private val DarkColors = darkColorScheme(
+private val PlayfulDarkColors = darkColorScheme(
     primary = Color(0xFFA5B4FC),
     onPrimary = Color(0xFF1E1B4B),
     secondary = Color(0xFF67E8F9),
@@ -35,13 +49,78 @@ private val DarkColors = darkColorScheme(
     error = Color(0xFFFCA5A5),
 )
 
+private val StrictLightColors = lightColorScheme(
+    primary = Color(0xFF1E3A5F),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFD6E4F0),
+    onPrimaryContainer = Color(0xFF0C1F3A),
+    secondary = Color(0xFF475569),
+    onSecondary = Color.White,
+    tertiary = Color(0xFF334155),
+    background = Color(0xFFF2F4F7),
+    onBackground = Color(0xFF0F172A),
+    surface = Color.White,
+    onSurface = Color(0xFF0F172A),
+    surfaceVariant = Color(0xFFE7EAEF),
+    error = Color(0xFF8F3333),
+)
+
+private val StrictDarkColors = darkColorScheme(
+    primary = Color(0xFF93B7E6),
+    onPrimary = Color(0xFF0C1F3A),
+    secondary = Color(0xFFB8C5D6),
+    background = Color(0xFF0F172A),
+    onBackground = Color(0xFFE2E8F0),
+    surface = Color(0xFF1E293B),
+    onSurface = Color(0xFFE2E8F0),
+    surfaceVariant = Color(0xFF334155),
+    error = Color(0xFFFCA5A5),
+)
+
+val LocalDesignMode = staticCompositionLocalOf { DesignMode.PLAYFUL }
+
 @Composable
 fun UchusTheme(
+    designMode: DesignMode = DesignMode.PLAYFUL,
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
-        content = content,
-    )
+    val colors = when {
+        designMode == DesignMode.STRICT && darkTheme -> StrictDarkColors
+        designMode == DesignMode.STRICT -> StrictLightColors
+        darkTheme -> PlayfulDarkColors
+        else -> PlayfulLightColors
+    }
+    val shapes = when (designMode) {
+        DesignMode.PLAYFUL -> androidx.compose.material3.Shapes(
+            extraSmall = androidx.compose.ui.unit.dp(8),
+            small = androidx.compose.ui.unit.dp(12),
+            medium = androidx.compose.ui.unit.dp(16),
+            large = androidx.compose.ui.unit.dp(24),
+            extraLarge = androidx.compose.ui.unit.dp(32),
+        )
+        DesignMode.STRICT -> androidx.compose.material3.Shapes(
+            extraSmall = androidx.compose.ui.unit.dp(6),
+            small = androidx.compose.ui.unit.dp(8),
+            medium = androidx.compose.ui.unit.dp(10),
+            large = androidx.compose.ui.unit.dp(12),
+            extraLarge = androidx.compose.ui.unit.dp(14),
+        )
+    }
+    CompositionLocalProvider(LocalDesignMode provides designMode) {
+        MaterialTheme(
+            colorScheme = colors,
+            shapes = shapes,
+            content = content,
+        )
+    }
 }
+
+@Composable
+fun DesignMode.current(): DesignMode = LocalDesignMode.current
+
+@Composable
+fun DesignMode.isPlayful(): Boolean = LocalDesignMode.current == DesignMode.PLAYFUL
+
+@Composable
+fun DesignMode.isStrict(): Boolean = LocalDesignMode.current == DesignMode.STRICT

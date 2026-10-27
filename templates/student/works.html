@@ -26,7 +26,13 @@
         <tbody>
           {% for work in works %}
             <tr>
-              <td><b>{{ work.title }}</b><div class="muted small">{{ work.subject_name or '' }}</div></td>
+              <td><b>{{ work.title }}</b>
+                <div class="muted small">
+                  {% set role = work.author_role or work.teacher_role %}
+                  {% if role == 'parent' %}от родителя{% elif role == 'admin' %}от администратора{% else %}от учителя{% endif %}
+                  {% if work.teacher_first or work.teacher_last %} {{ work.teacher_first }} {{ work.teacher_last }}{% endif %}
+                  {% if work.subject_name %} · {{ work.subject_name }}{% endif %}
+                </div></td>
               <td>{{ work.kind }}</td>
               <td class="muted small">
                 {% for slug in work.topic_slugs | fromjson %}{{ topic_titles.get(slug, slug) }}{% if not loop.last %}, {% endif %}{% endfor %}
@@ -42,7 +48,8 @@
                 {% endif %}
               </td>
               <td>
-                <a class="btn btn--ghost btn--small" href="{{ url_for('student.work_detail', assignment_id=work.id) }}">
+                <a class="btn btn--ghost btn--small" href="{{ url_for('student.work_detail', assignment_id=work.id) }}"
+                   title="{% if work.teacher_role == 'parent' %}Задание от родителя{% else %}Задание от учителя{% endif %}">
                   {% if work.result %}Посмотреть{% else %}Решить{% endif %}</a>
               </td>
             </tr>

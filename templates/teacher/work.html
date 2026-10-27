@@ -78,6 +78,33 @@
               <td class="muted">{% if row.result %}{{ (row.result.duration_sec / 60) | round(1) }} мин{% else %}—{% endif %}</td>
               <td class="muted">{% if row.result %}{{ row.result.completed_at }}{% else %}—{% endif %}</td>
             </tr>
+            {% if row.details %}
+              <tr>
+                <td colspan="6" style="background:#fafbfc;">
+                  <details>
+                    <summary style="cursor:pointer; font-weight:700;">
+                      Разбор ответов: {{ row.details|selectattr('correct')|list|length }} верно,
+                      {{ row.details|rejectattr('correct')|list|length }} с ошибкой
+                    </summary>
+                    <div class="mt-2">
+                      {% for item in row.details %}
+                        <div class="review-item">
+                          <span class="review-item__icon">{% if item.correct %}✅{% else %}❌{% endif %}</span>
+                          <div class="review-item__body">
+                            <div>{{ loop.index }}. {{ item.question }}</div>
+                            <div class="review-item__answer">
+                              {% if item.correct %}Ответ: {{ item.given }}
+                              {% else %}Ответ ученика: {{ item.given or '—' }} · Правильный: {{ item.answer }}{% endif %}
+                            </div>
+                            {% if item.solution %}<div class="review-item__answer">{{ item.solution }}</div>{% endif %}
+                          </div>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  </details>
+                </td>
+              </tr>
+            {% endif %}
           {% endfor %}
         </tbody>
       </table>

@@ -92,7 +92,7 @@ def welcome():
     return render_template(
         "welcome.html",
         learners=learners,
-        grades=[3, 4],
+        grades=list(range(1, 12)),
         app_release=release_service.info(),
     )
 
@@ -126,7 +126,27 @@ def map_page():
 
     if subject["slug"] == "math":
         cards = _topic_cards(learner, visible)
-        stats["topics_total"] = len(cards)
+        # Дополнительные темы (1–2 и 5–11 классы) хранятся в БД и изучаются
+        # по описанию/ИИ, а не через генераторы базовой программы.
+        extra_rows = [
+            row for row in topics_service.list_topics(
+                subject_id=subject["id"], grade=learner["grade"]
+            )
+            if (row["source"] or "") != "curriculum"
+            and (not visible or row["slug"] in visible)
+        ]
+        extra_books = textbooks_service.books_for_topics(
+            [row["slug"] for row in extra_rows]
+        )
+        for row in extra_rows:
+            progress_row = tp.get(row["slug"])
+            reading_cards.append({
+                "topic": row,
+                "books": extra_books.get(row["slug"], []),
+                "stars": (progress_row["stars"] if progress_row else 0) or 0,
+                "read": bool(progress_row and (progress_row["stars"] or 0) > 0),
+            })
+        stats["topics_total"] = len(cards) + len(reading_cards)
     else:
         rows = topics_service.list_topics(subject_id=subject["id"], grade=learner["grade"])
         if visible:
@@ -144,7 +164,7 @@ def map_page():
         stats["topics_total"] = len(reading_cards)
 
     daily = rewards_service.daily_status(learner["id"])
-    next_grade = learner["grade"] + 1 if learner["grade"] < 4 else None
+    next_grade = learner["grade"] + 1 if learner["grade"] < 11 else None
     can_upgrade = next_grade and stats["level"] >= 3
     return render_template(
         "map.html",
@@ -225,7 +245,7 @@ def change_grade():
         return redirect(url_for("main.welcome"))
     level = progress_service.level_for_xp(learner["xp"] or 0)
     grade = int(request.form.get("grade") or learner["grade"])
-    if grade not in (3, 4) or level < 3:
+    if not 1 <= grade <= 11 or level < 3:
         flash("Этот класс пока не открыт. Нужно дорасти до 3 уровня.", "error")
         return redirect(url_for("main.map_page"))
     learners_service.update_learner(learner["id"], grade=grade)

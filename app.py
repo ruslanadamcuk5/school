@@ -34,10 +34,11 @@ def create_app(config_name: str | None = None) -> Flask:
 
     with app.app_context():
         init_db()
-        from seed import seed_base_entities, sync_content
+        from seed import seed_base_entities, sync_content, sync_starter_topics
 
         admin_password = seed_base_entities()
         sync_content()
+        sync_starter_topics()
         from services import topics as topics_service
 
         topics_service.sync_course_topics()
@@ -162,19 +163,15 @@ def _user_grade_for_theme(user, learner) -> int | None:
 
 
 def _theme_mode(user, learner) -> str:
-    """Тема оформления: игровая (1–4), строгая (5–7), взрослая (8–11 и сотрудники)."""
+    """Игровая тема — только 1–4 классы, у остальных строгий учебный дизайн."""
     from services import auth as _auth
 
     if user and user["role"] in (_auth.ROLE_ADMIN, _auth.ROLE_TEACHER, _auth.ROLE_PARENT):
         return "adult"
     grade = _user_grade_for_theme(user, learner)
-    if grade is None:
+    if grade is None or grade <= 4:
         return "playful"
-    if grade <= 4:
-        return "playful"
-    if grade <= 7:
-        return "strict"
-    return "adult"
+    return "strict"
 
 
 def _register_globals(app: Flask) -> None:
@@ -234,6 +231,14 @@ def _register_context(app: Flask) -> None:
         for topic in TOPICS:
             titles.setdefault(topic["slug"], topic["title"])
         theme = _theme_mode(user, learner)
+        notifications_unread = 0
+        if user is not None:
+            try:
+                from services import notifications as notifications_service
+
+                notifications_unread = notifications_service.unread_count(int(user["id"]))
+            except Exception:  # pragma: no cover - уведомления не должны ломать страницы
+                notifications_unread = 0
         ai_enabled, ai_available, ai_status = False, False, None
         try:
             from services import ai as ai_service
@@ -257,7 +262,9 @@ def _register_context(app: Flask) -> None:
             "ai_enabled": ai_enabled,
             "ai_available": ai_available,
             "ai_status": ai_status,
-            "app_name": "Учусь · 3–4 класс",
+            "app_name": "Школьник",
+            "app_full_name": "Общеобразовательная платформа обучения",
+            "notifications_unread": notifications_unread,
             "today": datetime.now().strftime("%d.%m.%Y"),
             "topic_titles": titles,
             "topics_count": len(TOPICS),

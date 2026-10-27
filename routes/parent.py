@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 import os
 import random
 import time
@@ -293,9 +294,17 @@ def assignments_page():
     if children:
         for assignment in assignments_service.list_assignments(teacher_id=user["id"]):
             results = assignments_service.results_of(assignment["id"])
+            result = results[0] if results else None
+            details = []
+            if result is not None:
+                try:
+                    details = json.loads(result["answers"] or "[]")
+                except (ValueError, TypeError):
+                    details = []
             sent.append({
                 "assignment": assignment,
-                "result": results[0] if results else None,
+                "result": result,
+                "details": details,
             })
     return render_template(
         "parent/assignments.html",

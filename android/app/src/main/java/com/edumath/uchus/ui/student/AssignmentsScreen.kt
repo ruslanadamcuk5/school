@@ -164,6 +164,15 @@ fun AssignmentCard(item: AssignmentDto, onClick: () -> Unit) {
                     Tag("не сдано")
                 }
             }
+            // Автор задания (от учителя / от родителя)
+            val authorText = item.authorDisplay.takeIf { it.isNotBlank() }
+            if (authorText != null) {
+                Text(
+                    authorText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
             Text(
                 listOfNotNull(item.kind, item.dueDate?.takeIf { it.isNotBlank() }?.let { "до $it" })
                     .joinToString(" · "),

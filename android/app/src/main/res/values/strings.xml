@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Учусь</string>
+    <string name="app_name">Школьник</string>
+    <string name="app_tagline">Общеобразовательная платформа обучения</string>
 
     <string name="login_title">Вход в «Учусь»</string>
     <string name="login_server">Адрес сервера</string>

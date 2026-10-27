@@ -123,6 +123,32 @@
     </div>
   {% endfor %}
 </div>
+
+{% if reading_cards %}
+  <h3 class="section-title mt-3">Дополнительные темы</h3>
+  <div class="map-grid">
+    {% for card in reading_cards %}
+      <a class="topic-card"
+         style="--topic-color: {{ topic_colors.get(card.topic.color, '#6366f1') }};"
+         href="{{ url_for('main.topic_page', slug=card.topic.slug) }}">
+        <div class="topic-card__head">
+          <span class="topic-card__icon">{{ card.topic.icon }}</span>
+          <div>
+            <div class="topic-card__title">{{ card.topic.title }}</div>
+            <div class="muted small">Тема предмета</div>
+          </div>
+        </div>
+        <p class="topic-card__desc">{{ card.topic.description or 'Изучение темы с ИИ-объяснением и тестом.' }}</p>
+        <div class="topic-card__foot">
+          <span class="stars">
+            {% for i in range(3) %}<span class="{% if i < card.stars %}on{% else %}off{% endif %}">⭐</span>{% endfor %}
+          </span>
+          <span class="chip chip--amber">📖 Изучать</span>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}
 {% else %}
 <div class="map-grid">
   {% for card in reading_cards %}

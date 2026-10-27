@@ -1,6 +1,8 @@
 """API: кабинет родителя — дети, прогресс, привязка по коду."""
 from __future__ import annotations
 
+import json
+
 from flask import jsonify
 
 from database import query_all, query_one
@@ -13,6 +15,13 @@ from . import bp
 from .deps import current_user, fail, json_body, require_user, row_dict, user_payload
 
 MAX_GRADE = 11
+
+
+def _details(row) -> list[dict]:
+    try:
+        return json.loads(row["answers"] or "[]")
+    except (ValueError, TypeError, KeyError):
+        return []
 
 
 def _learner_of_user(user_id: int):
@@ -159,7 +168,10 @@ def child_detail(learner_id: int):
                     "kind": row["kind"],
                     "score": row["score"],
                     "max_score": row["max_score"],
+                    "percent": round(row["score"] / row["max_score"] * 100)
+                    if row["max_score"] else 0,
                     "completed_at": row["completed_at"],
+                    "details": _details(row),
                 }
                 for row in results
             ],

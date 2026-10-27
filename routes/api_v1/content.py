@@ -104,6 +104,41 @@ def _math_cards(profile, grade: int, visible: set[str]) -> list[dict]:
                 "methods_mastered": mastered,
             }
         )
+
+    # Темы 1–2 и 5–11 классов: изучаются по описанию, ИИ-объяснению и тесту.
+    math = orgs.get_subject_by_slug("math")
+    if math is not None:
+        for row in topics_service.list_topics(subject_id=int(math["id"]), grade=grade):
+            if (row["source"] or "") == "curriculum":
+                continue
+            if visible and row["slug"] not in visible:
+                continue
+            progress_row = tp.get(row["slug"])
+            cards.append(
+                {
+                    "slug": row["slug"],
+                    "title": row["title"],
+                    "icon": row["icon"] or "📖",
+                    "grade": row["grade"],
+                    "part": row["part"] or "",
+                    "description": row["description"] or "",
+                    "min_level": 1,
+                    "page_start": row["page_start"],
+                    "page_end": row["page_end"],
+                    "kind": "reading",
+                    "source": row["source"] or "starter",
+                    "stars": (progress_row["stars"] if progress_row else 0) or 0,
+                    "read": bool(progress_row and (progress_row["stars"] or 0) > 0),
+                    "attempts": (progress_row["attempts"] if progress_row else 0) or 0,
+                    "correct": (progress_row["correct"] if progress_row else 0) or 0,
+                    "accuracy": 0,
+                    "boss_cleared": False,
+                    "methods_total": 0,
+                    "methods_mastered": 0,
+                    "books_count": 0,
+                    "books": [],
+                }
+            )
     return cards
 
 

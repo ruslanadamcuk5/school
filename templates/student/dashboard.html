@@ -50,8 +50,13 @@
       <div class="schedule-row mt-2">
         <div>
           <b>{{ work.title }}</b>
-          <div class="muted small">{{ work.kind }} · {{ work.questions_count }} заданий
-            {% if work.due_date %} · срок {{ work.due_date }}{% endif %}</div>
+          <div class="muted small">
+            {% set role = work.author_role or work.teacher_role %}
+            {% if role == 'parent' %}от родителя{% elif role == 'admin' %}от администратора{% else %}от учителя{% endif %}
+            {% if work.teacher_first or work.teacher_last %} {{ work.teacher_first }} {{ work.teacher_last }}{% endif %}
+            · {{ work.kind }} · {{ work.questions_count }} заданий
+            {% if work.due_date %} · срок {{ work.due_date }}{% endif %}
+          </div>
         </div>
         <div class="muted small">Темы: {% for slug in work.topic_slugs | fromjson %}{{ topic_titles.get(slug, slug) }}{% if not loop.last %}, {% endif %}{% endfor %}</div>
         <a class="btn btn--warn" href="{{ url_for('student.work_detail', assignment_id=work.id) }}">Решить →</a>

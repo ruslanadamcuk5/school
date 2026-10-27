@@ -1,14 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Учусь · 3–4 класс — выбери героя{% endblock %}
+{% block title %}Школьник — общеобразовательная платформа обучения{% endblock %}
 {% block content %}
 
 <section class="hero">
   <div>
-    <span class="chip chip--purple">3–4 класс · Беларусь</span>
-    <h1 class="mt-1">Учиться — интересно 🎉</h1>
-    <p>Математика, языки, литература и «Человек и мир». Решай задачи, читай темы
-      по учебникам, получай монетки, звёзды и значки. Математические темы объясняются
-      разными способами — как тебе удобнее.</p>
+    <span class="chip chip--purple">1–11 классы · Беларусь</span>
+    <h1 class="mt-1">Школьник — учиться удобно</h1>
+    <p>Общеобразовательная платформа обучения: математика, языки, литература и другие
+      предметы. В 1–4 классах — игровые тренировки, в 5–11 — строгий учебный режим,
+      задания от учителя и родителей, расписание и электронный дневник.</p>
     <div class="row mt-2">
       <a class="btn btn--lg" href="#profiles">👦 Выбрать героя</a>
       <a class="btn btn--lg btn--ghost" href="{{ url_for('main.textbook') }}">📖 Пособия</a>
@@ -22,7 +22,7 @@
   <div class="row row--between">
     <div>
       <div class="row" style="gap:8px; align-items:center;">
-        <h2 style="margin:0;">📱 Приложение «Учусь» для Android</h2>
+        <h2 style="margin:0;">📱 Приложение «Школьник» для Android</h2>
         <span class="chip" style="background:#d1fae5; color:#065f46;">APK</span>
       </div>
       <p class="muted small" style="margin:4px 0 0;">
@@ -119,7 +119,7 @@
   <h2 class="section-title">Что внутри</h2>
   <div class="grid-2">
     <div class="card card--flat">
-      <h3>🧠 {{ topics_count }} тем математики</h3>
+      <h3>🧠 {{ topics_count }} тем в каталоге</h3>
       <p class="muted small">Числа до 1000, действия в столбик, таблица умножения, доли и дроби,
         величины, периметр и площадь, движение, признаки делимости. А ещё — темы языков,
         литературы и «Человека и мира» из загруженных пособий.</p>

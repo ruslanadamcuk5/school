@@ -32,6 +32,7 @@ def list_assignments(
     sql = """SELECT a.*, c.title AS course_title, s.name AS subject_name, s.icon AS subject_icon,
                     cl.grade, cl.letter,
                     u.first_name AS teacher_first, u.last_name AS teacher_last,
+                    u.role AS teacher_role,
                     st.first_name AS student_first, st.last_name AS student_last,
                     (SELECT COUNT(*) FROM assignment_results r
                       WHERE r.assignment_id = a.id) AS done_count,
@@ -72,6 +73,7 @@ def get_assignment(assignment_id: int) -> sqlite3.Row | None:
         """SELECT a.*, c.title AS course_title, s.name AS subject_name, s.icon AS subject_icon,
                   cl.grade, cl.letter, sch.name AS school_name,
                   u.first_name AS teacher_first, u.last_name AS teacher_last,
+                  u.role AS teacher_role,
                   st.first_name AS student_first, st.last_name AS student_last
              FROM assignments a
         LEFT JOIN courses c ON c.id = a.course_id
@@ -100,25 +102,34 @@ def create_assignment(
     due_date: str = "",
     status: str = "черновик",
     tasks: list[dict[str, Any]] | None = None,
+    author_role: str | None = None,
 ) -> int:
     topic_slugs = topic_slugs or []
     if tasks is None:
         tasks = build_tasks(topic_slugs, questions_count)
     question_total = len(tasks) if tasks else questions_count
-    return execute(
+    if author_role is None and teacher_id:
+        row = query_one("SELECT role FROM users WHERE id = ?", (teacher_id,))
+        author_role = row["role"] if row else None
+    assignment_id = execute(
         """INSERT INTO assignments
            (title, kind, description, course_id, subject_id, class_id, teacher_id,
-            student_id, topic_slugs, questions_json, questions_count, time_limit,
-            due_date, status, published_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            author_role, student_id, topic_slugs, questions_json, questions_count,
+            time_limit, due_date, status, published_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             title.strip(), kind, description.strip() or None, course_id, subject_id, class_id,
-            teacher_id, student_id, json.dumps(topic_slugs, ensure_ascii=False),
+            teacher_id, author_role, student_id, json.dumps(topic_slugs, ensure_ascii=False),
             json.dumps(tasks, ensure_ascii=False), question_total,
             time_limit, due_date or None, status,
             datetime.now().isoformat(timespec="seconds") if status == "опубликована" else None,
         ),
     )
+    if status == "опубликована":
+        from services import notifications
+
+        notifications.notify_published(assignment_id)
+    return assignment_id
 
 
 def assignment_tasks(assignment: sqlite3.Row) -> list[dict[str, Any]]:
@@ -173,6 +184,9 @@ def publish_assignment(assignment_id: int) -> None:
         "UPDATE assignments SET status = 'опубликована', published_at = datetime('now') WHERE id = ?",
         (assignment_id,),
     )
+    from services import notifications
+
+    notifications.notify_published(assignment_id)
 
 
 def close_assignment(assignment_id: int) -> None:
@@ -270,6 +284,9 @@ def save_result(
             json.dumps(answers, ensure_ascii=False), duration_sec,
         ),
     )
+    from services import notifications
+
+    notifications.notify_result(assignment_id, student_id, score, max_score)
 
 
 def results_of(assignment_id: int) -> list[sqlite3.Row]:
@@ -299,11 +316,18 @@ def results_with_students(assignment_id: int) -> list[dict[str, Any]]:
     for student in students:
         result = done.get(student["id"])
         percent = round(result["score"] / result["max_score"] * 100) if result and result["max_score"] else None
+        details: list[dict[str, Any]] = []
+        if result is not None:
+            try:
+                details = json.loads(result["answers"] or "[]")
+            except (ValueError, TypeError):
+                details = []
         out.append({
             "student": student,
             "result": result,
             "percent": percent,
             "grade": grade_for_percent(percent) if percent is not None else None,
+            "details": details,
         })
     return out
 

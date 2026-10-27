@@ -63,5 +63,6 @@ from . import assignments as _assignments  # noqa: E402,F401
 from . import library as _library  # noqa: E402,F401
 from . import teacher as _teacher  # noqa: E402,F401
 from . import parent as _parent  # noqa: E402,F401
+from . import notifications as _notifications  # noqa: E402,F401
 from . import admin as _admin  # noqa: E402,F401
 from . import ai as _ai  # noqa: E402,F401

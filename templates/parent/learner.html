@@ -20,8 +20,9 @@
       <div class="field">
         <label for="grade">Класс</label>
         <select id="grade" name="grade">
-          <option value="3" {% if learner.grade == 3 %}selected{% endif %}>3 класс</option>
-          <option value="4" {% if learner.grade == 4 %}selected{% endif %}>4 класс</option>
+          {% for g in range(1, 12) %}
+            <option value="{{ g }}" {% if learner.grade == g %}selected{% endif %}>{{ g }} класс</option>
+          {% endfor %}
         </select>
       </div>
       <div class="field">
