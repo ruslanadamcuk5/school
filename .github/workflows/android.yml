@@ -55,7 +55,19 @@ jobs:
       - name: Тесты JSON-разбора
         working-directory: android
         shell: bash
-        run: gradle :app:testDebugUnitTest --no-daemon
+        run: |
+          set +e
+          gradle :app:testDebugUnitTest --no-daemon --console=plain > /tmp/build.log 2>&1
+          status=$?
+          if [ "$status" -ne 0 ]; then
+            grep -n -E "^e: |error:|Unresolved reference|Execution failed|FAILED|Caused by" /tmp/build.log | head -n 40 | while IFS= read -r line; do
+              echo "::error file=android/build.log::$line"
+            done
+            tail -n 30 /tmp/build.log | while IFS= read -r line; do
+              echo "::error file=android/build.log::$line"
+            done
+          fi
+          exit "$status"
 
       - name: Собрать APK
         working-directory: android
