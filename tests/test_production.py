@@ -10,9 +10,6 @@ import unittest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 _TMP_DB = os.path.join(tempfile.gettempdir(), "edu_math_prod_test.db")
-os.environ["APP_ENV"] = "production"
-os.environ["SECRET_KEY"] = "production-test-secret"
-os.environ["DATABASE_PATH"] = _TMP_DB
 
 
 def _clean_db() -> None:
@@ -23,8 +20,13 @@ def _clean_db() -> None:
 
 
 class TestProductionBoot(unittest.TestCase):
+    _ENV_KEYS = ("APP_ENV", "DATABASE_PATH", "SECRET_KEY")
+
     def setUp(self):
         _clean_db()
+        self._previous_env = {key: os.environ.get(key) for key in self._ENV_KEYS}
+        os.environ["APP_ENV"] = "production"
+        os.environ["DATABASE_PATH"] = _TMP_DB
         os.environ["SECRET_KEY"] = "production-test-secret"
         for module in ("wsgi", "app"):
             sys.modules.pop(module, None)
@@ -35,6 +37,13 @@ class TestProductionBoot(unittest.TestCase):
 
     def tearDown(self):
         _clean_db()
+        for key, value in self._previous_env.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+        for module in ("wsgi", "app"):
+            sys.modules.pop(module, None)
 
     def test_boot_and_main_flow(self):
         response = self.client.get("/healthz")

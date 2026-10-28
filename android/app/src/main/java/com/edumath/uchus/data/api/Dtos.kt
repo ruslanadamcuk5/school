@@ -293,6 +293,8 @@ data class StepResultDto(
     @SerializedName("answer") val answer: String? = null,
     @SerializedName("correct") val correct: Boolean = false,
     @SerializedName("solution") val solution: String? = null,
+    @SerializedName("task_type") val taskType: String? = null,
+    @SerializedName("ai_comment") val aiComment: String? = null,
 )
 
 data class QuizResultDto(
@@ -444,12 +446,19 @@ data class ResultSummaryDto(
     @SerializedName("grade") val grade: Int = 0,
     @SerializedName("completed_at") val completedAt: String? = null,
     @SerializedName("duration_sec") val durationSec: Int = 0,
+    @SerializedName("submission_type") val submissionType: String? = null,
+    @SerializedName("ai_status") val aiStatus: String? = null,
+    @SerializedName("ai_feedback") val aiFeedback: String? = null,
+    @SerializedName("ai_model") val aiModel: String? = null,
+    @SerializedName("ai_score") val aiScore: Int? = null,
+    @SerializedName("photos") val photos: List<String> = emptyList(),
 )
 
 data class AssignmentDto(
     @SerializedName("id") val id: Int = 0,
     @SerializedName("title") val title: String? = null,
     @SerializedName("kind") val kind: String? = null,
+    @SerializedName("task_type") val taskType: String? = null,
     @SerializedName("description") val description: String? = null,
     @SerializedName("course_id") val courseId: Int? = null,
     @SerializedName("subject_id") val subjectId: Int? = null,
@@ -461,6 +470,8 @@ data class AssignmentDto(
     @SerializedName("student_id") val studentId: Int? = null,
     @SerializedName("topic_slugs") val topicSlugs: String? = null,
     @SerializedName("questions_count") val questionsCount: Int = 0,
+    @SerializedName("allow_photo") val allowPhoto: Boolean = true,
+    @SerializedName("allow_text") val allowText: Boolean = true,
     @SerializedName("time_limit") val timeLimit: Int = 0,
     @SerializedName("due_date") val dueDate: String? = null,
     @SerializedName("status") val status: String? = null,
@@ -489,8 +500,12 @@ data class QuestionDto(
     @SerializedName("index") val index: Int = 0,
     @SerializedName("question") val question: String = "",
     @SerializedName("answer_type") val answerType: String? = null,
+    @SerializedName("task_type") val taskType: String? = null,
     @SerializedName("choices") val choices: List<String> = emptyList(),
     @SerializedName("points") val points: Int = 1,
+    @SerializedName("audio_text") val audioText: String? = null,
+    @SerializedName("content_text") val contentText: String? = null,
+    @SerializedName("topic_slug") val topicSlug: String? = null,
 )
 
 data class AssignmentsDto(
@@ -541,6 +556,11 @@ data class CreateAssignmentRequest(
     @SerializedName("title") val title: String,
     @SerializedName("kind") val kind: String? = null,
     @SerializedName("description") val description: String? = null,
+    @SerializedName("task_type") val taskType: String? = null,
+    @SerializedName("reference_text") val referenceText: String? = null,
+    @SerializedName("audio_text") val audioText: String? = null,
+    @SerializedName("allow_photo") val allowPhoto: Boolean = true,
+    @SerializedName("allow_text") val allowText: Boolean = true,
     @SerializedName("class_id") val classId: Int? = null,
     @SerializedName("student_id") val studentId: Int? = null,
     @SerializedName("subject_id") val subjectId: Int? = null,
@@ -667,6 +687,41 @@ data class TeacherLibraryDto(
     @SerializedName("classes") val classes: List<ClassDto> = emptyList(),
     @SerializedName("students") val students: List<StudentCardDto> = emptyList(),
     @SerializedName("subjects") val subjects: List<SubjectDto> = emptyList(),
+)
+
+data class RecommendTopicDto(
+    @SerializedName("slug") val slug: String = "",
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("page") val page: Int? = null,
+    @SerializedName("page_end") val pageEnd: Int? = null,
+)
+
+data class RecommendTextbookDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("author") val author: String? = null,
+    @SerializedName("subject_id") val subjectId: Int? = null,
+    @SerializedName("subject_name") val subjectName: String? = null,
+    @SerializedName("subject_icon") val subjectIcon: String? = null,
+    @SerializedName("grade") val grade: Int? = null,
+    @SerializedName("book_id") val bookId: Int? = null,
+    @SerializedName("topics") val topics: List<RecommendTopicDto> = emptyList(),
+)
+
+data class RecommendTopicsDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("textbooks") val textbooks: List<RecommendTextbookDto> = emptyList(),
+    @SerializedName("classes") val classes: List<ClassDto> = emptyList(),
+    @SerializedName("students") val students: List<StudentCardDto> = emptyList(),
+    @SerializedName("subjects") val subjects: List<SubjectDto> = emptyList(),
+)
+
+data class RecommendTextbookRequest(
+    @SerializedName("textbook_id") val textbookId: Int,
+    @SerializedName("topic_slug") val topicSlug: String? = null,
+    @SerializedName("class_ids") val classIds: List<Int> = emptyList(),
+    @SerializedName("student_ids") val studentIds: List<Int> = emptyList(),
+    @SerializedName("note") val note: String? = null,
 )
 
 // ------------------------------------------------------------------ учитель

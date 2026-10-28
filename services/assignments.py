@@ -20,6 +20,18 @@ KINDS = {
     "домашняя": "Домашнее задание",
 }
 
+# Тип задания определяет, что именно выполняет ученик.
+# test      — тест из автоматически подобранных вопросов;
+# read      — прочитать тему (с озвучкой и отметкой о прочтении);
+# dictation — диктант: текст читает синтезатор речи, ответ письменный;
+# other     — свободное задание с проверкой ИИ (пересказ, упражнение и т.п.).
+TASK_TYPES = {
+    "test": "Тест",
+    "read": "Прочитать тему",
+    "dictation": "Диктант",
+    "other": "Иное задание",
+}
+
 TOPIC_BY_SLUG = {t["slug"]: t for t in TOPICS}
 
 
@@ -103,10 +115,22 @@ def create_assignment(
     status: str = "черновик",
     tasks: list[dict[str, Any]] | None = None,
     author_role: str | None = None,
+    task_type: str = "test",
+    reference_text: str = "",
+    audio_text: str = "",
+    allow_photo: bool = True,
+    allow_text: bool = True,
 ) -> int:
     topic_slugs = topic_slugs or []
+    task_type = task_type if task_type in TASK_TYPES else "test"
     if tasks is None:
-        tasks = build_tasks(topic_slugs, questions_count)
+        tasks = build_typed_tasks(
+            task_type,
+            topic_slugs,
+            questions_count,
+            description=description,
+            reference_text=reference_text,
+        )
     question_total = len(tasks) if tasks else questions_count
     if author_role is None and teacher_id:
         row = query_one("SELECT role FROM users WHERE id = ?", (teacher_id,))
@@ -114,14 +138,18 @@ def create_assignment(
     assignment_id = execute(
         """INSERT INTO assignments
            (title, kind, description, course_id, subject_id, class_id, teacher_id,
-            author_role, student_id, topic_slugs, questions_json, questions_count,
+            author_role, student_id, topic_slugs, questions_json, task_type,
+            reference_text, audio_text, allow_photo, allow_text, questions_count,
             time_limit, due_date, status, published_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             title.strip(), kind, description.strip() or None, course_id, subject_id, class_id,
             teacher_id, author_role, student_id, json.dumps(topic_slugs, ensure_ascii=False),
-            json.dumps(tasks, ensure_ascii=False), question_total,
-            time_limit, due_date or None, status,
+            json.dumps(tasks, ensure_ascii=False), task_type,
+            (reference_text or "").strip() or None,
+            (audio_text or "").strip() or None,
+            1 if allow_photo else 0, 1 if allow_text else 0,
+            question_total, time_limit, due_date or None, status,
             datetime.now().isoformat(timespec="seconds") if status == "опубликована" else None,
         ),
     )
@@ -139,8 +167,18 @@ def assignment_tasks(assignment: sqlite3.Row) -> list[dict[str, Any]]:
     except (ValueError, TypeError, KeyError, IndexError):
         tasks = []
     if not tasks:
+        task_type = assignment["task_type"] if "task_type" in assignment.keys() else "test"
         topics = assignment_topics(assignment)
-        tasks = build_tasks(topics, assignment["questions_count"] or 10)
+        tasks = build_typed_tasks(
+            task_type,
+            topics,
+            assignment["questions_count"] or 10,
+            description=assignment["description"] if "description" in assignment.keys() else "",
+            reference_text=(
+                assignment["reference_text"] if "reference_text" in assignment.keys() else ""
+            ),
+            audio_text=assignment["audio_text"] if "audio_text" in assignment.keys() else "",
+        )
         execute(
             "UPDATE assignments SET questions_json = ? WHERE id = ?",
             (json.dumps(tasks, ensure_ascii=False), assignment["id"]),
@@ -153,7 +191,17 @@ def regenerate_tasks(assignment_id: int) -> None:
     assignment = get_assignment(assignment_id)
     if not assignment:
         return
-    tasks = build_tasks(assignment_topics(assignment), assignment["questions_count"] or 10)
+    task_type = assignment["task_type"] if "task_type" in assignment.keys() else "test"
+    tasks = build_typed_tasks(
+        task_type,
+        assignment_topics(assignment),
+        assignment["questions_count"] or 10,
+        description=assignment["description"] or "",
+        reference_text=(
+            assignment["reference_text"] if "reference_text" in assignment.keys() else ""
+        ),
+        audio_text=assignment["audio_text"] if "audio_text" in assignment.keys() else "",
+    )
     execute(
         "UPDATE assignments SET questions_json = ? WHERE id = ?",
         (json.dumps(tasks, ensure_ascii=False), assignment_id),
@@ -164,7 +212,8 @@ def update_assignment(assignment_id: int, **fields: Any) -> None:
     allowed = {
         "title", "kind", "description", "course_id", "subject_id", "class_id",
         "teacher_id", "student_id", "questions_count", "time_limit", "due_date",
-        "status", "topic_slugs",
+        "status", "topic_slugs", "task_type", "reference_text", "audio_text",
+        "allow_photo", "allow_text",
     }
     data = {k: v for k, v in fields.items() if k in allowed}
     if "topic_slugs" in data and isinstance(data["topic_slugs"], list):
@@ -256,11 +305,280 @@ def build_tasks(topic_slugs: list[str], count: int, difficulty: int = 2) -> list
     return tasks[:count]
 
 
+def topic_reading_text(topic_slug: str, max_chars: int = 12000) -> str:
+    """Текст темы для чтения и озвучивания."""
+    from services import reading_quiz, topics as topics_service
+
+    topic = topics_service.get_topic(topic_slug)
+    if not topic:
+        return ""
+    parts: list[str] = []
+    try:
+        for page, text in reading_quiz.topic_pages(topic):
+            clean = (text or "").strip()
+            if not clean:
+                continue
+            parts.append(f"Страница {page}. {clean}" if page else clean)
+            if sum(len(part) for part in parts) >= max_chars:
+                break
+    except Exception:  # noqa: BLE001 - повреждённый PDF не должен ломать работу
+        parts = []
+    if not parts:
+        parts.append((topic["description"] or "").strip())
+    return "\n\n".join(part for part in parts if part)[:max_chars]
+
+
+def build_typed_tasks(
+    task_type: str,
+    topic_slugs: list[str] | None = None,
+    count: int = 10,
+    *,
+    description: str = "",
+    reference_text: str = "",
+    audio_text: str = "",
+) -> list[dict[str, Any]]:
+    """Собрать задания выбранного типа.
+
+    Для теста используется прежний генератор вопросов. Остальные типы дают
+    одно задание: прочитать тему, написать диктант или выполнить свободное
+    задание. Текст диктанта хранится в задании, но не показывается ученику
+    до проверки — его читает синтезатор речи.
+    """
+    task_type = task_type if task_type in TASK_TYPES else "test"
+    topic_slugs = topic_slugs or []
+    if task_type == "test":
+        return build_tasks(topic_slugs, count)
+
+    if task_type == "read":
+        slug = topic_slugs[0] if topic_slugs else ""
+        if not slug:
+            return []
+        from services import topics as topics_service
+
+        topic = topics_service.get_topic(slug)
+        if not topic:
+            return []
+        content = topic_reading_text(slug)
+        prompt = f"Прочитай тему «{topic['title']}»"
+        if description.strip():
+            prompt += f". {description.strip()}"
+        return [
+            {
+                "question": prompt,
+                "answer_type": "read",
+                "points": 1,
+                "task_type": "read",
+                "topic_slug": slug,
+                "content_text": content,
+                "audio_text": audio_text.strip() or content or topic["title"],
+            }
+        ]
+
+    if task_type == "dictation":
+        text = (reference_text or "").strip()
+        if not text and topic_slugs:
+            text = topic_reading_text(topic_slugs[0], max_chars=3000)
+        if not text:
+            return []
+        prompt = (description or "").strip() or "Напиши диктант под диктовку."
+        return [
+            {
+                "question": prompt,
+                "answer_type": "text",
+                "points": 1,
+                "task_type": "dictation",
+                "topic_slug": topic_slugs[0] if topic_slugs else "",
+                "reference_text": text,
+                "audio_text": audio_text.strip() or text,
+            }
+        ]
+
+    prompt = (description or "").strip() or "Выполни задание."
+    return [
+        {
+            "question": prompt,
+            "answer_type": "text",
+            "points": 1,
+            "task_type": "other",
+            "topic_slug": topic_slugs[0] if topic_slugs else "",
+            "audio_text": audio_text.strip() or prompt,
+        }
+    ]
+
+
+def evaluate_submission(
+    assignment: sqlite3.Row,
+    tasks: list[dict[str, Any]],
+    answers: list[str],
+    photo_paths: list[str] | None = None,
+    *,
+    user_id: int | None = None,
+) -> dict[str, Any]:
+    """Проверить ответы и, если подключён ИИ, получить разбор ошибок.
+
+    Возвращает всё, что нужно для сохранения результата: score, max_score,
+    details, ai_status, ai_feedback, ai_model, ai_score.
+    """
+    from services import ai as ai_service
+    from services import assignment_photos
+
+    photos = list(photo_paths or [])
+    task_type = assignment["task_type"] if "task_type" in assignment.keys() else "test"
+    task_type = task_type if task_type in TASK_TYPES else "test"
+    reference = (
+        assignment["reference_text"]
+        if "reference_text" in assignment.keys() and assignment["reference_text"]
+        else ""
+    )
+    instruction = assignment["description"] or "" if "description" in assignment.keys() else ""
+    ai_enabled = ai_service.is_enabled()
+    ai_status = "not_requested"
+    ai_feedback = ""
+    ai_model = ""
+    ai_score: int | None = None
+
+    if task_type == "read":
+        score, max_score = 1, 1
+        details = [
+            {
+                "index": 0,
+                "question": tasks[0].get("question", "Прочитать тему") if tasks else "Прочитать тему",
+                "given": (answers[0] if answers else "") or "прочитано",
+                "answer": "тема прочитана",
+                "correct": True,
+                "solution": "",
+                "task_type": "read",
+            }
+        ]
+    elif task_type in ("dictation", "other"):
+        max_score = 100
+        if photos:
+            score = 0
+        elif task_type == "dictation" and reference:
+            score = dictation_similarity(reference, answers[0] if answers else "")
+        else:
+            score = 0
+        details = [
+            {
+                "index": 0,
+                "question": tasks[0].get("question", "") if tasks else "",
+                "given": (answers[0] if answers else "") or ("фото ответа" if photos else ""),
+                "answer": reference[:2000] if reference else "",
+                "correct": score >= 60,
+                "solution": "",
+                "task_type": task_type,
+            }
+        ]
+    else:
+        max_score = len(tasks)
+        if photos:
+            score, details = 0, [
+                {
+                    "index": index,
+                    "question": task.get("question", ""),
+                    "given": "фото ответа",
+                    "answer": task.get("answer", ""),
+                    "correct": False,
+                    "solution": task.get("solution", ""),
+                    "task_type": "test",
+                }
+                for index, task in enumerate(tasks)
+            ]
+        else:
+            score, details = check_assignment_answers(tasks, answers)
+
+    needs_ai = ai_enabled and (
+        bool(photos)
+        or task_type in ("dictation", "other")
+        or (task_type == "test" and any(not item["correct"] for item in details))
+        or (task_type == "read" and bool(answers and answers[0].strip()))
+    )
+    if needs_ai:
+        review = ai_service.review_submission(
+            task_type=task_type,
+            tasks=tasks,
+            answers=answers,
+            photo_paths=[
+                path for path in (assignment_photos.absolute_path(item) for item in photos) if path
+            ],
+            assignment_title=assignment["title"] if "title" in assignment.keys() else "",
+            instruction=instruction,
+            reference_text=reference,
+            user_id=user_id,
+        )
+        ai_model = review.get("model") or ""
+        if not review.get("ok"):
+            ai_status = "failed"
+            ai_feedback = f"ИИ не смог проверить работу: {review.get('error', 'неизвестная ошибка')}"
+        else:
+            ai_status = "checked"
+            ai_feedback = review.get("summary") or ""
+            ai_score = review.get("score_percent")
+            corrected = (review.get("corrected_text") or "").strip()
+            if corrected:
+                ai_feedback = (
+                    ai_feedback + "\n\nИсправленный текст:\n" + corrected
+                ).strip()
+            comments = {
+                int(item.get("index", 0)): item
+                for item in review.get("items", [])
+                if isinstance(item, dict)
+            }
+            for index, detail in enumerate(details):
+                item = comments.get(index)
+                if not item:
+                    continue
+                detail["ai_comment"] = item.get("comment") or ""
+                if photos and task_type in ("test", "dictation", "other"):
+                    detail["correct"] = bool(item.get("correct"))
+            if task_type == "test" and photos:
+                max_score = len(tasks)
+                if ai_score is not None:
+                    score = max(0, min(max_score, round(ai_score / 100 * max_score)))
+                else:
+                    score = sum(
+                        int(tasks[index].get("points", 1))
+                        for index, detail in enumerate(details)
+                        if detail.get("correct")
+                    )
+            elif task_type in ("dictation", "other") and ai_score is not None:
+                score = ai_score
+                details[0]["correct"] = ai_score >= 60
+    elif not ai_enabled:
+        ai_status = "disabled"
+
+    submission_type = "mixed" if photos and any(str(a).strip() for a in answers) else (
+        "photo" if photos else "inline"
+    )
+    return {
+        "score": int(score),
+        "max_score": int(max_score or 0),
+        "details": details,
+        "submission_type": submission_type,
+        "photos": photos,
+        "ai_status": ai_status,
+        "ai_feedback": ai_feedback,
+        "ai_model": ai_model,
+        "ai_score": ai_score,
+    }
+
+
 def get_result(assignment_id: int, student_id: int) -> sqlite3.Row | None:
     return query_one(
         "SELECT * FROM assignment_results WHERE assignment_id = ? AND student_id = ?",
         (assignment_id, student_id),
     )
+
+
+def result_photos(result: sqlite3.Row | None) -> list[str]:
+    """Список относительных путей к фото ответа."""
+    if result is None:
+        return []
+    try:
+        data = json.loads(result["photos"] or "[]")
+    except (ValueError, TypeError, KeyError):
+        return []
+    return [str(item) for item in data if isinstance(item, str) and item.strip()]
 
 
 def save_result(
@@ -270,18 +588,33 @@ def save_result(
     max_score: int,
     answers: list[dict[str, Any]],
     duration_sec: int = 0,
+    *,
+    submission_type: str = "inline",
+    photos: list[str] | None = None,
+    ai_status: str = "not_requested",
+    ai_feedback: str = "",
+    ai_model: str = "",
+    ai_score: int | None = None,
 ) -> None:
     execute(
         """INSERT INTO assignment_results
-           (assignment_id, student_id, score, max_score, answers, duration_sec, started_at, completed_at)
-           VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+           (assignment_id, student_id, score, max_score, answers, duration_sec,
+            submission_type, photos, ai_status, ai_feedback, ai_model, ai_score,
+            started_at, completed_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
            ON CONFLICT(assignment_id, student_id) DO UPDATE SET
                score = excluded.score, max_score = excluded.max_score,
                answers = excluded.answers, duration_sec = excluded.duration_sec,
+               submission_type = excluded.submission_type, photos = excluded.photos,
+               ai_status = excluded.ai_status, ai_feedback = excluded.ai_feedback,
+               ai_model = excluded.ai_model, ai_score = excluded.ai_score,
                completed_at = datetime('now')""",
         (
             assignment_id, student_id, score, max_score,
             json.dumps(answers, ensure_ascii=False), duration_sec,
+            submission_type, json.dumps(photos or [], ensure_ascii=False),
+            ai_status, (ai_feedback or "").strip()[:8000] or None,
+            (ai_model or "").strip()[:200] or None, ai_score,
         ),
     )
     from services import notifications
@@ -328,8 +661,30 @@ def results_with_students(assignment_id: int) -> list[dict[str, Any]]:
             "percent": percent,
             "grade": grade_for_percent(percent) if percent is not None else None,
             "details": details,
+            "photos": result_photos(result),
         })
     return out
+
+
+def dictation_similarity(reference: str, given: str) -> int:
+    """Офлайн-оценка диктанта, если облачный ИИ не подключён.
+
+    Сравниваем нормализованный текст посимвольно: это не заменяет учителя,
+    но позволяет сразу показать примерный процент и не оставить работу без
+    результата.
+    """
+    import re
+    from difflib import SequenceMatcher
+
+    def clean(text: str) -> str:
+        return re.sub(r"\s+", " ", (text or "").strip().casefold().replace("ё", "е"))
+
+    left, right = clean(reference), clean(given)
+    if not left:
+        return 0
+    if not right:
+        return 0
+    return max(0, min(100, round(SequenceMatcher(None, left, right).ratio() * 100)))
 
 
 def grade_for_percent(percent: int) -> int:
@@ -361,14 +716,20 @@ def check_assignment_answers(tasks: list[dict[str, Any]], given: list[str]) -> t
     details = []
     for index, task in enumerate(tasks):
         answer = given[index] if index < len(given) else ""
-        correct, expected = check_answer(answer, task)
+        task_type = task.get("task_type", "test")
+        if task_type == "read":
+            correct, expected = True, "тема прочитана"
+        else:
+            correct, expected = check_answer(answer, task)
         if correct:
             score += task.get("points", 1)
         details.append({
+            "index": index,
             "question": task["question"],
             "given": answer,
             "answer": expected,
             "correct": correct,
             "solution": task.get("solution", ""),
+            "task_type": task_type,
         })
     return score, details

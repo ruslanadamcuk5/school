@@ -465,6 +465,12 @@ fun ParentCreateAssignmentScreen(
     var title by remember { mutableStateOf("") }
     var questions by remember { mutableStateOf(10) }
     var kind by remember { mutableStateOf("домашняя") }
+    var taskType by remember { mutableStateOf("test") }
+    var description by remember { mutableStateOf("") }
+    var referenceText by remember { mutableStateOf("") }
+    var audioText by remember { mutableStateOf("") }
+    var allowPhoto by remember { mutableStateOf(true) }
+    var allowText by remember { mutableStateOf(true) }
     var busy by remember { mutableStateOf(false) }
     var loadingTopics by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -544,6 +550,75 @@ fun ParentCreateAssignmentScreen(
                 }
             }
 
+            item { SectionTitle("Что должен сделать ребёнок") }
+            item {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    items(
+                        listOf(
+                            "test" to "Тест",
+                            "read" to "Чтение",
+                            "dictation" to "Диктант",
+                            "other" to "Задание",
+                        )
+                    ) { (value, label) ->
+                        FilterChip(
+                            selected = taskType == value,
+                            onClick = { taskType = value },
+                            label = { Text(label) },
+                        )
+                    }
+                }
+            }
+
+            item {
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = {
+                        Text(if (taskType == "other") "Задание для ребёнка" else "Инструкция")
+                    },
+                    minLines = 2,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            if (taskType == "dictation") {
+                item {
+                    OutlinedTextField(
+                        value = referenceText,
+                        onValueChange = { referenceText = it },
+                        label = { Text("Текст диктанта (ребёнок не увидит)") },
+                        minLines = 4,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            item {
+                OutlinedTextField(
+                    value = audioText,
+                    onValueChange = { audioText = it },
+                    label = { Text("Что озвучить (необязательно)") },
+                    minLines = 2,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    FilterChip(
+                        selected = allowText,
+                        onClick = { allowText = !allowText },
+                        label = { Text("Ответ текстом") },
+                    )
+                    FilterChip(
+                        selected = allowPhoto,
+                        onClick = { allowPhoto = !allowPhoto },
+                        label = { Text("Фото ответа") },
+                    )
+                }
+            }
+
             if (child != null) {
                 item { SectionTitle("Темы", trailing = "${selectedTopics.size} выбрано") }
                 when {
@@ -560,15 +635,17 @@ fun ParentCreateAssignmentScreen(
                 }
             }
 
-            item { SectionTitle("Вопросов") }
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf(5, 10, 15).forEach { value ->
-                        FilterChip(
-                            selected = questions == value,
-                            onClick = { questions = value },
-                            label = { Text("$value") },
-                        )
+            if (taskType == "test") {
+                item { SectionTitle("Вопросов") }
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        listOf(5, 10, 15).forEach { value ->
+                            FilterChip(
+                                selected = questions == value,
+                                onClick = { questions = value },
+                                label = { Text("$value") },
+                            )
+                        }
                     }
                 }
             }
@@ -579,6 +656,12 @@ fun ParentCreateAssignmentScreen(
 
             item {
                 val chosen = child
+                val topicsRequired = taskType == "test" || taskType == "read"
+                val canCreate = chosen != null &&
+                    (!topicsRequired || selectedTopics.isNotEmpty()) &&
+                    (taskType != "other" || description.isNotBlank()) &&
+                    (taskType != "dictation" || referenceText.isNotBlank() || selectedTopics.isNotEmpty()) &&
+                    (allowText || allowPhoto)
                 Button(
                     onClick = {
                         val userId = chosen?.user?.id
@@ -589,8 +672,14 @@ fun ParentCreateAssignmentScreen(
                                     apiCall {
                                         container.api.createParentAssignment(
                                             CreateAssignmentRequest(
-                                                title = title.trim().ifBlank { "Домашнее задание" },
+                                                title = title.trim(),
                                                 kind = kind,
+                                                description = description.trim().ifBlank { null },
+                                                taskType = taskType,
+                                                referenceText = referenceText.trim().ifBlank { null },
+                                                audioText = audioText.trim().ifBlank { null },
+                                                allowPhoto = allowPhoto,
+                                                allowText = allowText,
                                                 topicSlugs = selectedTopics.toList(),
                                                 questionsCount = questions,
                                                 childIds = listOf(userId),
@@ -605,7 +694,7 @@ fun ParentCreateAssignmentScreen(
                             }
                         }
                     },
-                    enabled = !busy && chosen != null && selectedTopics.isNotEmpty(),
+                    enabled = !busy && canCreate,
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(if (busy) "Создаём…" else "Создать задание") }
             }

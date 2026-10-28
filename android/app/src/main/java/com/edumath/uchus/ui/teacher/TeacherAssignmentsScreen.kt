@@ -194,6 +194,12 @@ fun CreateAssignmentScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var title by remember { mutableStateOf("") }
     var kind by remember { mutableStateOf("проверочная") }
+    var taskType by remember { mutableStateOf("test") }
+    var description by remember { mutableStateOf("") }
+    var referenceText by remember { mutableStateOf("") }
+    var audioText by remember { mutableStateOf("") }
+    var allowPhoto by remember { mutableStateOf(true) }
+    var allowText by remember { mutableStateOf(true) }
     var questions by remember { mutableStateOf(10) }
     var selectedClass by remember { mutableStateOf<ClassDto?>(null) }
     val selectedTopics = remember { mutableStateListOf<String>() }
@@ -254,6 +260,75 @@ fun CreateAssignmentScreen(
                 }
             }
 
+            item { SectionTitle("Что должен сделать ученик") }
+            item {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    items(
+                        listOf(
+                            "test" to "Тест",
+                            "read" to "Чтение",
+                            "dictation" to "Диктант",
+                            "other" to "Задание",
+                        )
+                    ) { (value, label) ->
+                        FilterChip(
+                            selected = taskType == value,
+                            onClick = { taskType = value },
+                            label = { Text(label) },
+                        )
+                    }
+                }
+            }
+
+            item {
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = {
+                        Text(if (taskType == "other") "Задание для ученика" else "Инструкция")
+                    },
+                    minLines = 2,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            if (taskType == "dictation") {
+                item {
+                    OutlinedTextField(
+                        value = referenceText,
+                        onValueChange = { referenceText = it },
+                        label = { Text("Текст диктанта (ученик не увидит)") },
+                        minLines = 4,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            item {
+                OutlinedTextField(
+                    value = audioText,
+                    onValueChange = { audioText = it },
+                    label = { Text("Что озвучить (необязательно)") },
+                    minLines = 2,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    FilterChip(
+                        selected = allowText,
+                        onClick = { allowText = !allowText },
+                        label = { Text("Ответ текстом") },
+                    )
+                    FilterChip(
+                        selected = allowPhoto,
+                        onClick = { allowPhoto = !allowPhoto },
+                        label = { Text("Фото ответа") },
+                    )
+                }
+            }
+
             item { SectionTitle("Класс", trailing = if (loadingClasses) "загрузка…" else "") }
             if (loadingClasses) {
                 item { LoadingBox() }
@@ -291,15 +366,17 @@ fun CreateAssignmentScreen(
                 }
             }
 
-            item { SectionTitle("Вопросов") }
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf(5, 10, 15).forEach { value ->
-                        FilterChip(
-                            selected = questions == value,
-                            onClick = { questions = value },
-                            label = { Text("$value") },
-                        )
+            if (taskType == "test") {
+                item { SectionTitle("Вопросов") }
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        listOf(5, 10, 15).forEach { value ->
+                            FilterChip(
+                                selected = questions == value,
+                                onClick = { questions = value },
+                                label = { Text("$value") },
+                            )
+                        }
                     }
                 }
             }
@@ -310,6 +387,12 @@ fun CreateAssignmentScreen(
 
             item {
                 val klass = selectedClass
+                val topicsRequired = taskType == "test" || taskType == "read"
+                val canCreate = title.isNotBlank() && klass != null &&
+                    (!topicsRequired || selectedTopics.isNotEmpty()) &&
+                    (taskType != "other" || description.isNotBlank()) &&
+                    (taskType != "dictation" || referenceText.isNotBlank() || selectedTopics.isNotEmpty()) &&
+                    (allowText || allowPhoto)
                 Button(
                     onClick = {
                         if (klass != null && !busy) {
@@ -321,6 +404,12 @@ fun CreateAssignmentScreen(
                                             CreateAssignmentRequest(
                                                 title = title.trim(),
                                                 kind = kind,
+                                                description = description.trim().ifBlank { null },
+                                                taskType = taskType,
+                                                referenceText = referenceText.trim().ifBlank { null },
+                                                audioText = audioText.trim().ifBlank { null },
+                                                allowPhoto = allowPhoto,
+                                                allowText = allowText,
                                                 classId = klass.id,
                                                 topicSlugs = selectedTopics.toList(),
                                                 questionsCount = questions,
@@ -335,7 +424,7 @@ fun CreateAssignmentScreen(
                             }
                         }
                     },
-                    enabled = !busy && title.isNotBlank() && klass != null && selectedTopics.isNotEmpty(),
+                    enabled = !busy && canCreate,
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(if (busy) "Создаём…" else "Создать и опубликовать") }
             }

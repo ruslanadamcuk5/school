@@ -7,8 +7,11 @@
 """
 from __future__ import annotations
 
+import base64
 import html
 import json
+import mimetypes
+import os
 import re
 import sqlite3
 import urllib.error
@@ -231,11 +234,12 @@ def _app_referer() -> str:
 
 
 def chat(
-    messages: Iterable[dict[str, str]],
+    messages: Iterable[dict[str, Any]],
     *,
     temperature: float | None = None,
     max_tokens: int | None = None,
     timeout: int | None = None,
+    model: str | None = None,
 ) -> tuple[str, str | None]:
     """Отправить сообщения модели. Возвращает (текст, ошибка)."""
     settings = get_settings()
@@ -244,7 +248,7 @@ def chat(
     base_url = (settings["base_url"] or "").strip().rstrip("/")
     url = f"{base_url}/chat/completions"
     payload = {
-        "model": settings["model"],
+        "model": (model or "").strip() or settings["model"],
         "messages": list(messages),
         "temperature": settings["temperature"] if temperature is None else temperature,
         "max_tokens": settings["max_tokens"] if max_tokens is None else max_tokens,
@@ -502,6 +506,246 @@ def assistant_reply(
         return "", error
     log_request(user_id, "assistant", True, f"{len(text)} символов")
     return text, None
+
+
+# ------------------------------------------------------------------ проверка работ
+_TASK_LABELS = {
+    "test": "тест",
+    "read": "чтение темы",
+    "dictation": "диктант",
+    "other": "иное задание",
+}
+
+
+def vision_model() -> str:
+    """Модель для проверки фотографий.
+
+    Текст проверяет выбранная в настройках модель, а для фото нужна
+    мультимодальная модель. Для OpenRouter по умолчанию берём Gemini Flash:
+    она хорошо читает рукописный и печатный текст и недорогая.
+    """
+    override = (os.environ.get("AI_VISION_MODEL") or "").strip()
+    if override:
+        return override
+    settings = get_settings()
+    provider = (settings.get("provider") or "").strip()
+    if provider == "openrouter":
+        return "google/gemini-3.5-flash-lite"
+    if provider == "openai":
+        return "gpt-4o-mini"
+    if provider == "gemini":
+        return "gemini-2.5-flash"
+    return (settings.get("model") or "").strip()
+
+
+def _image_part(path: str) -> dict[str, Any] | None:
+    try:
+        with open(path, "rb") as handle:
+            data = handle.read(8 * 1024 * 1024 + 1)
+        if not data or len(data) > 8 * 1024 * 1024:
+            return None
+        mime = mimetypes.guess_type(path)[0] or "image/jpeg"
+        encoded = base64.b64encode(data).decode("ascii")
+    except OSError:
+        return None
+    return {
+        "type": "image_url",
+        "image_url": {"url": f"data:{mime};base64,{encoded}"},
+    }
+
+
+def _extract_json(text: str) -> dict[str, Any] | None:
+    raw = (text or "").strip()
+    if raw.startswith("```"):
+        raw = re.sub(r"^```(?:json)?\s*", "", raw, flags=re.IGNORECASE)
+        raw = re.sub(r"\s*```$", "", raw)
+    start = raw.find("{")
+    end = raw.rfind("}")
+    if start < 0 or end <= start:
+        return None
+    try:
+        data = json.loads(raw[start : end + 1])
+    except ValueError:
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _grading_prompt(
+    *,
+    task_type: str,
+    tasks: list[dict[str, Any]],
+    answers: list[str],
+    instruction: str,
+    reference_text: str,
+    has_photos: bool,
+) -> str:
+    lines = [
+        "Ты — школьный учитель из Беларуси. Проверь работу ученика.",
+        f"Тип задания: {_TASK_LABELS.get(task_type, task_type)}.",
+    ]
+    if instruction:
+        lines.append(f"Инструкция учителя: {instruction}")
+    if reference_text:
+        lines.append("Эталонный текст (для диктанта/сверки):\n" + reference_text[:6000])
+    lines.append("Задания и ответы ученика:")
+    for index, task in enumerate(tasks):
+        answer = answers[index] if index < len(answers) else ""
+        lines.append(f"\n[{index + 1}] {task.get('question') or ''}")
+        if task.get("task_type") == "read":
+            lines.append("Ученик отметил тему как прочитанную." + (f" Комментарий: {answer}" if answer else ""))
+        else:
+            lines.append(f"Ответ ученика: {answer or '(нет текстового ответа)'}")
+        expected = task.get("answer")
+        if expected and task_type == "test":
+            lines.append(f"Правильный ответ: {expected}")
+    if has_photos:
+        lines.append(
+            "К работе приложены фотографии письменных ответов на листке. "
+            "Прочитай их и оцени именно то, что написано на фото."
+        )
+    lines.extend(
+        [
+            "",
+            "Верни ТОЛЬКО валидный JSON без markdown и пояснений:",
+            '{',
+            '  "score": 85,',
+            '  "summary": "краткий вывод для ученика, 2–4 предложения",',
+            '  "corrected_text": "исправленный текст диктанта или null",',
+            '  "items": [',
+            '    {"index": 0, "correct": true, "comment": "что верно/где ошибка"}',
+            "  ]",
+            "}",
+            "score — целое число от 0 до 100, насколько работа выполнена верно. "
+            "Если все ответы верны, score должен быть 100, а не 0. "
+            "Для теста поле score можно поставить 0: оценку теста выставляет сервер, "
+            "а ты объясняешь ошибки. Если ответа нет, это ошибка. "
+            "Не выдумывай ответы, которых нет.",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def review_submission(
+    *,
+    task_type: str,
+    tasks: list[dict[str, Any]],
+    answers: list[str],
+    photo_paths: list[str] | None = None,
+    assignment_title: str = "",
+    instruction: str = "",
+    reference_text: str = "",
+    user_id: int | None = None,
+) -> dict[str, Any]:
+    """Проверить работу через ИИ.
+
+    Возвращает словарь с summary, items, score_percent и model. Ошибка сети
+    не должна ломать сдачу работы: вызывающий код сохранит ответ и покажет
+    сообщение, что ИИ не смог проверить.
+    """
+    if not is_enabled():
+        return {"ok": False, "error": "ИИ не подключён", "summary": "", "items": []}
+    photos = [path for path in (photo_paths or []) if path]
+    model = vision_model() if photos else (get_settings().get("model") or "")
+    prompt = _grading_prompt(
+        task_type=task_type,
+        tasks=tasks,
+        answers=answers,
+        instruction=instruction or assignment_title,
+        reference_text=reference_text,
+        has_photos=bool(photos),
+    )
+    system = (
+        "Ты проверяешь школьную работу. Будь доброжелательным, но точным. "
+        "Не завышай оценку и всегда указывай конкретные ошибки. "
+        "Отвечай строго в формате JSON, как просят."
+    )
+    if photos:
+        content: list[dict[str, Any]] = [{"type": "text", "text": prompt}]
+        for path in photos[:6]:
+            part = _image_part(path)
+            if part:
+                content.append(part)
+        messages: list[dict[str, Any]] = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": content},
+        ]
+    else:
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ]
+    text, error = chat(
+        messages,
+        temperature=0.1,
+        max_tokens=1800,
+        timeout=min(60, max(30, int(Config.AI_TIMEOUT))),
+        model=model,
+    )
+    if error:
+        log_request(user_id, "check", False, error)
+        return {
+            "ok": False,
+            "error": error,
+            "summary": "",
+            "items": [],
+            "model": model,
+        }
+    data = _extract_json(text)
+    if not data:
+        log_request(user_id, "check", True, f"текстовый ответ {len(text)} символов")
+        return {
+            "ok": True,
+            "summary": text[:4000],
+            "items": [],
+            "score_percent": None,
+            "corrected_text": "",
+            "model": model,
+            "raw": text,
+        }
+    items = data.get("items") if isinstance(data.get("items"), list) else []
+    cleaned_items = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        try:
+            index = int(item.get("index", 0))
+        except (TypeError, ValueError):
+            index = 0
+        correct = item.get("correct")
+        if not isinstance(correct, bool):
+            correct = str(correct or "").strip().lower() in (
+                "true", "1", "yes", "да", "верно",
+            )
+        cleaned_items.append(
+            {
+                "index": index,
+                "correct": correct,
+                "comment": str(item.get("comment") or "").strip()[:1500],
+            }
+        )
+    try:
+        score_percent = int(data.get("score")) if data.get("score") is not None else None
+    except (TypeError, ValueError):
+        score_percent = None
+    if score_percent is not None:
+        score_percent = max(0, min(100, score_percent))
+    # Модели иногда ставят 0, хотя все пункты отметили верными. Не отдаём
+    # ученику несправедливый ноль: пересчитываем процент по пунктам.
+    if cleaned_items and all(item["correct"] for item in cleaned_items):
+        if score_percent in (None, 0):
+            score_percent = 100
+    summary = str(data.get("summary") or "").strip()[:4000]
+    corrected = str(data.get("corrected_text") or "").strip()[:6000]
+    log_request(user_id, "check", True, f"{task_type}: {score_percent}")
+    return {
+        "ok": True,
+        "summary": summary or text[:2000],
+        "items": cleaned_items,
+        "score_percent": score_percent,
+        "corrected_text": corrected,
+        "model": model,
+        "raw": text,
+    }
 
 
 # ------------------------------------------------------------------ статистика + разметка

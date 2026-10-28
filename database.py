@@ -87,6 +87,19 @@ MIGRATIONS: list[tuple[str, str, str]] = [
     ("assignments", "questions_json", "TEXT NOT NULL DEFAULT '[]'"),
     ("assignments", "student_id", "INTEGER"),
     ("assignments", "author_role", "TEXT"),
+    # типы заданий: тест, чтение темы, диктант, творческое/иное задание
+    ("assignments", "task_type", "TEXT NOT NULL DEFAULT 'test'"),
+    ("assignments", "reference_text", "TEXT"),
+    ("assignments", "audio_text", "TEXT"),
+    ("assignments", "allow_photo", "INTEGER NOT NULL DEFAULT 1"),
+    ("assignments", "allow_text", "INTEGER NOT NULL DEFAULT 1"),
+    # ответы фотографией и проверка ИИ
+    ("assignment_results", "submission_type", "TEXT NOT NULL DEFAULT 'inline'"),
+    ("assignment_results", "photos", "TEXT NOT NULL DEFAULT '[]'"),
+    ("assignment_results", "ai_status", "TEXT NOT NULL DEFAULT 'not_requested'"),
+    ("assignment_results", "ai_feedback", "TEXT"),
+    ("assignment_results", "ai_model", "TEXT"),
+    ("assignment_results", "ai_score", "INTEGER"),
     # темы теперь привязаны к предмету и могут приходить из содержания пособия
     ("topics", "subject_id", "INTEGER"),
     ("topics", "textbook_id", "INTEGER"),

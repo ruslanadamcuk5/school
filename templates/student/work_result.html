@@ -27,7 +27,7 @@
       <div class="stat-box__label">баллов</div>
     </div>
     <div class="stat-box">
-      <div class="stat-box__value">{{ (result.score / result.max_score * 100) | round | int }}%</div>
+      <div class="stat-box__value">{% if result.max_score %}{{ (result.score / result.max_score * 100) | round | int }}%{% else %}0%{% endif %}</div>
       <div class="stat-box__label">выполнено</div>
     </div>
     <div class="stat-box">
@@ -37,6 +37,42 @@
   </div>
 </section>
 
+{% if result.ai_feedback %}
+  <section class="card mb-3" style="background:linear-gradient(135deg,#eef7ff,#fff);">
+    <div class="row row--between">
+      <h2 style="margin:0; font-size:1.1rem;">🤖 Проверка ИИ</h2>
+      {% if result.ai_score is not none %}
+        <span class="chip chip--blue">{{ result.ai_score }}%</span>
+      {% endif %}
+    </div>
+    <div class="mt-2" style="white-space:pre-wrap; line-height:1.65;">{{ result.ai_feedback }}</div>
+    {% if result.ai_model %}<div class="muted small mt-2">Модель: {{ result.ai_model }}</div>{% endif %}
+  </section>
+{% elif result.ai_status == 'failed' %}
+  <div class="card mb-3" style="background:#fff8e8;">
+    ИИ не смог проверить работу. Учитель увидит твой ответ и проверит его.
+  </div>
+{% elif result.ai_status == 'disabled' %}
+  <div class="card mb-3" style="background:#f7f7f9;">
+    ИИ пока не подключён — работу проверит учитель.
+  </div>
+{% endif %}
+
+{% if photos %}
+  <h2 class="section-title">📷 Фото ответа</h2>
+  <div class="card mb-3">
+    <div class="row" style="flex-wrap:wrap; gap:10px;">
+      {% for photo in photos %}
+        <a href="{{ url_for('student.work_photo', assignment_id=assignment.id, student_id=user.id, filename=photo.split('/')[-1]) }}"
+           target="_blank" rel="noopener">
+          <img src="{{ url_for('student.work_photo', assignment_id=assignment.id, student_id=user.id, filename=photo.split('/')[-1]) }}"
+               alt="Фото ответа {{ loop.index }}" style="max-width:240px; max-height:240px; border-radius:10px; border:1px solid #e5e7eb;">
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+
 <h2 class="section-title">📝 Разбор</h2>
 <div class="card">
   {% for item in details %}
@@ -45,10 +81,14 @@
       <div class="review-item__body">
         <div>{{ item.question }}</div>
         <div class="review-item__answer">
-          {% if item.correct %}Твой ответ: {{ item.given }}
-          {% else %}Твой ответ: {{ item.given or '—' }} · Правильный: {{ item.answer }}{% endif %}
+          {% if item.task_type == 'read' %}Тема отмечена как прочитанная.
+          {% elif item.correct %}Твой ответ: {{ item.given }}
+          {% else %}Твой ответ: {{ item.given or '—' }}{% if item.answer %} · Правильный: {{ item.answer }}{% endif %}{% endif %}
         </div>
         {% if item.solution %}<div class="review-item__answer">{{ item.solution }}</div>{% endif %}
+        {% if item.ai_comment %}
+          <div class="review-item__answer" style="color:#1d4ed8;">🤖 {{ item.ai_comment }}</div>
+        {% endif %}
       </div>
     </div>
   {% endfor %}

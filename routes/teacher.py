@@ -307,6 +307,9 @@ def work_new():
     if request.method == "POST":
         title = (request.form.get("title") or "").strip()
         kind = request.form.get("kind", "проверочная")
+        task_type = request.form.get("task_type", "test")
+        if task_type not in assignments_service.TASK_TYPES:
+            task_type = "test"
         class_id = request.form.get("class_id", type=int)
         course_id = request.form.get("course_id", type=int)
         if class_id and user["role"] != auth.ROLE_ADMIN:
@@ -321,33 +324,65 @@ def work_new():
         subject_id = request.form.get("subject_id", type=int)
         if not subject_id and selected:
             subject_id = selected[0]["subject_id"]
+        description = (request.form.get("description") or "").strip()
+        reference_text = (request.form.get("reference_text") or "").strip()
+        audio_text = (request.form.get("audio_text") or "").strip()
+        allow_photo = (
+            "1" in request.form.getlist("allow_photo")
+            or "allow_photo" not in request.form
+        )
+        allow_text = (
+            "1" in request.form.getlist("allow_text")
+            or "allow_text" not in request.form
+        )
         if not title:
             flash("Введите название работы", "error")
-        elif not topic_slugs:
+        elif not allow_photo and not allow_text:
+            flash("Разрешите хотя бы один способ ответа: текстом или фото.", "error")
+        elif task_type == "test" and not topic_slugs:
             flash("Выберите хотя бы одну тему — по ней будут сгенерированы задания.", "error")
+        elif task_type == "read" and not topic_slugs:
+            flash("Для чтения выберите тему из пособия.", "error")
+        elif task_type == "read":
+            topic_slugs = topic_slugs[:1]
+        elif task_type == "dictation" and not reference_text and not topic_slugs:
+            flash("Вставьте текст диктанта или выберите тему пособия.", "error")
+        elif task_type == "other" and not description:
+            flash("Опишите задание, которое должен выполнить ученик.", "error")
         else:
-            tasks = assignments_service.build_tasks(topic_slugs, count)
+            tasks = assignments_service.build_typed_tasks(
+                task_type,
+                topic_slugs,
+                count,
+                description=description,
+                reference_text=reference_text,
+                audio_text=audio_text,
+            )
             if not tasks:
                 flash(
-                    "Не удалось составить задания по выбранным темам. "
-                    "Проверьте, что к теме привязано пособие.",
+                    "Не удалось составить задание. Проверьте тему и текст задания.",
                     "error",
                 )
             else:
                 assignment_id = assignments_service.create_assignment(
                     title=title,
                     kind=kind,
-                    description=request.form.get("description", ""),
+                    description=description,
                     course_id=course_id,
                     subject_id=subject_id,
                     class_id=class_id,
                     teacher_id=user["id"],
                     topic_slugs=topic_slugs,
-                    questions_count=count,
+                    questions_count=len(tasks),
                     time_limit=request.form.get("time_limit", type=int) or 0,
                     due_date=request.form.get("due_date", ""),
                     status="черновик",
                     tasks=tasks,
+                    task_type=task_type,
+                    reference_text=reference_text,
+                    audio_text=audio_text,
+                    allow_photo=allow_photo,
+                    allow_text=allow_text,
                 )
                 flash("Работа создана как черновик", "success")
                 return redirect(url_for("teacher.work_detail", assignment_id=assignment_id))
@@ -360,6 +395,7 @@ def work_new():
         topics=topics,
         topic_groups=_topic_groups(topics),
         kinds=assignments_service.KINDS,
+        task_types=assignments_service.TASK_TYPES,
     )
 
 
@@ -381,6 +417,7 @@ def work_detail(assignment_id: int):
         topics=topics,
         results=results,
         kinds=assignments_service.KINDS,
+        task_types=assignments_service.TASK_TYPES,
     )
 
 

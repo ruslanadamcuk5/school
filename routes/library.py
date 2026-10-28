@@ -387,6 +387,73 @@ def recommend(book_id: int):
     return redirect(url_for("library.book", book_id=book_id))
 
 
+@bp.route("/recommend-topic", methods=["GET", "POST"])
+@auth.role_required(auth.ROLE_TEACHER, auth.ROLE_ADMIN)
+def recommend_topic():
+    """Рекомендовать тему из любого загруженного пособия.
+
+    Это дополняет рекомендации из собственной библиотеки учителя: пособие
+    может быть загружено другим учителем или администратором, но тема всё
+    равно доступна для рекомендации.
+    """
+    user = _current_user()
+    subject_id = request.args.get("subject_id", type=int)
+    grade = request.args.get("grade", type=int)
+    if request.method == "POST":
+        textbook_id = request.form.get("textbook_id", type=int) or 0
+        topic_slug = (request.form.get("topic_slug") or "").strip() or None
+        note = (request.form.get("note") or "").strip()
+        textbook = textbooks_service.get_textbook(textbook_id)
+        if not textbook:
+            flash("Пособие не найдено", "error")
+            return redirect(url_for("library.recommend_topic"))
+        if topic_slug:
+            row = query_all(
+                """SELECT 1 AS x FROM textbook_topics
+                    WHERE textbook_id = ? AND topic_slug = ?""",
+                (textbook_id, topic_slug),
+            )
+            if not row:
+                flash("Эта тема не относится к выбранному пособию", "error")
+                return redirect(url_for("library.recommend_topic"))
+        allowed_classes = _allowed_class_ids(user)
+        allowed_students = _allowed_student_ids(user)
+        class_ids = [cid for cid in _form_ids("class_ids") if cid in allowed_classes]
+        student_ids = [sid for sid in _form_ids("student_ids") if sid in allowed_students]
+        if not class_ids and not student_ids:
+            flash("Выберите хотя бы один класс или ученика", "error")
+            return redirect(url_for("library.recommend_topic"))
+        result = library_service.recommend_textbook_topic(
+            teacher_id=user["id"],
+            textbook_id=textbook_id,
+            topic_slug=topic_slug,
+            class_ids=class_ids,
+            student_ids=student_ids,
+            note=note,
+        )
+        if not result["ok"]:
+            flash(result.get("error", "Не удалось отправить рекомендацию"), "error")
+        else:
+            message = f"Рекомендация отправлена: {result['created']}"
+            if result["skipped"]:
+                message += f", уже была отправлена ранее — {result['skipped']}"
+            flash(message, "success")
+        return redirect(url_for("library.recommendations"))
+    return render_template(
+        "library/recommend_topic.html",
+        user=user,
+        textbooks=library_service.textbooks_with_topics(
+            subject_id=subject_id, grade=grade
+        ),
+        subjects=orgs.list_subjects(active_only=True),
+        classes=_class_list(user),
+        students=_student_list(user),
+        selected_subject=subject_id,
+        selected_grade=grade,
+        grades=range(1, 12),
+    )
+
+
 @bp.route("/recommendations")
 @auth.role_required(auth.ROLE_TEACHER, auth.ROLE_ADMIN)
 def recommendations():

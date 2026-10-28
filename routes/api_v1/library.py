@@ -452,6 +452,92 @@ def teacher_textbooks():
     )
 
 
+@bp.get("/teacher/recommend/topics")
+@require_user("teacher", "admin")
+def teacher_recommend_topics():
+    """Пособия с темами: рекомендации не ограничены своей библиотекой."""
+    subject_id = request.args.get("subject_id", type=int)
+    grade = request.args.get("grade", type=int)
+    search = (request.args.get("search") or "").strip()
+    textbooks = library_service.textbooks_with_topics(
+        subject_id=subject_id, grade=grade, search=search
+    )
+    return jsonify(
+        {
+            "ok": True,
+            "textbooks": [
+                {
+                    "id": item["id"],
+                    "title": item.get("title"),
+                    "author": item.get("author"),
+                    "subject_id": item.get("subject_id"),
+                    "subject_name": item.get("subject_name"),
+                    "subject_icon": item.get("subject_icon"),
+                    "grade": item.get("grade"),
+                    "book_id": item.get("book_id"),
+                    "topics": [
+                        {
+                            "slug": topic.get("topic_slug"),
+                            "title": topic.get("title") or topic.get("topic_slug"),
+                            "page": topic.get("page"),
+                            "page_end": topic.get("page_end"),
+                        }
+                        for topic in item.get("topics", [])
+                    ],
+                }
+                for item in textbooks
+            ],
+            "classes": [row_dict(klass) for klass in _class_list(current_user())],
+            "students": [user_payload(student) for student in _student_list(current_user())],
+            "subjects": [row_dict(subject) for subject in orgs.list_subjects(active_only=True)],
+        }
+    )
+
+
+@bp.post("/teacher/recommend")
+@require_user("teacher", "admin")
+def teacher_recommend_textbook():
+    user = current_user()
+    data = json_body()
+    textbook_id = _optional_int(data.get("textbook_id"))
+    if not textbook_id:
+        fail(400, "bad_textbook", "Выберите пособие")
+    textbook = textbooks_service.get_textbook(textbook_id)
+    if textbook is None:
+        fail(404, "not_found", "Пособие не найдено")
+    topic_slug = str(data.get("topic_slug") or "").strip() or None
+    if topic_slug and not query_all(
+        "SELECT 1 AS x FROM textbook_topics WHERE textbook_id = ? AND topic_slug = ?",
+        (textbook_id, topic_slug),
+    ):
+        fail(400, "bad_topic", "Тема не относится к выбранному пособию")
+    allowed_classes = _allowed_class_ids(user)
+    allowed_students = _allowed_student_ids(user)
+    class_ids = [
+        class_id
+        for class_id in _int_list(data.get("class_ids") or data.get("classes"))
+        if class_id in allowed_classes
+    ]
+    student_ids = [
+        student_id
+        for student_id in _int_list(data.get("student_ids") or data.get("students"))
+        if student_id in allowed_students
+    ]
+    if not class_ids and not student_ids:
+        fail(400, "no_target", "Выберите класс или ученика")
+    result = library_service.recommend_textbook_topic(
+        teacher_id=int(user["id"]),
+        textbook_id=textbook_id,
+        topic_slug=topic_slug,
+        class_ids=class_ids,
+        student_ids=student_ids,
+        note=str(data.get("note") or ""),
+    )
+    if not result.get("ok"):
+        fail(400, "recommend_failed", result.get("error", "Не удалось порекомендовать"))
+    return jsonify({"ok": True, **result})
+
+
 @bp.post("/teacher/textbooks")
 @require_user("teacher", "admin")
 def teacher_upload_textbook():

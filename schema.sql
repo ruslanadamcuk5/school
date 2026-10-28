@@ -325,6 +325,14 @@ CREATE TABLE IF NOT EXISTS assignments (
     student_id      INTEGER,
     topic_slugs     TEXT NOT NULL DEFAULT '[]',
     questions_json  TEXT NOT NULL DEFAULT '[]',
+    -- test | read | dictation | other
+    task_type       TEXT NOT NULL DEFAULT 'test',
+    -- текст диктанта / текст темы для чтения (ученику не показывается до сдачи)
+    reference_text  TEXT,
+    -- что произносит синтезатор речи при выполнении
+    audio_text      TEXT,
+    allow_photo     INTEGER NOT NULL DEFAULT 1,
+    allow_text      INTEGER NOT NULL DEFAULT 1,
     questions_count INTEGER NOT NULL DEFAULT 10,
     time_limit      INTEGER NOT NULL DEFAULT 0,
     due_date        TEXT,
@@ -367,6 +375,14 @@ CREATE TABLE IF NOT EXISTS assignment_results (
     max_score       INTEGER NOT NULL DEFAULT 0,
     answers         TEXT NOT NULL DEFAULT '[]',
     duration_sec    INTEGER NOT NULL DEFAULT 0,
+    -- inline | photo | mixed
+    submission_type TEXT NOT NULL DEFAULT 'inline',
+    photos          TEXT NOT NULL DEFAULT '[]',
+    -- not_requested | pending | checked | failed | disabled
+    ai_status       TEXT NOT NULL DEFAULT 'not_requested',
+    ai_feedback     TEXT,
+    ai_model        TEXT,
+    ai_score        INTEGER,
     started_at      TEXT,
     completed_at    TEXT,
     UNIQUE (assignment_id, student_id),

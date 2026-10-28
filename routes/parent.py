@@ -240,12 +240,32 @@ def assignments_page():
         topic_slugs = request.form.getlist("topic_slugs")
         count = max(1, min(40, request.form.get("questions_count", type=int) or 10))
         kind = request.form.get("kind", "домашняя")
+        task_type = request.form.get("task_type", "test")
+        if task_type not in assignments_service.TASK_TYPES:
+            task_type = "test"
         due_date = request.form.get("due_date", "")
         title = (request.form.get("title") or "").strip()
+        description = (request.form.get("description") or "").strip()
+        reference_text = (request.form.get("reference_text") or "").strip()
+        audio_text = (request.form.get("audio_text") or "").strip()
+        allow_photo = (
+            "1" in request.form.getlist("allow_photo")
+            or "allow_photo" not in request.form
+        )
+        allow_text = (
+            "1" in request.form.getlist("allow_text")
+            or "allow_text" not in request.form
+        )
         if not chosen_children:
             flash("Выберите хотя бы одного ребёнка", "error")
-        elif not topic_slugs:
+        elif not allow_photo and not allow_text:
+            flash("Разрешите хотя бы один способ ответа: текстом или фото.", "error")
+        elif task_type in ("test", "read") and not topic_slugs:
             flash("Выберите хотя бы одну тему", "error")
+        elif task_type == "dictation" and not reference_text and not topic_slugs:
+            flash("Вставьте текст диктанта или выберите тему пособия.", "error")
+        elif task_type == "other" and not description:
+            flash("Опишите задание для ребёнка.", "error")
         else:
             created = 0
             for child in chosen_children:
@@ -255,30 +275,50 @@ def assignments_page():
                     and topic["grade"] == child["grade"]
                     and (not subject_id or topic["subject_id"] == subject_id)
                 ]
-                if not child_topics:
+                if task_type in ("test", "read") and not child_topics:
                     continue
-                tasks = assignments_service.build_tasks(child_topics, count)
+                if task_type == "read":
+                    child_topics = child_topics[:1]
+                tasks = assignments_service.build_typed_tasks(
+                    task_type,
+                    child_topics,
+                    count,
+                    description=description,
+                    reference_text=reference_text,
+                    audio_text=audio_text,
+                )
                 if not tasks:
                     continue
                 child_subject = subject_id
-                if not child_subject:
+                if not child_subject and child_topics:
                     first = next(
                         (topic for topic in topics if topic["slug"] == child_topics[0]), None
                     )
                     child_subject = first["subject_id"] if first else None
+                default_title = {
+                    "test": "Домашнее задание от родителя",
+                    "read": "Прочитать тему",
+                    "dictation": "Диктант",
+                    "other": "Задание от родителя",
+                }.get(task_type, "Домашнее задание от родителя")
                 assignments_service.create_assignment(
-                    title=title or "Домашнее задание от родителя",
+                    title=title or default_title,
                     kind=kind,
-                    description=request.form.get("description", ""),
+                    description=description,
                     subject_id=child_subject,
                     student_id=child["user"]["id"],
                     teacher_id=user["id"],
                     topic_slugs=child_topics,
-                    questions_count=count,
+                    questions_count=len(tasks),
                     time_limit=request.form.get("time_limit", type=int) or 0,
                     due_date=due_date,
                     status="опубликована",
                     tasks=tasks,
+                    task_type=task_type,
+                    reference_text=reference_text,
+                    audio_text=audio_text,
+                    allow_photo=allow_photo,
+                    allow_text=allow_text,
                 )
                 created += 1
             if created:
@@ -305,6 +345,7 @@ def assignments_page():
                 "assignment": assignment,
                 "result": result,
                 "details": details,
+                "photos": assignments_service.result_photos(result),
             })
     return render_template(
         "parent/assignments.html",
@@ -313,6 +354,7 @@ def assignments_page():
         groups=sorted(groups.values(), key=lambda item: item["name"]),
         subjects=orgs.list_subjects(active_only=True),
         kinds=assignments_service.KINDS,
+        task_types=assignments_service.TASK_TYPES,
         sent=sent,
     )
 

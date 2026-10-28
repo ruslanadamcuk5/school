@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Рекомендовать тему из пособия · Библиотека{% endblock %}
+{% block wrap_class %}library-page{% endblock %}
+
+{% block content %}
+<div class="page-head row--between">
+  <div>
+    <h1>📚 Рекомендовать тему из пособия</h1>
+    <p>
+      Выберите тему из любого загруженного пособия по предмету. Пособие
+      автоматически появится в библиотеке выбранных классов.
+    </p>
+  </div>
+  <a class="btn btn--ghost" href="{{ url_for('library.library') }}">← В библиотеку</a>
+</div>
+
+<form method="get" class="card mt-3">
+  <div class="grid-2">
+    <div class="field">
+      <label for="subject_id">Предмет</label>
+      <select id="subject_id" name="subject_id" onchange="this.form.submit()">
+        <option value="">Все предметы</option>
+        {% for subject in subjects %}
+          <option value="{{ subject.id }}" {% if selected_subject == subject.id %}selected{% endif %}>
+            {{ subject.icon }} {{ subject.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="grade">Класс</label>
+      <select id="grade" name="grade" onchange="this.form.submit()">
+        <option value="">Все классы</option>
+        {% for item in grades %}
+          <option value="{{ item }}" {% if selected_grade == item %}selected{% endif %}>{{ item }} класс</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+</form>
+
+{% if not textbooks %}
+  <div class="card mt-3">
+    <p class="muted">Пока нет загруженных пособий с темами. Загрузите PDF в библиотеку
+      или попросите администратора привязать темы к пособию.</p>
+  </div>
+{% else %}
+  <form method="post" class="card mt-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="field">
+      <label for="textbook_id">Пособие *</label>
+      <select id="textbook_id" name="textbook_id" required onchange="syncTopics()">
+        {% for book in textbooks %}
+          <option value="{{ book.id }}" data-topics="{{ book.topics|length }}">
+            {{ book.subject_icon or '📖' }} {{ book.title }} · {{ book.grade }} класс
+            {% if book.author %} · {{ book.author }}{% endif %}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="topic_slug">Тема *</label>
+      <select id="topic_slug" name="topic_slug" required>
+        {% for book in textbooks %}
+          {% for topic in book.topics %}
+            <option value="{{ topic.topic_slug }}" data-textbook="{{ book.id }}">
+              {{ topic.icon or '•' }} {{ topic.title or topic.topic_slug }}
+              {% if topic.page %} · с. {{ topic.page }}{% endif %}
+            </option>
+          {% endfor %}
+        {% endfor %}
+      </select>
+      <span class="field__hint">Тема будет открыта ученикам вместе с пособием.</span>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label>Классы</label>
+        <div class="checkbox-list">
+          {% for klass in classes %}
+            <label class="check-item">
+              <input type="checkbox" name="class_ids" value="{{ klass.id }}">
+              <span>{{ klass.grade }} «{{ klass.letter }}»{% if klass.school_name %} · {{ klass.school_name }}{% endif %}</span>
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="field">
+        <label>Отдельные ученики</label>
+        <div class="checkbox-list" style="max-height:260px; overflow:auto;">
+          {% for student in students %}
+            <label class="check-item">
+              <input type="checkbox" name="student_ids" value="{{ student.id }}">
+              <span>{{ student.last_name }} {{ student.first_name }}
+                <span class="muted small">· {{ student.grade }}{{ student.letter }}</span></span>
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="note">Записка ученикам</label>
+      <input id="note" name="note" maxlength="500" placeholder="Например: прочитайте к пятнице">
+    </div>
+
+    <button class="btn btn--lg" type="submit">Отправить рекомендацию</button>
+  </form>
+{% endif %}
+
+<script>
+function syncTopics() {
+  const bookSelect = document.getElementById('textbook_id');
+  const topicSelect = document.getElementById('topic_slug');
+  if (!bookSelect || !topicSelect) return;
+  const bookId = bookSelect.value;
+  let first = null;
+  for (const option of topicSelect.options) {
+    const match = option.dataset.textbook === bookId;
+    option.hidden = !match;
+    option.disabled = !match;
+    if (match && !first) first = option;
+  }
+  topicSelect.value = first ? first.value : '';
+  topicSelect.required = !!first;
+}
+syncTopics();
+</script>
+{% endblock %}

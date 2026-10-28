@@ -171,11 +171,75 @@ def book_classes(book_id: int) -> list[dict[str, Any]]:
 
 def set_book_classes(book_id: int, class_ids: Iterable[int]) -> None:
     execute("DELETE FROM library_book_classes WHERE book_id = ?", (book_id,))
+    add_book_classes(book_id, class_ids)
+
+
+def add_book_classes(book_id: int, class_ids: Iterable[int]) -> None:
+    """Добавить классы, не убирая уже открытые."""
     for class_id in dict.fromkeys(int(c) for c in class_ids if c):
         execute(
             "INSERT OR IGNORE INTO library_book_classes (book_id, class_id) VALUES (?, ?)",
             (book_id, class_id),
         )
+
+
+def ensure_book_for_textbook(
+    owner_id: int,
+    textbook_id: int,
+    class_ids: Iterable[int] = (),
+) -> dict[str, Any] | None:
+    """Найти книгу библиотеки для пособия или создать её.
+
+    Так учитель может рекомендовать тему из любого загруженного пособия, даже
+    если оно ещё не добавлено в его библиотеку. После рекомендации пособие
+    автоматически открывается выбранным классам.
+    """
+    textbook = textbooks_service.get_textbook(textbook_id)
+    if not textbook:
+        return None
+    row = query_one(
+        "SELECT id FROM library_books WHERE textbook_id = ? ORDER BY id LIMIT 1",
+        (textbook_id,),
+    )
+    if row:
+        book_id = int(row["id"])
+        add_book_classes(book_id, class_ids)
+    else:
+        book_id = create_book(
+            owner_id=owner_id,
+            textbook_id=textbook_id,
+            subject_id=textbook["subject_id"],
+            grade=textbook["grade"],
+            title=textbook["title"],
+            author=textbook["author"] or "",
+            description=textbook["description"] or "",
+            class_ids=class_ids,
+        )
+    return get_book(book_id)
+
+
+def textbooks_with_topics(
+    subject_id: int | None = None,
+    grade: int | None = None,
+    search: str = "",
+) -> list[dict[str, Any]]:
+    """Все загруженные пособия с темами — источник рекомендаций учителя."""
+    out: list[dict[str, Any]] = []
+    for row in textbooks_service.list_textbooks(
+        subject_id=subject_id, grade=grade, search=search
+    ):
+        topics = [dict(topic) for topic in textbooks_service.textbook_topics(row["id"])]
+        if not topics:
+            continue
+        item = dict(row)
+        item["topics"] = topics
+        book = query_one(
+            "SELECT id FROM library_books WHERE textbook_id = ? ORDER BY id LIMIT 1",
+            (row["id"],),
+        )
+        item["book_id"] = int(book["id"]) if book else None
+        out.append(item)
+    return out
 
 
 # --------------------------------------------------------------- книги ученика
@@ -368,6 +432,41 @@ def recommend(
         )
         created += 1
     return {"ok": created > 0 or skipped > 0, "created": created, "skipped": skipped}
+
+
+def recommend_textbook_topic(
+    teacher_id: int,
+    textbook_id: int,
+    topic_slug: str | None = None,
+    class_ids: Iterable[int] = (),
+    student_ids: Iterable[int] = (),
+    note: str = "",
+) -> dict[str, Any]:
+    """Рекомендовать тему из любого пособия, создав книгу при необходимости."""
+    class_ids = list(dict.fromkeys(int(c) for c in class_ids if c))
+    student_ids = list(dict.fromkeys(int(s) for s in student_ids if s))
+    # Если рекомендация адресована конкретному ученику, книгу всё равно нужно
+    # открыть его классу: доступ к пособиям в библиотеке классный, а не личный.
+    if student_ids:
+        placeholders = ",".join("?" for _ in student_ids)
+        rows = query_all(
+            f"""SELECT DISTINCT class_id FROM class_students
+                 WHERE student_id IN ({placeholders})""",
+            student_ids,
+        )
+        class_ids.extend(int(row["class_id"]) for row in rows)
+        class_ids = list(dict.fromkeys(class_ids))
+    book = ensure_book_for_textbook(teacher_id, textbook_id, class_ids)
+    if not book:
+        return {"ok": False, "created": 0, "skipped": 0, "error": "Пособие не найдено"}
+    return recommend(
+        teacher_id,
+        int(book["id"]),
+        topic_slug=topic_slug,
+        class_ids=class_ids,
+        student_ids=student_ids,
+        note=note,
+    )
 
 
 def recommendations_for_student(student_id: int) -> list[dict[str, Any]]:

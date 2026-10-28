@@ -34,6 +34,21 @@
 
   <div class="grid-2">
     <div class="field">
+      <label for="task_type">Что должен сделать ученик</label>
+      <select id="task_type" name="task_type" onchange="syncTaskType()">
+        {% for key, label in task_types.items() %}
+          <option value="{{ key }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field" id="count-block">
+      <label for="questions_count">Количество заданий</label>
+      <input id="questions_count" name="questions_count" type="number" min="1" max="40" value="10">
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="field">
       <label for="class_id">Класс</label>
       <select id="class_id" name="class_id">
         <option value="">— все классы —</option>
@@ -69,23 +84,38 @@
     </div>
   </div>
 
-  <div class="grid-2">
-    <div class="field">
-      <label for="questions_count">Количество заданий</label>
-      <input id="questions_count" name="questions_count" type="number" min="1" max="40" value="10">
-    </div>
-    <div class="field">
-      <label for="time_limit">Время на выполнение (мин, 0 — без ограничения)</label>
-      <input id="time_limit" name="time_limit" type="number" min="0" max="180" value="0">
-    </div>
+  <div class="field">
+    <label for="time_limit">Время на выполнение (мин, 0 — без ограничения)</label>
+    <input id="time_limit" name="time_limit" type="number" min="0" max="180" value="0">
   </div>
 
   <div class="field">
-    <label for="description">Инструкция для учеников</label>
+    <label for="description" id="description-label">Инструкция для учеников</label>
     <textarea id="description" name="description" rows="3" placeholder="Например: работа без калькулятора"></textarea>
   </div>
 
+  <div class="field" id="reference-block" hidden>
+    <label for="reference_text">Текст диктанта *</label>
+    <textarea id="reference_text" name="reference_text" rows="5" placeholder="Текст, который прочитает синтезатор речи. Ученик его не увидит до проверки."></textarea>
+    <span class="field__hint">Этот текст озвучивается на устройстве ученика. Можно не вставлять текст, а выбрать тему пособия — тогда будет прочитан её текст.</span>
+  </div>
+
   <div class="field">
+    <label for="audio_text">Что озвучить (необязательно)</label>
+    <textarea id="audio_text" name="audio_text" rows="2" placeholder="Оставьте пустым — озвучится задание или текст диктанта"></textarea>
+  </div>
+
+  <div class="field">
+    <label>Как можно отвечать</label>
+    <div class="checkbox-list">
+      <input type="hidden" name="allow_text" value="0">
+      <input type="hidden" name="allow_photo" value="0">
+      <label class="check-item"><input type="checkbox" name="allow_text" value="1" checked> <span>Ввести ответ в приложении</span></label>
+      <label class="check-item"><input type="checkbox" name="allow_photo" value="1" checked> <span>Прикрепить фото ответа на листке</span></label>
+    </div>
+  </div>
+
+  <div class="field" id="topics-block">
     <label>Темы работы *</label>
     <span class="field__hint">По математике генерируются вычислительные задания,
       по остальным предметам — вопросы по тексту пособия: пропущенное слово,
@@ -113,4 +143,32 @@
 
   <button class="btn btn--lg" type="submit">Создать черновик</button>
 </form>
+
+<script>
+function syncTaskType() {
+  const type = document.getElementById('task_type').value;
+  const count = document.getElementById('count-block');
+  const ref = document.getElementById('reference-block');
+  const topics = document.getElementById('topics-block');
+  const desc = document.getElementById('description');
+  const descLabel = document.getElementById('description-label');
+  count.hidden = type !== 'test';
+  ref.hidden = type !== 'dictation';
+  topics.hidden = type === 'other';
+  if (type === 'other') {
+    desc.required = true;
+    descLabel.textContent = 'Задание для ученика *';
+    desc.placeholder = 'Опишите, что нужно сделать: пересказать текст, выполнить упражнение…';
+  } else if (type === 'dictation') {
+    desc.required = false;
+    descLabel.textContent = 'Инструкция к диктанту';
+    desc.placeholder = 'Например: запиши текст в тетрадь, проверь знаки препинания';
+  } else {
+    desc.required = false;
+    descLabel.textContent = 'Инструкция для учеников';
+    desc.placeholder = 'Например: работа без калькулятора';
+  }
+}
+syncTaskType();
+</script>
 {% endblock %}

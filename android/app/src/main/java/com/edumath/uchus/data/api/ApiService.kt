@@ -138,6 +138,15 @@ interface ApiService {
         @Body body: SubmitRequest,
     ): SubmitResponse
 
+    @Multipart
+    @POST("assignments/{id}/submit-photo")
+    suspend fun submitAssignmentPhoto(
+        @Path("id") id: Int,
+        @Part("answers") answers: RequestBody,
+        @Part photos: List<MultipartBody.Part>,
+        @Part("duration_sec") durationSec: RequestBody,
+    ): SubmitResponse
+
     @POST("assignments/{id}/retry")
     suspend fun retryAssignment(@Path("id") id: Int): SimpleOkDto
 
@@ -226,6 +235,18 @@ interface ApiService {
 
     @DELETE("teacher/library/recommendations/{id}")
     suspend fun revokeRecommendation(@Path("id") id: Int): SimpleOkDto
+
+    @GET("teacher/recommend/topics")
+    suspend fun teacherRecommendTopics(
+        @Query("subject_id") subjectId: Int? = null,
+        @Query("grade") grade: Int? = null,
+        @Query("search") search: String? = null,
+    ): RecommendTopicsDto
+
+    @POST("teacher/recommend")
+    suspend fun recommendTextbookTopic(
+        @Body body: RecommendTextbookRequest,
+    ): SimpleOkDto
 
     @GET("teacher/textbooks")
     suspend fun teacherTextbooks(

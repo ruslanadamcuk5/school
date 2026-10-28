@@ -11,11 +11,13 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_file,
     session,
     url_for,
 )
 
 from database import execute, query_all
+from services import assignment_photos
 from services import assignments as assignments_service
 from services import auth, learners as learners_service, orgs, progress, textbooks
 
@@ -113,6 +115,7 @@ def work_detail(assignment_id: int):
             assignment=assignment,
             result=result,
             details=details,
+            photos=assignments_service.result_photos(result),
             grade=assignments_service.grade_for_percent(
                 round(result["score"] / result["max_score"] * 100) if result["max_score"] else 0
             ),
@@ -139,12 +142,45 @@ def work_submit(assignment_id: int):
 
     tasks = assignments_service.assignment_tasks(assignment)
     given = _collect_answers(tasks, request.form)
-    score, details = assignments_service.check_assignment_answers(tasks, given)
+    uploads = request.files.getlist("photos")
+    has_text = any(str(value or "").strip() for value in given)
+    if uploads and not assignment["allow_photo"]:
+        flash("В этой работе нельзя отвечать фотографией.", "error")
+        return redirect(url_for("student.work_detail", assignment_id=assignment_id))
+    if has_text and not assignment["allow_text"]:
+        flash("В этой работе нельзя отвечать текстом — прикрепите фото.", "error")
+        return redirect(url_for("student.work_detail", assignment_id=assignment_id))
+    try:
+        photos = assignment_photos.save_photos(
+            uploads, assignment_id, user["id"]
+        )
+    except ValueError as exc:
+        flash(str(exc), "error")
+        return redirect(url_for("student.work_detail", assignment_id=assignment_id))
     duration = int(request.form.get("duration") or 0)
-    assignments_service.save_result(
-        assignment_id, user["id"], score, len(tasks), details, duration
+    result = assignments_service.evaluate_submission(
+        assignment, tasks, given, photos, user_id=user["id"]
     )
-    flash("Работа отправлена учителю!", "success")
+    assignments_service.save_result(
+        assignment_id,
+        user["id"],
+        result["score"],
+        result["max_score"],
+        result["details"],
+        duration,
+        submission_type=result["submission_type"],
+        photos=result["photos"],
+        ai_status=result["ai_status"],
+        ai_feedback=result["ai_feedback"],
+        ai_model=result["ai_model"],
+        ai_score=result["ai_score"],
+    )
+    if result["ai_status"] == "failed":
+        flash("Работа сохранена, но ИИ не смог её проверить. Учитель увидит ответ.", "info")
+    elif result["ai_status"] == "checked":
+        flash("Работа отправлена, ИИ проверил ответы и указал на ошибки.", "success")
+    else:
+        flash("Работа отправлена учителю!", "success")
     return redirect(url_for("student.work_detail", assignment_id=assignment_id))
 
 
@@ -157,12 +193,46 @@ def work_retry(assignment_id: int):
         abort(404)
     if not _can_open_assignment(user, assignment):
         abort(403)
+    old = assignments_service.get_result(assignment_id, user["id"])
+    if old:
+        assignment_photos.delete_photos(assignments_service.result_photos(old))
     execute(
         "DELETE FROM assignment_results WHERE assignment_id = ? AND student_id = ?",
         (assignment_id, user["id"]),
     )
     flash("Работу можно пройти заново.", "info")
     return redirect(url_for("student.work_detail", assignment_id=assignment_id))
+
+
+@bp.route(
+    "/works/<int:assignment_id>/photo/<int:student_id>/<path:filename>"
+)
+@auth.login_required
+def work_photo(assignment_id: int, student_id: int, filename: str):
+    """Фото письменного ответа: доступно ученику, учителю и родителю."""
+    user = auth.current_user()
+    assignment = assignments_service.get_assignment(assignment_id)
+    if not assignment:
+        abort(404)
+    allowed = False
+    if user["role"] == auth.ROLE_ADMIN:
+        allowed = True
+    elif user["role"] == auth.ROLE_STUDENT:
+        allowed = int(user["id"]) == int(student_id) and _can_open_assignment(user, assignment)
+    elif user["role"] == auth.ROLE_TEACHER:
+        allowed = int(assignment["teacher_id"] or 0) == int(user["id"])
+    elif user["role"] == auth.ROLE_PARENT:
+        allowed = any(
+            int(child["id"]) == int(student_id) for child in auth.children_of(user["id"])
+        )
+    if not allowed:
+        abort(403)
+    path = assignment_photos.absolute_path(
+        f"{assignment_id}/{student_id}/{filename}"
+    )
+    if not path:
+        abort(404)
+    return send_file(path, conditional=True)
 
 
 @bp.route("/textbooks")

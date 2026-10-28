@@ -10,64 +10,178 @@
 {% endblock %}
 
 {% block cabinet_content %}
+{% set task_type = assignment.task_type|default('test') %}
 <div class="page-head">
   <div>
     <h1>📝 {{ assignment.title }}</h1>
     <p>
-      {{ assignment.kind }} · {{ tasks|length }} заданий
+      {{ assignment.kind }}
+      · {% if task_type == 'read' %}чтение темы{% elif task_type == 'dictation' %}диктант{% elif task_type == 'other' %}задание{% else %}тест{% endif %}
       {% if assignment.time_limit %} · на время {{ assignment.time_limit }} мин{% endif %}
       {% if assignment.due_date %} · срок {{ assignment.due_date }}{% endif %}
     </p>
   </div>
+  <button class="btn btn--ghost btn--small" type="button" onclick="speakAll()">🔊 Озвучить всё задание</button>
 </div>
 
 {% if assignment.description %}
   <div class="card mb-3" style="background:linear-gradient(135deg,#eff6ff,#fff);">
     <b>Инструкция:</b> {{ assignment.description }}
+    <button class="btn btn--ghost btn--small" type="button"
+            data-text="{{ assignment.description|e }}"
+            onclick="speakText(this.dataset.text)">🔊 Прослушать</button>
   </div>
 {% endif %}
 
-<form method="post" action="{{ url_for('student.work_submit', assignment_id=assignment.id) }}" id="work-form">
+<form method="post" action="{{ url_for('student.work_submit', assignment_id=assignment.id) }}"
+      enctype="multipart/form-data" onsubmit="return prepareSubmit()">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <input type="hidden" name="duration" id="duration" value="0">
 
   {% for task in tasks %}
-    {% set task_index = loop.index0 %}
-    <div class="card mb-3">
-      <div class="row row--between mb-2">
-        <b>Задание {{ loop.index }} из {{ tasks|length }}</b>
-        <span class="chip chip--purple">{{ topic_titles.get(task.topic_slug, task.topic_slug) }}</span>
-      </div>
-      <p style="font-size:1.05rem; font-weight:700;">{{ task.question }}</p>
-      {% if task.answer_type == 'choice' %}
-        <div class="choices mt-2">
-          {% for choice in task.choices %}
-            <label class="choice" style="display:flex; align-items:center; gap:8px;">
-              <input type="radio" name="answer_{{ task_index }}" value="{{ choice }}" required style="width:18px;height:18px;accent-color:var(--brand);">
-              <span>{{ choice }}</span>
-            </label>
-          {% endfor %}
+    {% set tt = task.task_type|default('test') %}
+    <section class="card mb-3" data-speak="{{ (task.audio_text or task.question or '')|e }}">
+      <div class="row row--between" style="align-items:flex-start;">
+        <div style="flex:1 1 320px;">
+          <div class="muted small">Задание {{ loop.index }}</div>
+          <h2 style="margin:4px 0 10px; font-size:1.15rem;">{{ task.question }}</h2>
         </div>
+        <button class="btn btn--ghost btn--small" type="button"
+                onclick="speakTask(this)">🔊 Прослушать</button>
+      </div>
+
+      {% if tt == 'read' %}
+        {% if task.content_text %}
+          <div class="card mt-2" style="max-height:52vh; overflow:auto; background:#fafbff;">
+            <div style="white-space:pre-wrap; line-height:1.65;">{{ task.content_text }}</div>
+          </div>
+          <button class="btn btn--ghost btn--small mt-2" type="button"
+                  data-text="{{ task.content_text|e }}"
+                  onclick="speakText(this.dataset.text)">🔊 Прослушать тему</button>
+        {% endif %}
+        {% if assignment.allow_text %}
+          <div class="field mt-3">
+            <label for="answer_{{ loop.index0 }}">Что запомнил(а)? (необязательно)</label>
+            <textarea id="answer_{{ loop.index0 }}" name="answer_{{ loop.index0 }}" rows="3"
+                      placeholder="Коротко расскажи, о чём была тема"></textarea>
+          </div>
+        {% endif %}
+        <div class="muted small mt-2">После отправки тема будет отмечена как прочитанная.</div>
+
+      {% elif tt == 'dictation' %}
+        <div class="card mt-2" style="background:#fff8e8;">
+          <b>🎧 Диктант читает устройство.</b>
+          <p class="muted small" style="margin:6px 0 10px;">
+            Нажмите «Прослушать диктант», записывайте текст в тетрадь или сразу вводите ниже.
+            Текст диктанта не показывается до проверки.
+          </p>
+          <button class="btn btn--small" type="button"
+                  data-audio="{{ (task.audio_text or '')|e }}"
+                  onclick="speakText(this.dataset.audio)">🔊 Прослушать диктант</button>
+          <button class="btn btn--ghost btn--small" type="button"
+                  onclick="speakText(this.previousElementSibling.dataset.audio)">↻ Повторить</button>
+        </div>
+        {% if assignment.allow_text %}
+          <div class="field mt-3">
+            <label for="answer_{{ loop.index0 }}">Текст диктанта{% if not assignment.allow_photo %} *{% endif %}</label>
+            <textarea id="answer_{{ loop.index0 }}" name="answer_{{ loop.index0 }}" rows="8"
+                      {% if not assignment.allow_photo %}required{% endif %}
+                      placeholder="Запишите текст здесь или прикрепите фото листка ниже"></textarea>
+          </div>
+        {% endif %}
+
+      {% elif tt == 'other' %}
+        {% if assignment.allow_text %}
+          <div class="field mt-2">
+            <label for="answer_{{ loop.index0 }}">Ответ{% if not assignment.allow_photo %} *{% endif %}</label>
+            <textarea id="answer_{{ loop.index0 }}" name="answer_{{ loop.index0 }}" rows="7"
+                      {% if not assignment.allow_photo %}required{% endif %}
+                      placeholder="Выполните задание здесь или прикрепите фото"></textarea>
+          </div>
+        {% endif %}
+
       {% else %}
-        <input class="answer-input mt-2" type="text" name="answer_{{ task_index }}" placeholder="Твой ответ" required>
+        {% if assignment.allow_text %}
+          <div class="mt-2">
+            {% if task.choices %}
+              <div class="checkbox-list">
+                {% for choice in task.choices %}
+                  <label class="check-item">
+                    <input type="radio" name="answer_{{ loop.index0 }}" value="{{ choice }}"
+                           {% if not assignment.allow_photo %}required{% endif %}>
+                    <span>{{ choice }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="field">
+                <label for="answer_{{ loop.index0 }}">Ответ</label>
+                <input id="answer_{{ loop.index0 }}" name="answer_{{ loop.index0 }}"
+                       {% if not assignment.allow_photo %}required{% endif %}
+                       autocomplete="off" placeholder="Введите ответ">
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
       {% endif %}
-    </div>
+    </section>
   {% endfor %}
 
-  <button class="btn btn--lg btn--block" type="submit">📨 Отправить учителю</button>
-</form>
-{% endblock %}
+  {% if assignment.allow_photo %}
+    <div class="card mb-3">
+      <h2 style="font-size:1.05rem;">📷 Фото письменного ответа</h2>
+      <p class="muted small">
+        Можно сфотографировать листок с решением. ИИ прочитает фото и укажет на ошибки.
+        До {{ 6 }} фото, каждое до 8 МБ.
+      </p>
+      <input id="photos" name="photos" type="file" accept="image/*" capture="environment" multiple
+             onchange="showPhotoCount()">
+      <div id="photo-count" class="muted small mt-1"></div>
+    </div>
+  {% endif %}
 
-{% block scripts %}
+  <button class="btn btn--lg" type="submit">Отправить работу</button>
+</form>
+
 <script>
-  (function () {
-    const form = document.getElementById("work-form");
-    const duration = document.getElementById("duration");
-    if (!form) return;
-    const start = Date.now();
-    form.addEventListener("submit", function () {
-      duration.value = Math.round((Date.now() - start) / 1000);
-    });
-  })();
+const startedAt = Date.now();
+function speakText(text) {
+  if (!text) return;
+  if (!('speechSynthesis' in window)) {
+    alert('На этом устройстве нет синтеза речи.');
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'ru-RU';
+  utterance.rate = 0.9;
+  const voices = window.speechSynthesis.getVoices();
+  const ru = voices.find(v => (v.lang || '').toLowerCase().startsWith('ru'));
+  if (ru) utterance.voice = ru;
+  window.speechSynthesis.speak(utterance);
+}
+function speakTask(button) {
+  const section = button.closest('section');
+  speakText(section ? section.dataset.speak : '');
+}
+function speakAll() {
+  const parts = [];
+  document.querySelectorAll('section[data-speak]').forEach(section => {
+    if (section.dataset.speak) parts.push(section.dataset.speak);
+  });
+  speakText(parts.join('. '));
+}
+function showPhotoCount() {
+  const input = document.getElementById('photos');
+  const target = document.getElementById('photo-count');
+  if (!input || !target) return;
+  target.textContent = input.files.length ? ('Выбрано фото: ' + input.files.length) : '';
+}
+function prepareSubmit() {
+  const duration = document.getElementById('duration');
+  if (duration) duration.value = Math.max(0, Math.round((Date.now() - startedAt) / 1000));
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  return true;
+}
 </script>
 {% endblock %}

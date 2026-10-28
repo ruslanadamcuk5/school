@@ -21,6 +21,7 @@ from services import topics as topics_service
 
 from . import bp
 from .deps import (
+    current_user,
     fail,
     int_arg,
     learner,
@@ -618,11 +619,14 @@ def _can_read_textbook(textbook_id: int) -> bool:
 @bp.get("/books/<int:textbook_id>")
 @require_actor
 def book_info(textbook_id: int):
-    if not _can_read_textbook(textbook_id):
-        fail(403, "forbidden", "Книга недоступна")
     row = textbooks_service.get_textbook(textbook_id)
     if row is None:
-        fail(404, "not_found", "Пособие не найдено")
+        user = current_user()
+        if user is not None and user["role"] in ("admin", "teacher", "parent"):
+            fail(404, "not_found", "Пособие не найдено")
+        fail(403, "forbidden", "Книга недоступна")
+    if not _can_read_textbook(textbook_id):
+        fail(403, "forbidden", "Книга недоступна")
     links = textbooks_service.textbook_topics(textbook_id)
     return jsonify(
         {

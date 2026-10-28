@@ -15,6 +15,7 @@
     <h1>📝 {{ assignment.title }}</h1>
     <p>
       {{ assignment.kind }}
+      · {{ task_types.get(assignment.task_type|default('test'), 'Тест') }}
       {% if assignment.grade %} · {{ assignment.grade }}{% if assignment.letter %} «{{ assignment.letter }}»{% endif %}{% endif %}
       · {{ assignment.questions_count }} заданий
       · статус: <b>{{ assignment.status }}</b>
@@ -54,6 +55,12 @@
   {% if assignment.description %}
     <p class="muted mt-2">{{ assignment.description }}</p>
   {% endif %}
+  {% if assignment.task_type == 'dictation' and assignment.reference_text %}
+    <details class="mt-2">
+      <summary style="cursor:pointer; font-weight:700;">Текст диктанта</summary>
+      <div class="mt-1" style="white-space:pre-wrap;">{{ assignment.reference_text }}</div>
+    </details>
+  {% endif %}
 </div>
 
 <h2 class="section-title">📊 Результаты класса</h2>
@@ -87,6 +94,21 @@
                       {{ row.details|rejectattr('correct')|list|length }} с ошибкой
                     </summary>
                     <div class="mt-2">
+                      {% if row.result and row.result.ai_feedback %}
+                        <div class="card mb-2" style="background:#f0f7ff;">
+                          <b>🤖 Проверка ИИ</b>
+                          <div class="mt-1" style="white-space:pre-wrap;">{{ row.result.ai_feedback }}</div>
+                        </div>
+                      {% endif %}
+                      {% if row.photos %}
+                        <div class="mb-2">
+                          <b>Фото ответа:</b>
+                          {% for photo in row.photos %}
+                            <a class="btn btn--ghost btn--small" target="_blank"
+                               href="{{ url_for('student.work_photo', assignment_id=assignment.id, student_id=row.student.id, filename=photo.split('/')[-1]) }}">Фото {{ loop.index }}</a>
+                          {% endfor %}
+                        </div>
+                      {% endif %}
                       {% for item in row.details %}
                         <div class="review-item">
                           <span class="review-item__icon">{% if item.correct %}✅{% else %}❌{% endif %}</span>
@@ -97,6 +119,7 @@
                               {% else %}Ответ ученика: {{ item.given or '—' }} · Правильный: {{ item.answer }}{% endif %}
                             </div>
                             {% if item.solution %}<div class="review-item__answer">{{ item.solution }}</div>{% endif %}
+                            {% if item.ai_comment %}<div class="review-item__answer" style="color:#1d4ed8;">🤖 {{ item.ai_comment }}</div>{% endif %}
                           </div>
                         </div>
                       {% endfor %}

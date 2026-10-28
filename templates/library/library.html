@@ -10,7 +10,10 @@
       <p>Загрузите книгу (PDF) — она разобьётся на темы по оглавлению. Отметьте классы,
         которым книга доступна, и рекомендуйте темы ученикам.</p>
     </div>
-    <a class="btn btn--ghost" href="{{ url_for('library.recommendations') }}">📤 Мои рекомендации</a>
+    <div class="row">
+      <a class="btn" href="{{ url_for('library.recommend_topic') }}">📚 Рекомендовать тему из пособия</a>
+      <a class="btn btn--ghost" href="{{ url_for('library.recommendations') }}">📤 Мои рекомендации</a>
+    </div>
   </div>
 
   <div class="mt-2">

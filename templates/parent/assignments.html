@@ -55,6 +55,21 @@
 
     <div class="grid-2">
       <div class="field">
+        <label for="task_type">Что должен сделать ребёнок</label>
+        <select id="task_type" name="task_type" onchange="syncTaskType()">
+          {% for key, label in task_types.items() %}
+            <option value="{{ key }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field" id="count-block">
+        <label for="questions_count">Количество заданий</label>
+        <input id="questions_count" name="questions_count" type="number" min="1" max="40" value="10">
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
         <label for="subject_id">Предмет</label>
         <select id="subject_id" name="subject_id">
           <option value="">— по выбранным темам —</option>
@@ -69,24 +84,41 @@
       </div>
     </div>
 
-    <div class="grid-2">
-      <div class="field">
-        <label for="questions_count">Количество заданий</label>
-        <input id="questions_count" name="questions_count" type="number" min="1" max="40" value="10">
-      </div>
-      <div class="field">
-        <label for="time_limit">Время (мин, 0 — без ограничения)</label>
-        <input id="time_limit" name="time_limit" type="number" min="0" max="180" value="0">
-      </div>
+    <div class="field">
+      <label for="time_limit">Время (мин, 0 — без ограничения)</label>
+      <input id="time_limit" name="time_limit" type="number" min="0" max="180" value="0">
     </div>
 
     <div class="field">
-      <label for="description">Инструкция для ребёнка</label>
+      <label for="description" id="description-label">Инструкция для ребёнка</label>
       <textarea id="description" name="description" rows="2"
                 placeholder="Например: сначала прочитай тему в учебнике"></textarea>
     </div>
 
+    <div class="field" id="reference-block" hidden>
+      <label for="reference_text">Текст диктанта *</label>
+      <textarea id="reference_text" name="reference_text" rows="5"
+                placeholder="Текст, который ребёнок услышит и запишет. Он не показывается до проверки."></textarea>
+      <span class="field__hint">Можно не вставлять текст, а выбрать тему — тогда будет прочитан текст темы.</span>
+    </div>
+
     <div class="field">
+      <label for="audio_text">Что озвучить (необязательно)</label>
+      <textarea id="audio_text" name="audio_text" rows="2"
+                placeholder="Оставьте пустым — озвучится задание или текст диктанта"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Как можно отвечать</label>
+      <div class="checkbox-list">
+        <input type="hidden" name="allow_text" value="0">
+        <input type="hidden" name="allow_photo" value="0">
+        <label class="check-item"><input type="checkbox" name="allow_text" value="1" checked> <span>Ввести ответ в приложении</span></label>
+        <label class="check-item"><input type="checkbox" name="allow_photo" value="1" checked> <span>Прикрепить фото ответа на листке</span></label>
+      </div>
+    </div>
+
+    <div class="field" id="topics-block">
       <label>Темы работы *</label>
       <span class="field__hint">Выбирайте темы класса ребёнка. По математике задания
         вычислительные, по другим предметам — по тексту учебника.</span>
@@ -156,6 +188,22 @@
                         {{ item.details|rejectattr('correct')|list|length }} с ошибкой
                       </summary>
                       <div class="mt-2">
+                        {% if result.ai_feedback %}
+                          <div class="card mb-2" style="background:#f0f7ff;">
+                            <b>🤖 Проверка ИИ</b>
+                            <div class="mt-1" style="white-space:pre-wrap;">{{ result.ai_feedback }}</div>
+                          </div>
+                        {% endif %}
+                        {% if item.photos %}
+                          <div class="mb-2">
+                            <b>Фото ответа:</b>
+                            {% for photo in item.photos %}
+                              {% set parts = photo.split('/') %}
+                              <a class="btn btn--ghost btn--small" target="_blank"
+                                 href="{{ url_for('student.work_photo', assignment_id=assignment.id, student_id=assignment.student_id, filename=parts[-1]) }}">Фото {{ loop.index }}</a>
+                            {% endfor %}
+                          </div>
+                        {% endif %}
                         {% for detail in item.details %}
                           <div class="review-item">
                             <span class="review-item__icon">{% if detail.correct %}✅{% else %}❌{% endif %}</span>
@@ -183,4 +231,27 @@
     {% endif %}
   </div>
 {% endif %}
+<script>
+function syncTaskType() {
+  const type = document.getElementById('task_type').value;
+  const count = document.getElementById('count-block');
+  const ref = document.getElementById('reference-block');
+  const topics = document.getElementById('topics-block');
+  const desc = document.getElementById('description');
+  const descLabel = document.getElementById('description-label');
+  count.hidden = type !== 'test';
+  ref.hidden = type !== 'dictation';
+  topics.hidden = type === 'other';
+  if (type === 'other') {
+    desc.required = true;
+    descLabel.textContent = 'Задание для ребёнка *';
+    desc.placeholder = 'Опишите, что нужно сделать';
+  } else {
+    desc.required = false;
+    descLabel.textContent = 'Инструкция для ребёнка';
+    desc.placeholder = 'Например: сначала прочитай тему в учебнике';
+  }
+}
+syncTaskType();
+</script>
 {% endblock %}

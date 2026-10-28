@@ -7,6 +7,7 @@ from datetime import date
 from flask import jsonify, request
 
 from database import execute, query_one
+from services import assignment_photos
 from services import assignments as assignments_service
 from services import auth as auth_service
 from services import orgs
@@ -30,10 +31,19 @@ STUDENT_ROLE = "student"
 AUTHOR_LABEL = {"teacher": "учителя", "parent": "родителя", "admin": "администратора"}
 
 
-def _assignment_payload(row) -> dict:
+def _assignment_payload(row, *, include_reference: bool = False) -> dict:
     """Безопасное представление работы для мобильного клиента."""
     item = row_dict(row)
     item.pop("questions_json", None)
+    if not include_reference:
+        item.pop("reference_text", None)
+        item.pop("audio_text", None)
+    # SQLite хранит флаги как 0/1. Android-клиент ждёт настоящие boolean:
+    # Gson не умеет читать число в поле Boolean и падает на разборе ответа.
+    for field in ("allow_photo", "allow_text"):
+        if field in item:
+            item[field] = bool(item[field])
+    item["task_type"] = item.get("task_type") or "test"
     role = item.get("author_role") or item.get("teacher_role") or "teacher"
     item["author_role"] = role
     item["author_label"] = AUTHOR_LABEL.get(role, "учителя")
@@ -73,6 +83,12 @@ def _result_summary(result) -> dict | None:
         "grade": assignments_service.grade_for_percent(percent),
         "completed_at": result["completed_at"],
         "duration_sec": result["duration_sec"],
+        "submission_type": result["submission_type"] if "submission_type" in result.keys() else "inline",
+        "ai_status": result["ai_status"] if "ai_status" in result.keys() else "not_requested",
+        "ai_feedback": result["ai_feedback"] if "ai_feedback" in result.keys() else None,
+        "ai_model": result["ai_model"] if "ai_model" in result.keys() else None,
+        "ai_score": result["ai_score"] if "ai_score" in result.keys() else None,
+        "photos": assignments_service.result_photos(result),
     }
 
 
@@ -97,8 +113,15 @@ def _public_questions(tasks: list[dict]) -> list[dict]:
                 "question": task.get("question", ""),
                 "answer_type": task.get("answer_type")
                 or ("choice" if choices else "text"),
+                "task_type": task.get("task_type")
+                or ("read" if task.get("answer_type") == "read" else "test"),
                 "choices": choices,
                 "points": task.get("points", 1),
+                # Для диктанта это текст, который читает синтезатор речи.
+                # Для чтения — текст темы. Поле нужно и веб-, и Android-клиенту.
+                "audio_text": task.get("audio_text") or "",
+                "content_text": task.get("content_text") or "",
+                "topic_slug": task.get("topic_slug") or "",
             }
         )
     return out
@@ -183,20 +206,99 @@ def student_submit(assignment_id: int):
         answers = [str(raw.get(str(i), "")) for i in range(len(tasks))]
     else:
         fail(400, "bad_answers", "Передайте ответы списком")
+    if any(value.strip() for value in answers) and not assignment["allow_text"]:
+        fail(403, "text_forbidden", "В этой работе нельзя отвечать текстом")
 
-    score, details = assignments_service.check_assignment_answers(tasks, answers)
     duration = int(data.get("duration_sec") or data.get("duration") or 0)
-    assignments_service.save_result(
-        assignment_id, user["id"], score, len(tasks), details, duration
+    result = assignments_service.evaluate_submission(
+        assignment, tasks, answers, [], user_id=user["id"]
     )
-    result = assignments_service.get_result(assignment_id, user["id"])
+    assignments_service.save_result(
+        assignment_id,
+        user["id"],
+        result["score"],
+        result["max_score"],
+        result["details"],
+        duration,
+        submission_type=result["submission_type"],
+        photos=result["photos"],
+        ai_status=result["ai_status"],
+        ai_feedback=result["ai_feedback"],
+        ai_model=result["ai_model"],
+        ai_score=result["ai_score"],
+    )
+    saved = assignments_service.get_result(assignment_id, user["id"])
     return jsonify(
         {
             "ok": True,
-            "score": score,
-            "max_score": len(tasks),
-            "result": _result_summary(result),
-            "details": details,
+            "score": result["score"],
+            "max_score": result["max_score"],
+            "result": _result_summary(saved),
+            "details": result["details"],
+        }
+    )
+
+
+@bp.post("/assignments/<int:assignment_id>/submit-photo")
+@require_user(STUDENT_ROLE)
+def student_submit_photo(assignment_id: int):
+    """Сдать письменные ответы фотографией. Поле answers — JSON-массив."""
+    user = current_user()
+    assignment = assignments_service.get_assignment(assignment_id)
+    if assignment is None:
+        fail(404, "not_found", "Работа не найдена")
+    if not _can_open(user, assignment):
+        fail(403, "forbidden", "Работа недоступна")
+    if not assignment["allow_photo"]:
+        fail(403, "photo_forbidden", "В этой работе нельзя отвечать фотографией")
+    tasks = assignments_service.assignment_tasks(assignment)
+    raw = request.form.get("answers")
+    answers: list[str] = []
+    if raw:
+        try:
+            parsed = json.loads(raw)
+        except ValueError:
+            parsed = None
+        if isinstance(parsed, list):
+            answers = [str(value or "") for value in parsed]
+        elif isinstance(parsed, dict):
+            answers = [str(parsed.get(str(i), "")) for i in range(len(tasks))]
+    if len(answers) < len(tasks):
+        answers.extend([""] * (len(tasks) - len(answers)))
+    try:
+        photos = assignment_photos.save_photos(
+            request.files.getlist("photos"), assignment_id, user["id"]
+        )
+    except ValueError as exc:
+        fail(400, "bad_photo", str(exc))
+    if not photos:
+        fail(400, "no_photos", "Прикрепите хотя бы одну фотографию ответа")
+    duration = int(request.form.get("duration_sec") or request.form.get("duration") or 0)
+    result = assignments_service.evaluate_submission(
+        assignment, tasks, answers, photos, user_id=user["id"]
+    )
+    assignments_service.save_result(
+        assignment_id,
+        user["id"],
+        result["score"],
+        result["max_score"],
+        result["details"],
+        duration,
+        submission_type=result["submission_type"],
+        photos=result["photos"],
+        ai_status=result["ai_status"],
+        ai_feedback=result["ai_feedback"],
+        ai_model=result["ai_model"],
+        ai_score=result["ai_score"],
+    )
+    saved = assignments_service.get_result(assignment_id, user["id"])
+    return jsonify(
+        {
+            "ok": True,
+            "score": result["score"],
+            "max_score": result["max_score"],
+            "result": _result_summary(saved),
+            "details": result["details"],
         }
     )
 
@@ -210,6 +312,9 @@ def student_retry(assignment_id: int):
         fail(404, "not_found", "Работа не найдена")
     if not _can_open(user, assignment):
         fail(403, "forbidden", "Работа недоступна")
+    old = assignments_service.get_result(assignment_id, user["id"])
+    if old is not None:
+        assignment_photos.delete_photos(assignments_service.result_photos(old))
     execute(
         "DELETE FROM assignment_results WHERE assignment_id = ? AND student_id = ?",
         (assignment_id, user["id"]),
@@ -263,9 +368,25 @@ def teacher_create():
     class_id = _optional_int(data.get("class_id"))
     student_id = _optional_int(data.get("student_id"))
     subject_id = _optional_int(data.get("subject_id"))
+    task_type = str(data.get("task_type") or "test").strip()
+    if task_type not in assignments_service.TASK_TYPES:
+        task_type = "test"
     topic_slugs = _string_list(data.get("topic_slugs") or data.get("topics"))
-    if not topic_slugs:
+    description = str(data.get("description") or "").strip()
+    reference_text = str(data.get("reference_text") or "").strip()
+    audio_text = str(data.get("audio_text") or "").strip()
+    allow_photo = _bool_flag(data, "allow_photo")
+    allow_text = _bool_flag(data, "allow_text")
+    if not allow_photo and not allow_text:
+        fail(400, "no_answer_mode", "Разрешите ответ текстом или фото")
+    if task_type in ("test", "read") and not topic_slugs:
         fail(400, "no_topics", "Выберите хотя бы одну тему")
+    if task_type == "read":
+        topic_slugs = topic_slugs[:1]
+    if task_type == "dictation" and not reference_text and not topic_slugs:
+        fail(400, "no_dictation_text", "Вставьте текст диктанта или выберите тему")
+    if task_type == "other" and not description:
+        fail(400, "no_description", "Опишите задание")
     count = _clamp(_optional_int(data.get("questions_count")) or 10, 1, MAX_QUESTIONS)
 
     allowed_classes = {
@@ -280,24 +401,36 @@ def teacher_create():
             if student_id not in students:
                 fail(403, "forbidden", "Ученик не из ваших классов")
 
-    tasks = assignments_service.build_tasks(topic_slugs, count)
+    tasks = assignments_service.build_typed_tasks(
+        task_type,
+        topic_slugs,
+        count,
+        description=description,
+        reference_text=reference_text,
+        audio_text=audio_text,
+    )
     if not tasks:
         fail(400, "no_tasks", "Не удалось подобрать задания по выбранным темам")
 
     assignment_id = assignments_service.create_assignment(
         title=title,
         kind=str(data.get("kind") or "проверочная"),
-        description=str(data.get("description") or ""),
+        description=description,
         subject_id=subject_id,
         class_id=class_id,
         teacher_id=user["id"],
         student_id=student_id,
         topic_slugs=topic_slugs,
-        questions_count=count,
+        questions_count=len(tasks),
         time_limit=_optional_int(data.get("time_limit")) or 0,
         due_date=str(data.get("due_date") or ""),
         status=str(data.get("status") or "опубликована"),
         tasks=tasks,
+        task_type=task_type,
+        reference_text=reference_text,
+        audio_text=audio_text,
+        allow_photo=allow_photo,
+        allow_text=allow_text,
     )
     assignment = assignments_service.get_assignment(assignment_id)
     return jsonify({"ok": True, "assignment": _assignment_payload(assignment)}), 201
@@ -325,6 +458,11 @@ def teacher_update(assignment_id: int):
         "time_limit",
         "due_date",
         "status",
+        "task_type",
+        "reference_text",
+        "audio_text",
+        "allow_photo",
+        "allow_text",
     ):
         if key in data:
             fields[key] = data[key]
@@ -334,7 +472,10 @@ def teacher_update(assignment_id: int):
             fail(400, "no_topics", "Выберите хотя бы одну тему")
         fields["topic_slugs"] = slugs
     assignments_service.update_assignment(assignment_id, **fields)
-    if "topic_slugs" in fields:
+    if any(
+        key in fields
+        for key in ("topic_slugs", "task_type", "reference_text", "description", "audio_text")
+    ):
         assignments_service.regenerate_tasks(assignment_id)
 
     return jsonify(
@@ -402,6 +543,17 @@ def teacher_results(assignment_id: int):
                     "percent": item.get("percent"),
                     "grade": item.get("grade"),
                     "details": _details_of(item.get("result")),
+                    "photos": item.get("photos") or [],
+                    "ai_status": (
+                        item["result"]["ai_status"]
+                        if item.get("result") is not None and "ai_status" in item["result"].keys()
+                        else "not_requested"
+                    ),
+                    "ai_feedback": (
+                        item["result"]["ai_feedback"]
+                        if item.get("result") is not None and "ai_feedback" in item["result"].keys()
+                        else None
+                    ),
                 }
                 for item in rows
             ],
@@ -432,6 +584,10 @@ def parent_assignments():
                 if result["max_score"] else 0,
                 "completed_at": result["completed_at"],
                 "details": _details_of(result),
+                "photos": assignments_service.result_photos(result),
+                "ai_status": result["ai_status"] if "ai_status" in result.keys() else "not_requested",
+                "ai_feedback": result["ai_feedback"] if "ai_feedback" in result.keys() else None,
+                "ai_score": result["ai_score"] if "ai_score" in result.keys() else None,
             }
             for result in results
         ]
@@ -456,11 +612,31 @@ def parent_create():
         fail(400, "no_children", "Выберите ребёнка")
 
     topic_slugs = _string_list(data.get("topic_slugs") or data.get("topics"))
-    if not topic_slugs:
+    task_type = str(data.get("task_type") or "test").strip()
+    if task_type not in assignments_service.TASK_TYPES:
+        task_type = "test"
+    description = str(data.get("description") or "").strip()
+    reference_text = str(data.get("reference_text") or "").strip()
+    audio_text = str(data.get("audio_text") or "").strip()
+    allow_photo = _bool_flag(data, "allow_photo")
+    allow_text = _bool_flag(data, "allow_text")
+    if not allow_photo and not allow_text:
+        fail(400, "no_answer_mode", "Разрешите ответ текстом или фото")
+    if task_type in ("test", "read") and not topic_slugs:
         fail(400, "no_topics", "Выберите хотя бы одну тему")
+    if task_type == "dictation" and not reference_text and not topic_slugs:
+        fail(400, "no_dictation_text", "Вставьте текст диктанта или выберите тему")
+    if task_type == "other" and not description:
+        fail(400, "no_description", "Опишите задание")
     subject_id = _optional_int(data.get("subject_id"))
     count = _clamp(_optional_int(data.get("questions_count")) or 10, 1, MAX_QUESTIONS)
-    title = str(data.get("title") or "").strip() or "Домашнее задание от родителя"
+    default_title = {
+        "test": "Домашнее задание от родителя",
+        "read": "Прочитать тему",
+        "dictation": "Диктант",
+        "other": "Задание от родителя",
+    }.get(task_type, "Домашнее задание от родителя")
+    title = str(data.get("title") or "").strip() or default_title
     all_topics = topics_service.list_topics()
 
     created = 0
@@ -474,13 +650,22 @@ def parent_create():
             and topic["grade"] == grade
             and (not subject_id or topic["subject_id"] == subject_id)
         ]
-        if not child_topics:
+        if task_type in ("test", "read") and not child_topics:
             continue
-        tasks = assignments_service.build_tasks(child_topics, count)
+        if task_type == "read":
+            child_topics = child_topics[:1]
+        tasks = assignments_service.build_typed_tasks(
+            task_type,
+            child_topics,
+            count,
+            description=description,
+            reference_text=reference_text,
+            audio_text=audio_text,
+        )
         if not tasks:
             continue
         child_subject = subject_id
-        if not child_subject:
+        if not child_subject and child_topics:
             first = next(
                 (topic for topic in all_topics if topic["slug"] == child_topics[0]), None
             )
@@ -488,16 +673,21 @@ def parent_create():
         assignments_service.create_assignment(
             title=title,
             kind=str(data.get("kind") or "домашняя"),
-            description=str(data.get("description") or ""),
+            description=description,
             subject_id=child_subject,
             student_id=child["id"],
             teacher_id=user["id"],
             topic_slugs=child_topics,
-            questions_count=count,
+            questions_count=len(tasks),
             time_limit=_optional_int(data.get("time_limit")) or 0,
             due_date=str(data.get("due_date") or ""),
             status="опубликована",
             tasks=tasks,
+            task_type=task_type,
+            reference_text=reference_text,
+            audio_text=audio_text,
+            allow_photo=allow_photo,
+            allow_text=allow_text,
         )
         created += 1
 
@@ -522,6 +712,16 @@ def _optional_int(value) -> int | None:
 
 def _clamp(value: int, low: int, high: int) -> int:
     return max(low, min(high, value))
+
+
+def _bool_flag(data: dict, key: str, default: bool = True) -> bool:
+    """Флаг из JSON: принимает bool, 0/1 и строки true/false."""
+    if key not in data:
+        return default
+    value = data.get(key)
+    if isinstance(value, str):
+        return value.strip().lower() not in ("", "0", "false", "no", "off")
+    return bool(value)
 
 
 def _string_list(value) -> list[str]:
