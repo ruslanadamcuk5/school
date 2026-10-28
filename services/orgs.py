@@ -5,7 +5,7 @@ import json
 import sqlite3
 from typing import Any
 
-from database import execute, query_all, query_one
+from database import connect, execute, query_all, query_one
 
 
 # ------------------------------------------------------------------ города
@@ -165,8 +165,28 @@ def delete_class(class_id: int) -> None:
     execute("DELETE FROM school_classes WHERE id = ?", (class_id,))
 
 
-def set_class_teacher(class_id: int, teacher_id: int | None) -> None:
-    execute("UPDATE school_classes SET teacher_id = ? WHERE id = ?", (teacher_id, class_id))
+def set_class_teacher(class_id: int, teacher_id: int | None, *, force: bool = False) -> bool:
+    """Назначить учителя класса.
+
+    Без ``force`` занимает только свободный класс: нельзя перехватить класс,
+    который уже ведёт другой учитель. ``force`` используется админкой.
+    """
+    if force or teacher_id is None:
+        execute(
+            "UPDATE school_classes SET teacher_id = ? WHERE id = ?",
+            (teacher_id, class_id),
+        )
+        return True
+    conn = connect()
+    try:
+        cursor = conn.execute(
+            """UPDATE school_classes SET teacher_id = ?
+                WHERE id = ? AND (teacher_id IS NULL OR teacher_id = ?)""",
+            (teacher_id, class_id, teacher_id),
+        )
+        return cursor.rowcount > 0
+    finally:
+        conn.close()
 
 
 def classes_of_teacher(teacher_id: int) -> list[sqlite3.Row]:

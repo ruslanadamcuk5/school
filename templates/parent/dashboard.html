@@ -16,8 +16,38 @@
   </div>
 </div>
 
-{% for card in cards %}
+{% if not cards %}
+<section class="card mt-3 center">
+  <p class="muted">В этой семье пока нет профилей. Создайте профиль ребёнка на главной странице.</p>
+  <a class="btn btn--ghost mt-2" href="{{ url_for('main.welcome') }}">Создать профиль</a>
+</section>
+{% endif %}
+
+{% if unclaimed %}
 <section class="card mt-3">
+  <h2>🔗 Непривязанные профили</h2>
+  <p class="muted small">
+    Эти профили были созданы до обновления и теперь скрыты от посторонних.
+    Добавьте свои — чужие останутся недоступными.
+  </p>
+  <div class="method-list mt-2">
+    {% for learner in unclaimed %}
+      <form method="post" action="{{ url_for('parent.claim_profile', learner_id=learner.id) }}"
+            class="method-item" style="width:100%;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <span class="avatar avatar--sm">{{ learner.avatar }}</span>
+        <span class="method-item__body">
+          <span class="method-item__title">{{ learner.name }}</span>
+          <span class="method-item__desc">{{ learner.grade }} класс</span>
+        </span>
+        <button class="btn btn--ghost btn--small" type="submit">Добавить в семью</button>
+      </form>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% for card in cards %}<section class="card mt-3">
   <div class="row row--between">
     <div class="row" style="gap:14px; align-items:center;">
       <span class="avatar">{{ card.learner.avatar }}</span>

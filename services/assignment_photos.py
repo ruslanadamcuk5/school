@@ -10,6 +10,7 @@ import os
 import uuid
 
 from database import upload_dir
+from services import filecheck
 
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"}
 MAX_BYTES = 8 * 1024 * 1024
@@ -40,6 +41,9 @@ def save_photos(files, assignment_id: int, student_id: int) -> list[str]:
             continue
         data = storage.read(MAX_BYTES + 1)
         if not data or len(data) > MAX_BYTES:
+            continue
+        if not filecheck.looks_like(extension, data[: filecheck.HEAD_BYTES]):
+            # Содержимое не соответствует расширению (например, HTML под видом .png).
             continue
         new_name = f"{uuid.uuid4().hex}{extension}"
         with open(os.path.join(target_dir, new_name), "wb") as handle:

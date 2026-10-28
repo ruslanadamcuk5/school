@@ -16,7 +16,22 @@ CREATE TABLE IF NOT EXISTS learners (
     voice_on     INTEGER NOT NULL DEFAULT 1,
     daily_limit  INTEGER NOT NULL DEFAULT 0,
     device_id    TEXT,
+    -- Семья, создавшая профиль в веб-интерфейсе. Случайный ключ хранится
+    -- в подписанной cookie-сессии: профили видны только своей семье.
+    family_key   TEXT,
     created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_learners_family ON learners(family_key);
+CREATE INDEX IF NOT EXISTS idx_learners_device ON learners(device_id);
+
+-- Счётчики попыток для защиты от подбора паролей и PIN-кодов.
+-- Хранятся на сервере, поэтому очистка cookie не сбрасывает блокировку.
+CREATE TABLE IF NOT EXISTS throttle (
+    key           TEXT PRIMARY KEY,
+    attempts      INTEGER NOT NULL DEFAULT 0,
+    first_at      REAL    NOT NULL DEFAULT 0,
+    locked_until  REAL    NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS topics (

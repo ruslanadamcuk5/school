@@ -1,9 +1,11 @@
 """Собрать архив проекта для загрузки на хостинг.
 
     python tools/make_deploy_zip.py                # без данных (чистая установка)
+    python tools/make_deploy_zip.py --with-apk     # код + новый APK для автообновления
     python tools/make_deploy_zip.py --with-data    # вместе с БД и загруженными PDF
 
-Архив: dist/edu-math-deploy.zip или dist/edu-math-deploy-with-data.zip
+Архив: dist/edu-math-deploy.zip, dist/edu-math-deploy-with-apk.zip или
+dist/edu-math-deploy-with-data.zip
 """
 from __future__ import annotations
 
@@ -52,14 +54,15 @@ def _relative(path: Path) -> str:
     return path.relative_to(ROOT).as_posix()
 
 
-def _skip(path: Path, with_data: bool) -> bool:
+def _skip(path: Path, with_data: bool, with_apk: bool = False) -> bool:
     rel = _relative(path)
     parts = path.relative_to(ROOT).parts
 
     if any(part in EXCLUDE_DIRS for part in parts):
         return True
+    is_release = rel.startswith("data/releases/")
     if path.suffix in EXCLUDE_SUFFIXES and not (
-        with_data and rel.startswith("data/releases/")
+        is_release and (with_data or with_apk)
     ):
         return True
     if path.name in EXCLUDE_NAMES:
@@ -71,6 +74,9 @@ def _skip(path: Path, with_data: bool) -> bool:
     if with_data and rel.startswith("data/") and rel.endswith(".db"):
         if rel != "data/math_tutor.db":
             return True
+    if with_apk and is_release:
+        # обновление сайта вместе с новым APK, но без базы и загрузок
+        return False
     if not with_data:
         if rel.startswith("data/"):
             tail = rel[len("data/"):]
@@ -98,17 +104,21 @@ def _checkpoint_database() -> None:
         connection.close()
 
 
-def build(with_data: bool) -> Path:
+def build(with_data: bool, with_apk: bool = False) -> Path:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     if with_data:
         _checkpoint_database()
-    target = OUT_DIR / (
-        "edu-math-deploy-with-data.zip" if with_data else "edu-math-deploy.zip"
-    )
+    if with_data:
+        name = "edu-math-deploy-with-data.zip"
+    elif with_apk:
+        name = "edu-math-deploy-with-apk.zip"
+    else:
+        name = "edu-math-deploy.zip"
+    target = OUT_DIR / name
     count = 0
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
         for path in sorted(ROOT.rglob("*")):
-            if not path.is_file() or _skip(path, with_data):
+            if not path.is_file() or _skip(path, with_data, with_apk):
                 continue
             archive.write(path, _relative(path))
             count += 1
@@ -120,6 +130,8 @@ def build(with_data: bool) -> Path:
     print(f"Файлов: {count}, размер: {size_mb:.1f} МБ")
     if not with_data:
         print("Данные (БД и PDF) НЕ включены. Для переноса добавьте --with-data.")
+    if with_apk:
+        print("Включён data/releases (APK и version.json) для автообновления.")
     return target
 
 
@@ -130,8 +142,13 @@ def main() -> int:
         action="store_true",
         help="включить data/math_tutor.db и data/uploads",
     )
+    parser.add_argument(
+        "--with-apk",
+        action="store_true",
+        help="включить data/releases (APK и version.json), не трогая базу",
+    )
     args = parser.parse_args()
-    build(args.with_data)
+    build(args.with_data, args.with_apk)
     return 0
 
 

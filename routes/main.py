@@ -85,7 +85,9 @@ def _topic_cards(learner, visible: set[str] | None = None) -> list[dict]:
 
 @bp.route("/")
 def welcome():
-    learners = learners_service.list_learners()
+    # Показываем только профили своей семьи: ключ семьи лежит в подписанной
+    # сессии и создаётся при первом создании профиля.
+    learners = learners_service.family_learners()
     current = learners_service.current_learner()
     if current:
         return redirect(url_for("main.map_page"))
@@ -195,17 +197,61 @@ def create_learner():
     if pin and (not pin.isdigit() or len(pin) != 4):
         flash("PIN должен состоять из 4 цифр", "error")
         return redirect(url_for("main.welcome"))
-    learner_id = learners_service.create_learner(name, avatar, int(grade), pin or None)
+    learner_id = learners_service.create_learner(
+        name, avatar, int(grade), pin or None,
+        family_key=learners_service.family_key(create=True),
+    )
     learners_service.login(learner_id)
     flash(f"Привет, {name}! Выбирай тему и начинаем 🚀", "success")
     return redirect(url_for("main.map_page"))
 
 
+@bp.route("/learners/<int:learner_id>/enter")
+def enter_learner(learner_id: int):
+    """Экран ввода PIN перед входом в профиль."""
+    learner = learners_service.get_learner(learner_id)
+    if not learner or not learners_service.owns(learner, learners_service.family_key()):
+        # Не раскрываем существование чужих профилей.
+        abort(404)
+    if not learner["pin_hash"]:
+        return redirect(url_for("main.welcome"))
+    return render_template("learner_pin.html", learner=learner, error=None)
+
+
 @bp.route("/learners/<int:learner_id>/login", methods=["POST"])
 def login_learner(learner_id: int):
     learner = learners_service.get_learner(learner_id)
-    if not learner:
+    key = learners_service.family_key()
+    if not learner or not learners_service.owns(learner, key):
         abort(404)
+
+    if learner["pin_hash"]:
+        from services import rate_limit
+
+        throttle_key = rate_limit.make_key(
+            "learner-pin", rate_limit.client_ip(request), str(learner_id)
+        )
+        wait = rate_limit.blocked_for(throttle_key)
+        if wait:
+            return render_template(
+                "learner_pin.html",
+                learner=learner,
+                error=f"Слишком много попыток. Подождите {wait} с.",
+            ), 429
+        pin = (request.form.get("pin") or "").strip()
+        if not learners_service.verify_pin(pin, learner["pin_hash"]):
+            locked = rate_limit.register_failure(throttle_key, lock_seconds=120)
+            if locked:
+                return render_template(
+                    "learner_pin.html",
+                    learner=learner,
+                    error=f"Слишком много попыток. Подождите {locked} с.",
+                ), 429
+            return render_template(
+                "learner_pin.html", learner=learner, error="Неверный PIN-код"
+            ), 403
+        rate_limit.clear(throttle_key)
+
     learners_service.login(learner_id)
     flash(f"С возвращением, {learner['name']}!", "success")
     return redirect(url_for("main.map_page"))
@@ -517,8 +563,8 @@ def daily():
 
 @bp.route("/family")
 def family():
-    """Небольшая таблица результатов семьи (для соревновательного элемента)."""
-    learners = learners_service.list_learners()
+    """Результаты своей семьи (профили других семей не показываем)."""
+    learners = learners_service.family_learners()
     rows = []
     for learner in learners:
         stats = progress_service.learner_stats(learner["id"])

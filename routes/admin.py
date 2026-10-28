@@ -166,7 +166,7 @@ def classes():
         elif action == "teacher":
             class_id = request.form.get("class_id", type=int)
             teacher_id = request.form.get("teacher_id", type=int)
-            orgs.set_class_teacher(class_id, teacher_id)
+            orgs.set_class_teacher(class_id, teacher_id, force=True)
             _log("update", "class", class_id, f"teacher={teacher_id}")
             flash("Учитель назначен", "success")
         elif action == "delete":

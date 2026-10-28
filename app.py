@@ -105,7 +105,46 @@ def _configure_logging(app: Flask) -> None:
 
 
 def _ensure_secret_key(app: Flask) -> None:
-    if app.config.get("SECRET_KEY") == "change-me-in-production" and not os.environ.get("SECRET_KEY"):
+    """Гарантировать непустой SECRET_KEY.
+
+    Пустая переменная окружения (частая ошибка в ``.env``) раньше приводила
+    к ``RuntimeError`` при первом обращении к сессии. Теперь ключ создаётся
+    один раз и сохраняется в ``data/.secret_key``, чтобы сессии переживали
+    перезапуск приложения.
+    """
+    env_key = (os.environ.get("SECRET_KEY") or "").strip()
+    if env_key:
+        app.config["SECRET_KEY"] = env_key
+        return
+
+    current = (app.config.get("SECRET_KEY") or "").strip()
+    if current and current != "change-me-in-production":
+        app.config["SECRET_KEY"] = current
+        return
+
+    from pathlib import Path
+
+    path = Path(app.root_path) / "data" / ".secret_key"
+    try:
+        if path.exists():
+            stored = path.read_text(encoding="utf-8").strip()
+            if stored:
+                app.config["SECRET_KEY"] = stored
+                return
+        path.parent.mkdir(parents=True, exist_ok=True)
+        generated = secrets.token_urlsafe(48)
+        path.write_text(generated, encoding="utf-8")
+        try:
+            os.chmod(path, 0o600)
+        except OSError:  # pragma: no cover - экзотические файловые системы
+            pass
+        app.config["SECRET_KEY"] = generated
+        app.logger.warning(
+            "SECRET_KEY не задан — создан постоянный ключ %s. "
+            "Для продакшена лучше задать переменную окружения.",
+            path,
+        )
+    except OSError:  # pragma: no cover
         app.config["SECRET_KEY"] = secrets.token_urlsafe(48)
         app.logger.warning(
             "SECRET_KEY не задан — сгенерирован временный ключ. "
@@ -316,12 +355,19 @@ def _register_security(app: Flask) -> None:
         resp.headers.setdefault(
             "Content-Security-Policy",
             "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
-            "script-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self'",
+            "script-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self'; "
+            "base-uri 'self'; form-action 'self'; frame-ancestors 'self'",
         )
         return resp
 
 
 def _register_errors(app: Flask) -> None:
+    @app.errorhandler(403)
+    def _forbidden(error):
+        if request.path.startswith("/api/"):
+            return jsonify({"ok": False, "error": "forbidden"}), 403
+        return render_template("errors/403.html"), 403
+
     @app.errorhandler(404)
     def _not_found(error):
         if request.path.startswith("/api/"):

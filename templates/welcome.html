@@ -63,14 +63,23 @@
   <h2 class="section-title">Кто сегодня занимается? <small>выбери свой профиль</small></h2>
   <div class="profile-grid">
     {% for learner in learners %}
-      <form method="post" action="{{ url_for('main.login_learner', learner_id=learner.id) }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="profile-card" style="width:100%; border:none; cursor:pointer;">
+      {% if learner.pin_hash %}
+        <a class="profile-card" style="width:100%; border:none; cursor:pointer; text-decoration:none;"
+           href="{{ url_for('main.enter_learner', learner_id=learner.id) }}">
           <span class="avatar avatar--lg">{{ learner.avatar }}</span>
           <span class="profile-card__name">{{ learner.name }}</span>
-          <span class="profile-card__meta">{{ learner.grade }} класс · {{ learner.xp }} XP</span>
-        </button>
-      </form>
+          <span class="profile-card__meta">{{ learner.grade }} класс · 🔒 PIN</span>
+        </a>
+      {% else %}
+        <form method="post" action="{{ url_for('main.login_learner', learner_id=learner.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="profile-card" style="width:100%; border:none; cursor:pointer;">
+            <span class="avatar avatar--lg">{{ learner.avatar }}</span>
+            <span class="profile-card__name">{{ learner.name }}</span>
+            <span class="profile-card__meta">{{ learner.grade }} класс · {{ learner.xp }} XP</span>
+          </button>
+        </form>
+      {% endif %}
     {% endfor %}
   </div>
 </section>

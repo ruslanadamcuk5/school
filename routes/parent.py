@@ -4,8 +4,7 @@ from __future__ import annotations
 import csv
 import io
 import json
-import os
-import random
+import secrets
 import time
 from flask import (
     Blueprint,
@@ -36,12 +35,17 @@ MAX_ATTEMPTS = 5
 LOCK_SECONDS = 300
 
 
+def _new_pin() -> str:
+    """Криптостойкий 4-значный PIN (secrets, а не random)."""
+    return f"{secrets.randbelow(9000) + 1000}"
+
+
 def ensure_parent_pin() -> str:
     """Создать PIN родителя при первом запуске и вернуть его (только для лога)."""
     stored = get_meta("parent_pin_hash")
     if stored:
         return ""
-    pin = f"{random.randint(1000, 9999)}"
+    pin = _new_pin()
     from services.learners import hash_pin
 
     set_meta("parent_pin_hash", hash_pin(pin))
@@ -51,7 +55,7 @@ def ensure_parent_pin() -> str:
 def reset_parent_pin() -> str:
     from services.learners import hash_pin
 
-    pin = f"{random.randint(1000, 9999)}"
+    pin = _new_pin()
     set_meta("parent_pin_hash", hash_pin(pin))
     return pin
 
@@ -71,6 +75,47 @@ def _require_unlock():
     return None
 
 
+def _parent_throttle_key() -> str:
+    from services import rate_limit
+
+    return rate_limit.make_key("parent-pin", rate_limit.client_ip(request))
+
+
+def _visible_learners(user) -> list:
+    """Профили, которые можно показывать в родительской зоне.
+
+    * администратор — все;
+    * родитель с аккаунтом — только свои дети;
+    * семейный режим — только профили своей семьи (ключ в сессии).
+    """
+    from services import auth
+
+    if user and user["role"] == auth.ROLE_ADMIN:
+        return list(learners_service.list_learners())
+    if user and user["role"] == auth.ROLE_PARENT:
+        result = []
+        for child in auth.children_of(user["id"]):
+            row = query_one(
+                """SELECT l.* FROM learner_accounts la
+                     JOIN learners l ON l.id = la.learner_id
+                    WHERE la.user_id = ?""",
+                (child["id"],),
+            )
+            if row:
+                result.append(row)
+        return result
+    return learners_service.family_learners()
+
+
+def _may_manage(learner_id: int) -> bool:
+    from services import auth
+
+    user = auth.current_user()
+    if user and user["role"] == auth.ROLE_ADMIN:
+        return True
+    return any(int(row["id"]) == learner_id for row in _visible_learners(user))
+
+
 @bp.route("/parent")
 def gate():
     from services import auth
@@ -80,26 +125,37 @@ def gate():
         return redirect(url_for("parent.dashboard"))
     if _is_unlocked():
         return redirect(url_for("parent.dashboard"))
+    from services import rate_limit
+
     locked_until = session.get(PIN_LOCKED_UNTIL, 0)
+    locked_for = max(
+        0,
+        int(locked_until - time.time()),
+        rate_limit.blocked_for(_parent_throttle_key()),
+    )
     return render_template(
         "parent/gate.html",
         attempts=session.get(PIN_ATTEMPTS, 0),
         max_attempts=MAX_ATTEMPTS,
-        locked_for=max(0, int(locked_until - time.time())),
+        locked_for=locked_for,
     )
 
 
 @bp.route("/parent/unlock", methods=["POST"])
 def unlock():
-    from services.learners import verify_pin
+    from services import learners as learners_service
+    from services import rate_limit
 
-    locked_until = session.get(PIN_LOCKED_UNTIL, 0)
-    if locked_until > time.time():
+    throttle_key = _parent_throttle_key()
+    wait = rate_limit.blocked_for(throttle_key)
+    if wait:
+        flash(f"Слишком много попыток. Подождите {wait} с.", "error")
         return redirect(url_for("parent.gate"))
 
     pin = (request.form.get("pin") or "").strip()
     stored = get_meta("parent_pin_hash") or ""
-    if verify_pin(pin, stored):
+    if learners_service.verify_pin(pin, stored):
+        rate_limit.clear(throttle_key)
         session["parent_unlocked"] = True
         session.pop(PIN_ATTEMPTS, None)
         session.pop(PIN_LOCKED_UNTIL, None)
@@ -108,7 +164,10 @@ def unlock():
 
     attempts = session.get(PIN_ATTEMPTS, 0) + 1
     session[PIN_ATTEMPTS] = attempts
-    if attempts >= MAX_ATTEMPTS:
+    locked = rate_limit.register_failure(
+        throttle_key, max_attempts=MAX_ATTEMPTS, lock_seconds=LOCK_SECONDS
+    )
+    if locked or attempts >= MAX_ATTEMPTS:
         session[PIN_LOCKED_UNTIL] = time.time() + LOCK_SECONDS
         session[PIN_ATTEMPTS] = 0
         flash("Слишком много попыток. Подождите 5 минут", "error")
@@ -132,20 +191,12 @@ def dashboard():
     from services import auth
 
     user = auth.current_user()
-    learners = []
-    if user and user["role"] == auth.ROLE_PARENT:
-        # школьный режим: показываем только своих детей
-        for child in auth.children_of(user["id"]):
-            row = query_one(
-                """SELECT l.* FROM learner_accounts la
-                     JOIN learners l ON l.id = la.learner_id
-                    WHERE la.user_id = ?""",
-                (child["id"],),
-            )
-            if row:
-                learners.append(row)
-    else:
-        learners = list(learners_service.list_learners())
+    learners = _visible_learners(user)
+    unclaimed = (
+        learners_service.unclaimed_learners()
+        if not (user and user["role"] in (auth.ROLE_PARENT, auth.ROLE_ADMIN))
+        else []
+    )
 
     cards = []
     for learner in learners:
@@ -167,9 +218,30 @@ def dashboard():
     return render_template(
         "parent/dashboard.html",
         cards=cards,
+        unclaimed=unclaimed,
         catalog=ACHIEVEMENTS,
         school_mode=bool(user and user["role"] == auth.ROLE_PARENT),
     )
+
+
+@bp.route("/parent/claim/<int:learner_id>", methods=["POST"])
+def claim_profile(learner_id: int):
+    """Привязать «старый» профиль (созданный до изоляции семей) к своей семье."""
+    guard = _require_unlock()
+    if guard:
+        return guard
+    from services import auth
+
+    user = auth.current_user()
+    if user and user["role"] in (auth.ROLE_PARENT, auth.ROLE_ADMIN):
+        # Родитель с аккаунтом и так видит только своих детей.
+        abort(403)
+    key = learners_service.family_key(create=True)
+    if learners_service.claim_learner(learner_id, key):
+        flash("Профиль добавлен в вашу семью", "success")
+    else:
+        flash("Профиль уже привязан к другой семье", "error")
+    return redirect(url_for("parent.dashboard"))
 
 
 def _school_children(user) -> list[dict]:
@@ -364,19 +436,9 @@ def learner_settings(learner_id: int):
     guard = _require_unlock()
     if guard:
         return guard
-    from services import auth
-
-    user = auth.current_user()
-    if user and user["role"] == auth.ROLE_PARENT:
-        owned = set()
-        for child in auth.children_of(user["id"]):
-            row = query_one(
-                "SELECT learner_id FROM learner_accounts WHERE user_id = ?", (child["id"],)
-            )
-            if row:
-                owned.add(row["learner_id"])
-        if learner_id not in owned:
-            abort(403)
+    # Доступ только к профилям своей семьи (или своим детям / админу).
+    if not _may_manage(learner_id):
+        abort(403)
     learner = learners_service.get_learner(learner_id)
     if not learner:
         abort(404)
@@ -429,6 +491,8 @@ def export_csv(learner_id: int):
     guard = _require_unlock()
     if guard:
         return guard
+    if not _may_manage(learner_id):
+        abort(403)
     learner = learners_service.get_learner(learner_id)
     if not learner:
         abort(404)
@@ -483,9 +547,11 @@ def settings():
             pin = reset_parent_pin()
             flash(f"Новый PIN родителя: {pin}", "info")
         elif action == "reset_all":
-            for learner in learners_service.list_learners():
+            from services import auth as auth_service
+
+            for learner in _visible_learners(auth_service.current_user()):
                 learners_service.reset_progress(learner["id"])
-            flash("Весь прогресс сброшен", "info")
+            flash("Прогресс семьи сброшен", "info")
         return redirect(url_for("parent.settings"))
 
     return render_template("parent/settings.html")

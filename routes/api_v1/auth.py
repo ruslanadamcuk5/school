@@ -64,11 +64,21 @@ def login():
     data = json_body()
     login_name = auth_service.normalize_login(str(data.get("login") or ""))
     password = str(data.get("password") or "")
+    from services import rate_limit
+
+    throttle_key = rate_limit.make_key(
+        "api-login", rate_limit.client_ip(request), login_name
+    )
+    wait = rate_limit.blocked_for(throttle_key)
+    if wait:
+        fail(429, "too_many_attempts", f"Слишком много попыток. Повторите через {wait} с.")
     user = auth_service.get_user_by_login(login_name)
     if not user or not auth_service.verify_password(password, user["password_hash"]):
+        rate_limit.register_failure(throttle_key)
         fail(401, "bad_credentials", "Неверный логин или пароль")
     if not user["is_active"]:
         fail(403, "inactive", "Аккаунт отключён. Обратитесь к администратору.")
+    rate_limit.clear(throttle_key)
 
     learner = None
     if user["role"] == auth_service.ROLE_STUDENT:
@@ -190,11 +200,25 @@ def login_learner(learner_id: int):
 
     stored_pin = learner["pin_hash"]
     if stored_pin:
+        from services import rate_limit
+
+        throttle_key = rate_limit.make_key(
+            "api-learner-pin", rate_limit.client_ip(request), str(learner_id)
+        )
+        wait = rate_limit.blocked_for(throttle_key)
+        if wait:
+            fail(
+                429,
+                "too_many_attempts",
+                f"Слишком много попыток. Повторите через {wait} с.",
+            )
         pin = str(json_body().get("pin") or "").strip()
         if not pin:
             fail(401, "pin_required", "Введите PIN-код профиля")
         if not learners_service.verify_pin(pin, stored_pin):
+            rate_limit.register_failure(throttle_key)
             fail(403, "bad_pin", "Неверный PIN-код")
+        rate_limit.clear(throttle_key)
 
     token = api_tokens.create(
         learner_id=learner_id, label=request.headers.get("User-Agent")

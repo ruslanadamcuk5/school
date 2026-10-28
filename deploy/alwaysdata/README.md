@@ -39,6 +39,15 @@ https://<ваш-логин>.alwaysdata.net
    > Без флага на сервере будет чистая база: темы математики создадутся
    > автоматически из программы, а пособия вы загрузите заново.
 
+   Обновление сайта вместе с новой версией APK (база и загрузки не трогаются):
+
+   ```powershell
+   python tools/make_deploy_zip.py --with-apk
+   # → dist\edu-math-deploy-with-apk.zip
+   ```
+
+   > `--with-apk` добавляет только `data/releases/` (APK и `version.json`).
+
 ---
 
 ## 1. Загрузить код
@@ -229,8 +238,18 @@ uchus-debug.apk
 version.json
 ```
 
-После сборки новой версии скопируйте оба файла на сервер (SFTP или `scp`),
-увеличьте `version_code` в `version.json` и перезапустите сайт. Главная страница
+Проще всего собрать архив с APK и распаковать его поверх проекта:
+
+```bash
+python tools/publish_release.py dist/uchus-debug.apk \
+  --version-code 10 --version-name 1.7.0 --notes "Что нового"
+python tools/make_deploy_zip.py --with-apk
+# загрузить dist/edu-math-deploy-with-apk.zip и распаковать в ~/edu-math
+```
+
+`publish_release.py` сам считает sha256 и запишет `version.json`. Можно и вручную:
+скопировать оба файла на сервер (SFTP или `scp`) и увеличить `version_code`
+в `version.json`, затем перезапустить сайт. Главная страница
 сразу покажет новую версию, а установленные приложения при запуске предложат
 обновление. Сам код Flask перезапускается кнопкой **Restart** в панели.
 

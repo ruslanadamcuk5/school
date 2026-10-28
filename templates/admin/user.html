@@ -119,7 +119,7 @@
       <input type="hidden" name="user_id" value="{{ user.id }}">
       <label class="field__hint" for="newpass">Сбросить пароль</label>
       <div class="row mt-1">
-        <input id="newpass" class="answer-input" style="flex:1;min-width:140px;" type="text" name="password" value="math2025" required>
+        <input id="newpass" class="answer-input" style="flex:1;min-width:140px;" type="text" name="password" required minlength="6" autocomplete="new-password" placeholder="Новый пароль">
         <button class="btn btn--warn btn--small" type="submit">Сбросить</button>
       </div>
     </form>

@@ -46,23 +46,88 @@ def create_learner(
     grade: int = 3,
     pin: str | None = None,
     device_id: str | None = None,
+    family_key: str | None = None,
 ) -> int:
     learner_id = execute(
-        "INSERT INTO learners (name, avatar, grade, pin_hash, device_id) "
-        "VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO learners (name, avatar, grade, pin_hash, device_id, family_key) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
         (
             name.strip()[:24],
             avatar,
             grade,
             hash_pin(pin) if pin else None,
             (device_id or "")[:64] or None,
+            (family_key or "")[:64] or None,
         ),
     )
     return learner_id
 
 
-def list_learners() -> list[sqlite3.Row]:
-    return query_all("SELECT * FROM learners ORDER BY created_at, id")
+def list_learners(family_key: str | None = None) -> list[sqlite3.Row]:
+    """Профили учеников.
+
+    Без ``family_key`` возвращает все профили — это нужно только админке.
+    Публичные страницы обязаны передавать ключ семьи, иначе утекут имена
+    детей из других семей.
+    """
+    if family_key is None:
+        return query_all("SELECT * FROM learners ORDER BY created_at, id")
+    return query_all(
+        "SELECT * FROM learners WHERE family_key = ? ORDER BY created_at, id",
+        (family_key,),
+    )
+
+
+def unclaimed_learners() -> list[sqlite3.Row]:
+    """Профили, созданные до появления семей (family_key пустой)."""
+    return query_all(
+        "SELECT * FROM learners WHERE family_key IS NULL OR family_key = '' "
+        "ORDER BY created_at, id"
+    )
+
+
+def claim_learner(learner_id: int, family_key: str) -> bool:
+    """Привязать «старый» профиль к семье. Занятые профили не трогаем."""
+    if not family_key:
+        return False
+    execute(
+        "UPDATE learners SET family_key = ? "
+        " WHERE id = ? AND (family_key IS NULL OR family_key = '')",
+        (family_key[:64], learner_id),
+    )
+    row = get_learner(learner_id)
+    return bool(row and row["family_key"] == family_key)
+
+
+# ------------------------------------------------------- ключ семьи (cookie)
+FAMILY_SESSION_KEY = "family_key"
+
+
+def family_key(create: bool = False) -> str | None:
+    """Ключ семьи текущего посетителя (хранится в подписанной сессии)."""
+    from flask import session
+
+    key = session.get(FAMILY_SESSION_KEY)
+    if not key and create:
+        import secrets
+
+        key = secrets.token_urlsafe(18)
+        session[FAMILY_SESSION_KEY] = key
+        session.permanent = True
+    return key
+
+
+def family_learners(create_key: bool = False) -> list[sqlite3.Row]:
+    """Профили только своей семьи (для публичных страниц)."""
+    key = family_key(create=create_key)
+    if not key:
+        return []
+    return list_learners(family_key=key)
+
+
+def owns(learner, key: str | None) -> bool:
+    """Принадлежит ли профиль семье с указанным ключом."""
+    return bool(key and learner is not None and learner["family_key"] == key)
 
 
 def get_learner(learner_id: int) -> sqlite3.Row | None:

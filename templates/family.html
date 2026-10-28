@@ -6,7 +6,7 @@
   <div>
     <span class="chip chip--purple">Семейный чемпионат</span>
     <h1 class="mt-1">🏆 Результаты семьи</h1>
-    <p>Кто больше занимался математикой — тот и чемпион. Подключайся к соревнованию!</p>
+    <p>Кто больше занимался — тот и чемпион. Здесь видны только профили вашей семьи.</p>
   </div>
   <div class="hero__art" aria-hidden="true">🏆</div>
 </section>
@@ -25,7 +25,10 @@
       <span class="chip chip--purple">{{ row.xp }} XP</span>
     </div>
   {% else %}
-    <p class="muted">Пока нет профилей.</p>
+    <div class="card card--flat center">
+      <p class="muted">На этом устройстве пока нет профилей.</p>
+      <a class="btn btn--ghost mt-2" href="{{ url_for('main.welcome') }}">Создать профиль</a>
+    </div>
   {% endfor %}
 </div>
 

@@ -82,6 +82,8 @@ MIGRATIONS: list[tuple[str, str, str]] = [
     ("learners", "class_id", "INTEGER"),
     # семейные профили, созданные в мобильном приложении: привязка к устройству
     ("learners", "device_id", "TEXT"),
+    # семейные профили веб-интерфейса: изоляция по ключу семьи
+    ("learners", "family_key", "TEXT"),
     ("users", "child_code", "TEXT"),
     ("users", "is_active", "INTEGER NOT NULL DEFAULT 1"),
     ("assignments", "questions_json", "TEXT NOT NULL DEFAULT '[]'"),

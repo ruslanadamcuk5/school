@@ -78,6 +78,15 @@ def save_upload(file_storage, subject_id: int, grade: int, title: str) -> tuple[
     name = f"{uuid.uuid4().hex}{extension}"
     path = os.path.join(upload_dir(), name)
     file_storage.save(path)
+    # Расширение легко подделать: проверяем сигнатуру файла.
+    from services import filecheck
+
+    if not filecheck.looks_like(extension, filecheck.head_of(path)):
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+        raise ValueError("Файл не похож на PDF — загрузите настоящий документ")
     return name, os.path.getsize(path)
 
 

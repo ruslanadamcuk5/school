@@ -126,6 +126,8 @@ class SessionStore(private val context: Context) {
     }
 
     companion object {
+        private val LOCAL_HOSTS = setOf("localhost", "127.0.0.1", "10.0.2.2")
+
         fun normalizeBaseUrl(raw: String): String {
             var value = raw.trim()
             if (value.isEmpty()) return BuildConfig.DEFAULT_SERVER_URL
@@ -133,6 +135,21 @@ class SessionStore(private val context: Context) {
                 value = "https://$value"
             }
             return value.trimEnd('/')
+        }
+
+        /**
+         * true, если адрес задан по HTTP и указывает не на локальный хост.
+         * Такой сервер отклоняем: по открытому каналу уходят пароли и работы детей.
+         */
+        fun isInsecureRemote(raw: String): Boolean {
+            val normalized = normalizeBaseUrl(raw)
+            if (!normalized.startsWith("http://")) return false
+            val host = normalized
+                .removePrefix("http://")
+                .substringBefore('/')
+                .substringBefore(':')
+                .lowercase()
+            return host !in LOCAL_HOSTS
         }
     }
 }

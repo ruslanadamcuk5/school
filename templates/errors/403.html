@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Доступ запрещён{% endblock %}
+{% block content %}
+<section class="card card--pad-lg mt-3" style="max-width:520px; margin-left:auto; margin-right:auto; text-align:center;">
+  <div style="font-size:3.5rem;">🔒</div>
+  <h1>Доступ запрещён</h1>
+  <p class="muted">
+    У вас нет прав на эту страницу. Если вы считаете, что это ошибка,
+    войдите в аккаунт с нужной ролью.
+  </p>
+  <div class="row mt-3" style="justify-content:center; gap:8px;">
+    <a class="btn" href="{{ url_for('main.welcome') }}">На главную</a>
+    <a class="btn btn--ghost" href="{{ url_for('auth.login') }}">Войти</a>
+  </div>
+</section>
+{% endblock %}

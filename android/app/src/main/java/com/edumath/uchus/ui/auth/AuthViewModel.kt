@@ -10,6 +10,7 @@ import com.edumath.uchus.data.api.LearnerDto
 import com.edumath.uchus.data.api.LoginRequest
 import com.edumath.uchus.data.api.SessionDto
 import com.edumath.uchus.data.api.apiCall
+import com.edumath.uchus.data.session.SessionStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -34,6 +35,10 @@ class AuthViewModel(private val container: AppContainer) : ViewModel() {
 
     fun refreshLearners() {
         val server = _state.value.server
+        insecureServerError(server)?.let { message ->
+            _state.update { it.copy(learnersLoaded = true, error = message) }
+            return
+        }
         container.session.primeBaseUrl(server)
         viewModelScope.launch {
             runCatching { apiCall { container.api.learners() } }
@@ -96,6 +101,10 @@ class AuthViewModel(private val container: AppContainer) : ViewModel() {
 
     private fun launchAuth(block: suspend () -> SessionDto) {
         val server = _state.value.server
+        insecureServerError(server)?.let { message ->
+            _state.update { it.copy(error = message) }
+            return
+        }
         container.session.primeBaseUrl(server)
         _state.update { it.copy(busy = true, error = null) }
         viewModelScope.launch {
@@ -106,6 +115,13 @@ class AuthViewModel(private val container: AppContainer) : ViewModel() {
                 }
         }
     }
+
+    private fun insecureServerError(server: String): String? =
+        if (SessionStore.isInsecureRemote(server)) {
+            "Сервер должен работать по HTTPS. HTTP допустим только для localhost."
+        } else {
+            null
+        }
 
     private suspend fun persist(server: String, session: SessionDto) {
         val token = session.token
