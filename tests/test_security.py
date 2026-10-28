@@ -327,5 +327,72 @@ class TestUploadValidation(SecurityTestCase):
         self.assertFalse(filecheck.looks_like(".png", b"<html>"))
 
 
+class TestMigrations(unittest.TestCase):
+    """Старая база должна обновляться без падения CREATE INDEX."""
+
+    def test_old_database_upgrades(self):
+        import sqlite3
+        import tempfile
+
+        from database import init_db, query_all
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "old.db")
+            conn = sqlite3.connect(path)
+            conn.executescript(
+                """
+                CREATE TABLE learners (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    avatar TEXT NOT NULL DEFAULT '🦊',
+                    grade INTEGER NOT NULL DEFAULT 3,
+                    pin_hash TEXT,
+                    coins INTEGER NOT NULL DEFAULT 0,
+                    xp INTEGER NOT NULL DEFAULT 0,
+                    streak_days INTEGER NOT NULL DEFAULT 0,
+                    last_day TEXT,
+                    sound_on INTEGER NOT NULL DEFAULT 1,
+                    voice_on INTEGER NOT NULL DEFAULT 1,
+                    daily_limit INTEGER NOT NULL DEFAULT 0,
+                    device_id TEXT,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+                );
+                INSERT INTO learners (name) VALUES ('Старый профиль');
+                """
+            )
+            conn.commit()
+            conn.close()
+
+            init_db(path)  # не должно бросать OperationalError
+
+            columns = {row["name"] for row in query_all_path(path, "PRAGMA table_info(learners)")}
+            self.assertIn("family_key", columns)
+
+            indexes = {
+                row["name"]
+                for row in query_all_path(path, "PRAGMA index_list(learners)")
+            }
+            self.assertIn("idx_learners_family", indexes)
+
+            throttle = query_all_path(
+                path, "SELECT name FROM sqlite_master WHERE type='table' AND name='throttle'"
+            )
+            self.assertTrue(throttle)
+            # данные не потерялись
+            rows = query_all_path(path, "SELECT name FROM learners")
+            self.assertEqual(rows[0]["name"], "Старый профиль")
+
+
+def query_all_path(path: str, sql: str):
+    import sqlite3
+
+    conn = sqlite3.connect(path)
+    conn.row_factory = sqlite3.Row
+    try:
+        return conn.execute(sql).fetchall()
+    finally:
+        conn.close()
+
+
 if __name__ == "__main__":
     unittest.main()

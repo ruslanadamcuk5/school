@@ -138,6 +138,15 @@ def migrate(path: str | None = None) -> None:
             )
         except sqlite3.OperationalError:
             pass
+        # Индексы по колонкам, которые появляются миграциями выше. Раньше они
+        # были в schema.sql и падали на старой базе: CREATE INDEX выполнялся до
+        # ALTER TABLE, из-за чего обновление сайта ломалось.
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_learners_family ON learners(family_key)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_learners_device ON learners(device_id)"
+        )
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_topics_subject "
             "ON topics(subject_id, grade, order_index)"

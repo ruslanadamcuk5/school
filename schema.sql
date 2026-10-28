@@ -22,8 +22,8 @@ CREATE TABLE IF NOT EXISTS learners (
     created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_learners_family ON learners(family_key);
-CREATE INDEX IF NOT EXISTS idx_learners_device ON learners(device_id);
+-- Индексы по learners создаются после миграций (database.migrate): на старой
+-- базе колонок family_key/device_id ещё нет, и CREATE INDEX здесь падал.
 
 -- Счётчики попыток для защиты от подбора паролей и PIN-кодов.
 -- Хранятся на сервере, поэтому очистка cookie не сбрасывает блокировку.
