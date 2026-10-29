@@ -1,6 +1,8 @@
 """Регистрация, вход и выход."""
 from __future__ import annotations
 
+import hmac
+import logging
 from urllib.parse import urlsplit
 
 from flask import (
@@ -15,9 +17,10 @@ from flask import (
 )
 
 from database import query_all
-from services import auth, orgs, rate_limit
+from services import auth, google_auth, orgs, rate_limit
 
 bp = Blueprint("auth", __name__)
+log = logging.getLogger("edu-math.auth")
 
 ROLE_HOME = {
     auth.ROLE_ADMIN: "admin.dashboard",
@@ -37,6 +40,68 @@ def _safe_next(target: str | None) -> str | None:
     if not target.startswith("/") or target.startswith("//"):
         return None
     return target
+
+
+def _validate_org_choices(role: str, form, school_id: int | None) -> list[str]:
+    """Проверить школу/классы, которые выбрал ученик или учитель."""
+    errors: list[str] = []
+    if role == auth.ROLE_TEACHER:
+        for cid in [int(v) for v in form.getlist("class_ids") if v.isdigit()]:
+            row = orgs.get_class(cid)
+            if not row:
+                errors.append("Выбранный класс не найден")
+            elif school_id and int(row["school_id"]) != school_id:
+                errors.append("Можно выбрать только классы выбранной школы")
+            elif row["teacher_id"]:
+                errors.append(f"Класс {orgs.class_title(row)} уже ведёт другой учитель")
+    if role == auth.ROLE_STUDENT:
+        class_id = int(form.get("class_id") or 0) or None
+        if class_id:
+            row = orgs.get_class(class_id)
+            if not row:
+                errors.append("Выбранный класс не найден")
+            elif school_id and int(row["school_id"]) != school_id:
+                errors.append("Можно выбрать только классы выбранной школы")
+    return errors
+
+
+def _apply_signup(user_id: int, role: str, form) -> None:
+    """Общая часть после создания аккаунта (пароль и Google)."""
+    if role == auth.ROLE_STUDENT:
+        class_id = int(form.get("class_id") or 0) or None
+        if class_id:
+            orgs.add_student_to_class(class_id, user_id)
+        from services.learners import ensure_learner_for_user
+
+        user = auth.get_user(user_id)
+        session["learner_id"] = ensure_learner_for_user(user)
+    elif role == auth.ROLE_TEACHER:
+        school_id = int(form.get("school_id") or 0) or None
+        for cid in [int(v) for v in form.getlist("class_ids") if v.isdigit()]:
+            orgs.set_class_teacher(cid, user_id)
+        if school_id:
+            auth.update_user(user_id, school_id=school_id)
+    elif role == auth.ROLE_PARENT:
+        code = (form.get("child_code", "") or "").strip().upper()
+        child = auth.find_child_by_code(code)
+        if child:
+            auth.link_parent_child(user_id, child["id"],
+                                   form.get("relation", "родитель"))
+        elif code:
+            flash(
+                f"Код {code} не найден. Сохраните его — можно привязать ребёнка позже.",
+                "info",
+            )
+
+
+def _enter_account(user, target: str | None = None):
+    """Войти и перейти в кабинет роли (общая часть пароля и Google)."""
+    auth.login_user(user["id"])
+    if user["role"] == auth.ROLE_STUDENT:
+        from services.learners import ensure_learner_for_user
+
+        session["learner_id"] = ensure_learner_for_user(user)
+    return redirect(target or url_for(ROLE_HOME.get(user["role"], "main.map_page")))
 
 
 @bp.route("/login", methods=["GET", "POST"])
@@ -92,10 +157,6 @@ def register():
 
         city_id = int(request.form.get("city_id") or 0) or None
         school_id = int(request.form.get("school_id") or 0) or None
-        class_id = int(request.form.get("class_id") or 0) or None
-        requested_classes = [
-            int(value) for value in request.form.getlist("class_ids") if value.isdigit()
-        ]
 
         errors = []
         if not login_name or len(login_name) < 3:
@@ -112,22 +173,7 @@ def register():
             errors.append("Выберите роль")
 
         # Классы при регистрации: нельзя занять чужой класс или класс другой школы.
-        for cid in requested_classes:
-            row = orgs.get_class(cid)
-            if not row:
-                errors.append("Выбранный класс не найден")
-            elif school_id and int(row["school_id"]) != school_id:
-                errors.append("Можно выбрать только классы выбранной школы")
-            elif row["teacher_id"]:
-                errors.append(
-                    f"Класс {orgs.class_title(row)} уже ведёт другой учитель"
-                )
-        if role == auth.ROLE_STUDENT and class_id:
-            row = orgs.get_class(class_id)
-            if not row:
-                errors.append("Выбранный класс не найден")
-            elif school_id and int(row["school_id"]) != school_id:
-                errors.append("Можно выбрать только классы выбранной школы")
+        errors.extend(_validate_org_choices(role, request.form, school_id))
 
         if errors:
             for message in errors:
@@ -140,35 +186,197 @@ def register():
             city_id=city_id, school_id=school_id,
         )
 
-        if role == auth.ROLE_STUDENT:
-            if class_id:
-                orgs.add_student_to_class(class_id, user_id)
-            from services.learners import ensure_learner_for_user
-
-            user = auth.get_user(user_id)
-            session["learner_id"] = ensure_learner_for_user(user)
-        elif role == auth.ROLE_TEACHER:
-            for cid in requested_classes:
-                orgs.set_class_teacher(cid, user_id)
-            if school_id:
-                auth.update_user(user_id, school_id=school_id)
-        elif role == auth.ROLE_PARENT:
-            code = (request.form.get("child_code", "") or "").strip().upper()
-            child = auth.find_child_by_code(code)
-            if child:
-                auth.link_parent_child(user_id, child["id"],
-                                       request.form.get("relation", "родитель"))
-            elif code:
-                flash(
-                    f"Код {code} не найден. Сохраните его — можно привязать ребёнка позже.",
-                    "info",
-                )
-
+        _apply_signup(user_id, role, request.form)
         auth.login_user(user_id)
         flash(f"Аккаунт создан. Добро пожаловать, {first_name}!", "success")
         return redirect(url_for(ROLE_HOME.get(role, "main.map_page")))
 
     return render_template("auth/register.html", role=role, form={})
+
+
+def _link_google_account(profile: dict) -> object:
+    """Привязать Google к текущему пользователю (кнопка в профиле)."""
+    user = auth.current_user()
+    if not user:
+        return redirect(url_for("auth.login"))
+    owner = auth.get_user_by_google_sub(profile["sub"])
+    linked_other = user["google_sub"] and user["google_sub"] != profile["sub"]
+    if owner and owner["id"] != user["id"]:
+        flash("Этот Google-аккаунт уже привязан к другой учётной записи.", "error")
+    elif linked_other:
+        flash("К аккаунту уже привязан другой Google-аккаунт. Сначала отвяжите его.", "error")
+    else:
+        auth.attach_google(user["id"], profile["sub"], profile["email"])
+        log.info("Google attached to user %s", user["id"])
+        flash("Вход через Google включён для этого аккаунта.", "success")
+    return redirect(url_for("auth.account"))
+
+
+@bp.get("/auth/google")
+def google_login():
+    """Начать вход (или привязку) через Google."""
+    if not google_auth.is_configured():
+        abort(404)
+    mode = "link" if request.args.get("link") else "login"
+    if mode == "link" and not auth.current_user():
+        return redirect(url_for("auth.login", next=request.path))
+    state = google_auth.new_state()
+    session["google_oauth"] = {
+        "state": state,
+        "mode": mode,
+        "next": _safe_next(request.args.get("next")),
+    }
+    return redirect(google_auth.authorize_url(state))
+
+
+@bp.get("/auth/google/callback")
+def google_callback():
+    """Вернуться от Google: проверить state, обменять код, войти."""
+    if not google_auth.is_configured():
+        abort(404)
+    pending = session.pop("google_oauth", None) or {}
+    state = str(pending.get("state") or "")
+    given = request.args.get("state", "")
+    if not state or not hmac.compare_digest(state, given):
+        flash("Сессия входа через Google истекла. Попробуйте снова.", "error")
+        return redirect(url_for("auth.login"))
+    if request.args.get("error"):
+        flash("Вход через Google отменён.", "info")
+        return redirect(url_for("auth.login"))
+    code = request.args.get("code", "")
+    if not code:
+        flash("Google не вернул код авторизации.", "error")
+        return redirect(url_for("auth.login"))
+    try:
+        tokens = google_auth.exchange_code(code, google_auth.redirect_uri())
+        info = google_auth.fetch_userinfo(tokens["access_token"])
+        profile = google_auth.profile_from_userinfo(info)
+    except google_auth.GoogleAuthError as exc:
+        log.warning("Google login failed: %s", exc)
+        flash("Не удалось войти через Google. Попробуйте ещё раз.", "error")
+        return redirect(url_for("auth.login"))
+
+    if pending.get("mode") == "link":
+        return _link_google_account(profile)
+
+    user = auth.get_user_by_google_sub(profile["sub"])
+    if user is None:
+        accounts = auth.users_by_email(profile["email"])
+        # Привязываем только при однозначном совпадении и если Google ещё нет:
+        # почту Google он уже подтвердил.
+        if len(accounts) == 1 and not accounts[0]["google_sub"]:
+            user = accounts[0]
+            auth.attach_google(user["id"], profile["sub"], profile["email"])
+            log.info("Google linked by email to user %s", user["id"])
+            flash(
+                "Аккаунт с этой почтой уже был — привязали к нему вход через Google.",
+                "info",
+            )
+    if user is not None:
+        if not user["is_active"]:
+            flash("Аккаунт отключён. Обратитесь к администратору.", "error")
+            return redirect(url_for("auth.login"))
+        return _enter_account(user, pending.get("next"))
+
+    # Новый пользователь: роль и имя выберет сам на следующем шаге.
+    session["google_pending"] = profile
+    session["google_next"] = pending.get("next")
+    return redirect(url_for("auth.google_finish"))
+
+
+@bp.route("/auth/google/finish", methods=["GET", "POST"])
+def google_finish():
+    """Завершение регистрации: роль, имя и логин для нового Google-пользователя."""
+    pending = session.get("google_pending")
+    if not pending:
+        return redirect(url_for("auth.login"))
+    if auth.current_user():
+        session.pop("google_pending", None)
+        return redirect(url_for("main.map_page"))
+
+    suggested_login = auth.suggest_login(pending.get("email", ""))
+    role = request.form.get("role", auth.ROLE_STUDENT)
+    if request.method == "POST":
+        login_name = auth.normalize_login(request.form.get("login", ""))
+        password = request.form.get("password", "")
+        first_name = request.form.get("first_name", "").strip()
+        last_name = request.form.get("last_name", "").strip()
+        city_id = int(request.form.get("city_id") or 0) or None
+        school_id = int(request.form.get("school_id") or 0) or None
+        errors = []
+        if role not in (auth.ROLE_STUDENT, auth.ROLE_TEACHER, auth.ROLE_PARENT):
+            errors.append("Выберите роль")
+        if not first_name:
+            errors.append("Укажите имя")
+        if not login_name or len(login_name) < 3:
+            errors.append("Логин должен содержать минимум 3 символа")
+        elif auth.login_taken(login_name):
+            errors.append("Такой логин уже занят")
+        if password and len(password) < auth.MIN_PASSWORD_LENGTH:
+            errors.append(
+                f"Пароль должен быть не короче {auth.MIN_PASSWORD_LENGTH} символов"
+            )
+        errors.extend(_validate_org_choices(role, request.form, school_id))
+        if errors:
+            for message in errors:
+                flash(message, "error")
+            return render_template(
+                "auth/google_finish.html",
+                role=role,
+                form=request.form,
+                profile=pending,
+                suggested_login=suggested_login,
+            )
+
+        linked = auth.get_user_by_google_sub(pending["sub"])
+        if linked:
+            session.pop("google_pending", None)
+            return _enter_account(linked)
+
+        user_id = auth.create_user(
+            login_name, password, role, first_name, last_name,
+            email=pending.get("email"),
+            avatar=request.form.get("avatar", "🦊"),
+            city_id=city_id, school_id=school_id,
+            google_sub=pending["sub"],
+        )
+        _apply_signup(user_id, role, request.form)
+        session.pop("google_pending", None)
+        target = _safe_next(session.pop("google_next", None))
+        flash(f"Аккаунт создан. Добро пожаловать, {first_name}!", "success")
+        return _enter_account(auth.get_user(user_id), target)
+
+    render_form = {
+        "first_name": pending.get("first_name", ""),
+        "last_name": pending.get("last_name", ""),
+        "login": suggested_login,
+    }
+    return render_template(
+        "auth/google_finish.html",
+        role=role,
+        form=render_form,
+        profile=pending,
+        suggested_login=suggested_login,
+    )
+
+
+@bp.post("/auth/google/unlink")
+@auth.login_required
+def google_unlink():
+    """Отключить вход через Google (нужен пароль, чтобы не потерять доступ)."""
+    user = auth.current_user()
+    if not user["google_sub"]:
+        flash("Google-аккаунт не привязан.", "info")
+    elif not auth.has_password(user):
+        flash(
+            "Сначала задайте пароль: иначе после отвязки не сможете войти.",
+            "error",
+        )
+    else:
+        auth.detach_google(user["id"])
+        log.info("Google detached from user %s", user["id"])
+        flash("Вход через Google отключён.", "info")
+    return redirect(url_for("auth.account"))
 
 
 @bp.route("/logout")
@@ -199,7 +407,9 @@ def account():
         elif action == "password":
             current = request.form.get("current_password", "")
             new = request.form.get("new_password", "")
-            if not auth.verify_password(current, user["password_hash"]):
+            if auth.has_password(user) and not auth.verify_password(
+                current, user["password_hash"]
+            ):
                 flash("Текущий пароль указан неверно", "error")
             elif len(new) < auth.MIN_PASSWORD_LENGTH:
                 flash("Новый пароль слишком короткий", "error")

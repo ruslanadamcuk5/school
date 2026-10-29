@@ -86,6 +86,8 @@ MIGRATIONS: list[tuple[str, str, str]] = [
     ("learners", "family_key", "TEXT"),
     ("users", "child_code", "TEXT"),
     ("users", "is_active", "INTEGER NOT NULL DEFAULT 1"),
+    # вход через Google: sub из OpenID Connect
+    ("users", "google_sub", "TEXT"),
     ("assignments", "questions_json", "TEXT NOT NULL DEFAULT '[]'"),
     ("assignments", "student_id", "INTEGER"),
     ("assignments", "author_role", "TEXT"),
@@ -251,6 +253,11 @@ def migrate(path: str | None = None) -> None:
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_topics_subject "
             "ON topics(subject_id, grade, order_index)"
+        )
+        # Один Google-аккаунт — не больше одной учётной записи.
+        conn.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub "
+            "ON users(google_sub) WHERE google_sub IS NOT NULL"
         )
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_textbook_topics_slug "

@@ -5,6 +5,7 @@ import functools
 import hashlib
 import hmac
 import os
+import re
 import secrets
 import sqlite3
 from typing import Any, Callable
@@ -70,15 +71,22 @@ def create_user(
     avatar: str = "🦊",
     city_id: int | None = None,
     school_id: int | None = None,
+    google_sub: str | None = None,
 ) -> int:
+    """Создать аккаунт.
+
+    ``password`` может быть пустой строкой: такие аккаунты создаются входом
+    через Google и пароль задают позже в профиле.
+    """
     user_id = execute(
         """INSERT INTO users
-           (login, email, password_hash, role, first_name, last_name, avatar, city_id, school_id, child_code)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+           (login, email, password_hash, role, first_name, last_name, avatar,
+            city_id, school_id, child_code, google_sub)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         (
             normalize_login(login),
             (email or None),
-            hash_password(password),
+            hash_password(password) if password else "",
             role,
             first_name.strip()[:40],
             last_name.strip()[:40],
@@ -86,9 +94,28 @@ def create_user(
             city_id,
             school_id,
             secrets.token_hex(3).upper() if role == ROLE_STUDENT else None,
+            google_sub or None,
         ),
     )
     return user_id
+
+
+def has_password(user: sqlite3.Row | None) -> bool:
+    return bool(user and user["password_hash"])
+
+
+def suggest_login(email: str) -> str:
+    """Свободный логин из адреса почты: ivan.petrov, ivan.petrov2, …"""
+    base = re.sub(r"[^a-z0-9._-]+", "", (email or "").split("@")[0].lower())
+    base = base.strip("._-")[:24] or "user"
+    if len(base) < 3:
+        base = f"user{base}" if base else "user"
+    candidate = base
+    suffix = 1
+    while login_taken(candidate):
+        suffix += 1
+        candidate = f"{base}{suffix}"
+    return candidate
 
 
 def get_user(user_id: int) -> sqlite3.Row | None:
@@ -97,6 +124,35 @@ def get_user(user_id: int) -> sqlite3.Row | None:
 
 def get_user_by_login(login: str) -> sqlite3.Row | None:
     return query_one("SELECT * FROM users WHERE login = ?", (normalize_login(login),))
+
+
+def get_user_by_google_sub(sub: str) -> sqlite3.Row | None:
+    if not sub:
+        return None
+    return query_one("SELECT * FROM users WHERE google_sub = ?", (str(sub),))
+
+
+def users_by_email(email: str) -> list[sqlite3.Row]:
+    """Все аккаунты с такой почтой (регистр не важен)."""
+    value = (email or "").strip().lower()
+    if not value:
+        return []
+    return query_all(
+        "SELECT * FROM users WHERE lower(email) = ? ORDER BY id", (value,)
+    )
+
+
+def attach_google(user_id: int, sub: str, email: str | None = None) -> None:
+    """Привязать Google-аккаунт. Пустой e-mail заполняем почтой из Google."""
+    update_user(user_id, google_sub=str(sub))
+    if email:
+        user = get_user(user_id)
+        if user and not (user["email"] or "").strip():
+            update_user(user_id, email=email.strip().lower())
+
+
+def detach_google(user_id: int) -> None:
+    update_user(user_id, google_sub=None)
 
 
 def list_users(role: str | None = None, search: str = "") -> list[sqlite3.Row]:
@@ -122,7 +178,8 @@ def list_users(role: str | None = None, search: str = "") -> list[sqlite3.Row]:
 def update_user(user_id: int, **fields: Any) -> None:
     allowed = {
         "login", "email", "password_hash", "role", "first_name", "last_name",
-        "avatar", "phone", "city_id", "school_id", "child_code", "is_active", "last_login",
+        "avatar", "phone", "city_id", "school_id", "child_code", "is_active",
+        "last_login", "google_sub",
     }
     data = {k: v for k, v in fields.items() if k in allowed}
     if not data:

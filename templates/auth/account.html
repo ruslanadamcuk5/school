@@ -53,17 +53,45 @@
   <form method="post" class="card card--flat mt-3">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="action" value="password">
-    <h2>Смена пароля</h2>
-    <div class="field mt-2">
-      <label for="current_password">Текущий пароль</label>
-      <input id="current_password" name="current_password" type="password" required>
-    </div>
+    <h2>{% if user.password_hash %}Смена пароля{% else %}Пароль для входа{% endif %}</h2>
+    {% if user.password_hash %}
+      <div class="field mt-2">
+        <label for="current_password">Текущий пароль</label>
+        <input id="current_password" name="current_password" type="password" required>
+      </div>
+    {% else %}
+      <p class="muted small">Аккаунт создан через Google, пароля пока нет. Задайте его,
+        чтобы входить без Google (он также понадобится, если отвяжете Google).</p>
+    {% endif %}
     <div class="field">
-      <label for="new_password">Новый пароль (мин. 6 символов)</label>
+      <label for="new_password">
+        {% if user.password_hash %}Новый пароль (мин. 6 символов){% else %}Пароль (мин. 6 символов){% endif %}
+      </label>
       <input id="new_password" name="new_password" type="password" minlength="6" required>
     </div>
-    <button class="btn btn--ghost" type="submit">Изменить пароль</button>
+    <button class="btn btn--ghost" type="submit">
+      {% if user.password_hash %}Изменить пароль{% else %}Задать пароль{% endif %}
+    </button>
   </form>
+
+  <div class="card card--flat mt-3">
+    <h2>🔐 Вход через Google</h2>
+    {% if user.google_sub %}
+      <p class="muted small">Google-аккаунт привязан. Входить можно одной кнопкой, без пароля.</p>
+      <form method="post" action="{{ url_for('auth.google_unlink') }}"
+            onsubmit="return confirm('Отключить вход через Google?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn--ghost btn--small" type="submit">Отвязать Google</button>
+      </form>
+    {% elif google_auth_enabled %}
+      <p class="muted small">Привяжите Google, чтобы входить одной кнопкой, без пароля.</p>
+      <a class="btn btn--ghost btn--small" href="{{ url_for('auth.google_login', link=1) }}">
+        Привязать Google
+      </a>
+    {% else %}
+      <p class="muted small">Вход через Google не настроен на этом сервере.</p>
+    {% endif %}
+  </div>
 
   {% if user.role == 'parent' %}
     <div class="card card--flat mt-3">

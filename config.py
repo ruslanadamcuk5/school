@@ -68,6 +68,16 @@ class Config:
     # Доверять X-Forwarded-* от reverse-proxy (Alwaysdata, nginx, Caddy).
     TRUST_PROXY = _bool("TRUST_PROXY", False)
 
+    # Вход через Google (OAuth 2.0 / OpenID Connect).
+    # Без CLIENT_ID и CLIENT_SECRET кнопка «Войти через Google» не показывается,
+    # а маршруты /auth/google* отвечают 404.
+    GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "").strip()
+    GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "").strip()
+    # По умолчанию — <адрес сайта>/auth/google/callback. Явное значение нужно,
+    # если сайт стоит за прокси и определяет схему/хост неверно.
+    GOOGLE_REDIRECT_URI = os.environ.get("GOOGLE_REDIRECT_URI", "").strip()
+    GOOGLE_TIMEOUT = _int("GOOGLE_TIMEOUT", 15)
+
 
 class DevelopmentConfig(Config):
     DEBUG = True

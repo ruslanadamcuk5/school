@@ -1,0 +1,22 @@
+{# Выбор роли: используется при обычной и Google-регистрации. #}
+    <div class="role-picker" id="role-picker">
+      <label class="role-card">
+        <input type="radio" name="role" value="student" {% if role != 'teacher' and role != 'parent' %}checked{% endif %}>
+        <span class="role-card__icon">🎒</span>
+        <span class="role-card__title">Ученик</span>
+        <span class="role-card__desc">Школа, класс и учитель подставятся автоматически</span>
+      </label>
+      <label class="role-card">
+        <input type="radio" name="role" value="teacher" {% if role == 'teacher' %}checked{% endif %}>
+        <span class="role-card__icon">👩‍🏫</span>
+        <span class="role-card__title">Учитель</span>
+        <span class="role-card__desc">Свои классы, темы, работы и расписание</span>
+      </label>
+      <label class="role-card">
+        <input type="radio" name="role" value="parent" {% if role == 'parent' %}checked{% endif %}>
+        <span class="role-card__icon">👨‍👩‍👧</span>
+        <span class="role-card__title">Родитель</span>
+        <span class="role-card__desc">Статистика и работы своего ребёнка</span>
+      </label>
+    </div>
+

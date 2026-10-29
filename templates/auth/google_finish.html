@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Завершение регистрации{% endblock %}
+{% block content %}
+
+<section class="card card--pad-lg mt-3" style="max-width:720px; margin-left:auto; margin-right:auto;">
+  <h1>👋 Ещё один шаг</h1>
+  <p class="muted">
+    Google подтвердил почту <b>{{ profile.email }}</b>. Выберите роль и укажите имя —
+    аккаунт создастся сразу, без пароля.
+  </p>
+
+  <form method="post" action="{{ url_for('auth.google_finish') }}" id="register-form" class="mt-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    {% include "auth/_role_picker.html" %}
+
+    <div class="grid-2 mt-3">
+      <div class="field">
+        <label for="first_name">Имя *</label>
+        <input id="first_name" name="first_name" required maxlength="40"
+               value="{{ form.get('first_name', '') }}">
+      </div>
+      <div class="field">
+        <label for="last_name">Фамилия</label>
+        <input id="last_name" name="last_name" maxlength="40"
+               value="{{ form.get('last_name', '') }}">
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="login">Логин *</label>
+        <input id="login" name="login" required minlength="3" maxlength="40"
+               value="{{ form.get('login', suggested_login) }}" autocomplete="username">
+        <span class="field__hint">Нужен для входа по паролю и для учителя.</span>
+      </div>
+      <div class="field">
+        <label for="google_email">E-mail</label>
+        <input id="google_email" type="email" value="{{ profile.email }}" disabled>
+        <span class="field__hint">Почта из Google, менять её здесь нельзя.</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="password">Пароль (необязательно)</label>
+      <input id="password" name="password" type="password" minlength="6"
+             autocomplete="new-password">
+      <span class="field__hint">Можно не задавать: вход будет только через Google.
+        Пароль добавите позже в профиле.</span>
+    </div>
+
+    {% include "auth/_role_fields.html" %}
+
+    <button class="btn btn--lg btn--block mt-3" type="submit">Создать аккаунт</button>
+  </form>
+
+  <p class="center muted small mt-3">
+    <a href="{{ url_for('auth.login') }}">Отменить и вернуться ко входу</a>
+  </p>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/register.js') }}"></script>
+{% endblock %}

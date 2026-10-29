@@ -167,12 +167,16 @@ CREATE TABLE IF NOT EXISTS users (
     school_id     INTEGER,
     child_code    TEXT,
     is_active     INTEGER NOT NULL DEFAULT 1,
+    -- идентификатор Google-аккаунта (поле sub из OpenID Connect)
+    google_sub    TEXT,
     created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
     last_login    TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_users_school ON users(school_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub
+    ON users(google_sub) WHERE google_sub IS NOT NULL;
 
 -- Привязка аккаунта ученика к профилю прогресса
 CREATE TABLE IF NOT EXISTS learner_accounts (

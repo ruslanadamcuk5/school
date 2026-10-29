@@ -89,6 +89,58 @@ python tools/check_templates.py    # синтаксис всех Jinja-шабл�
 
 Роль администратора через регистрацию **не выдаётся** — только через `seed.py`/переменные окружения.
 
+### Вход и регистрация через Google
+
+Если заданы `GOOGLE_CLIENT_ID` и `GOOGLE_CLIENT_SECRET`, на страницах входа и
+регистрации появляется кнопка **«Войти через Google»**. Без этих переменных
+кнопка скрыта, а маршруты `/auth/google*` отвечают 404 — обновление безопасно
+выкладывать до настройки.
+
+Как это работает:
+
+* новый пользователь после Google выбирает роль (ученик/учитель/родитель),
+  имя и логин; почта берётся из Google и не редактируется;
+* если аккаунт с такой почтой уже есть и Google к нему не привязан, он
+  привязывается автоматически (Google подтвердил владение почтой);
+* пароль не обязателен: аккаунт живёт на входе через Google, пароль можно
+  задать позже в профиле;
+* в профиле есть «Привязать Google» / «Отвязать Google»; отвязка требует
+  заданного пароля, чтобы не потерять доступ;
+* `state` одноразовый и хранится в сессии, почта принимается только с
+  `email_verified=true`, один Google-аккаунт (`sub`) — только у одной учётной
+  записи.
+
+Настройка в Google Cloud Console:
+
+1. [console.cloud.google.com](https://console.cloud.google.com/) → создайте
+   проект → **APIs & Services → OAuth consent screen** (тип External; для
+   тестирования добавьте себя в Test users).
+2. **Credentials → Create credentials → OAuth client ID → Web application**.
+3. В **Authorized redirect URIs** добавьте:
+   * `https://virusadk.alwaysdata.net/auth/google/callback` — продакшн;
+   * `http://127.0.0.1:5000/auth/google/callback` — локальная разработка.
+4. Скопируйте Client ID и Client secret в `.env`:
+
+```bash
+GOOGLE_CLIENT_ID=…apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=…
+# Необязательно: точный адрес callback, если сайт за прокси
+GOOGLE_REDIRECT_URI=https://virusadk.alwaysdata.net/auth/google/callback
+```
+
+Можно не задавать переменные в панели хостинга, а положить те же данные в
+файл `data/google_oauth.json` (каталог `data/` не попадает в git и в архив
+выкладки):
+
+```json
+{"client_id": "…apps.googleusercontent.com", "client_secret": "…"}
+```
+
+Кнопка появляется сразу после сохранения файла — перезапуск не нужен.
+
+В Android-приложении кнопки Google пока нет: там вход по логину и паролю
+(задайте пароль в профиле, если регистрировались через Google).
+
 ---
 
 ## 📚 Учебная программа
@@ -298,6 +350,9 @@ Mistral, DeepSeek, Google Gemini (OpenAI-совместимый режим), л�
 | `TASKS_PER_ROUND` | `8` | длина тренировочного раунда |
 | `BOSS_TASKS` | `3` | число заданий в испытании-боссе |
 | `ADMIN_LOGIN` / `ADMIN_PASSWORD` | `admin` / `math2025` | учётная запись администратора |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | пусто | вход через Google; пусто — кнопка скрыта |
+| `GOOGLE_REDIRECT_URI` | `<сайт>/auth/google/callback` | точный callback для Google Cloud |
+| `GOOGLE_TIMEOUT` | `15` | таймаут запросов к Google, секунд |
 | `AI_TIMEOUT` | `45` | таймаут запроса к модели ИИ, секунд |
 | `AI_MAX_PER_HOUR` | `60` | лимит запросов к ИИ на сессию, в час |
 | `LOG_LEVEL` | `INFO` | уровень журналирования |
@@ -620,6 +675,10 @@ python tools/prod_check.py
 * **HTTPS.** Android-клиент по умолчанию запрещает cleartext-трафик, HTTP
   разрешён только для `localhost`/эмулятора. Для продакшена задайте
   `SECRET_KEY` и `COOKIE_SECURE=1`.
+* **Google OAuth.** `state` одноразовый и сравнивается за постоянное время;
+  почта принимается только с `email_verified=true`; `sub` Google уникален
+  (частичный уникальный индекс в БД); привязка по почте — только при
+  однозначном совпадении; токены Google не сохраняются.
 * **Секреты.** Если `SECRET_KEY` пуст, приложение создаёт постоянный ключ в
   `data/.secret_key` (файл в `.gitignore`) вместо падения на первом запросе.
 

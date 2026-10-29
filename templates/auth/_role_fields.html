@@ -1,0 +1,65 @@
+{# Поля школы/классов/ребёнка: общие для обычной и Google-регистрации. #}
+    <!-- Ученик -->
+    <div class="role-block" data-role="student">
+      <h2 class="section-title">🏫 Школа и класс</h2>
+      <div class="grid-2">
+        <div class="field">
+          <label for="student_city">Город</label>
+          <select id="student_city" data-load="schools" data-target="student_school">
+            <option value="">— выбери город —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="student_school">Школа</label>
+          <select id="student_school" name="school_id" data-load="classes" data-target="student_class">
+            <option value="">— выбери школу —</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="student_class">Класс</label>
+        <select id="student_class" name="class_id">
+          <option value="">— выбери класс —</option>
+        </select>
+        <span class="field__hint" id="teacher-hint">Учитель класса подставится автоматически.</span>
+      </div>
+    </div>
+
+    <!-- Учитель -->
+    <div class="role-block" data-role="teacher">
+      <h2 class="section-title">👩‍🏫 Школа и классы</h2>
+      <div class="grid-2">
+        <div class="field">
+          <label for="teacher_city">Город</label>
+          <select id="teacher_city" data-load="schools" data-target="teacher_school">
+            <option value="">— выбери город —</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="teacher_school">Школа</label>
+          <select id="teacher_school" name="school_id" data-load="classes" data-target="teacher_classes">
+            <option value="">— выбери школу —</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Классы, которые вы ведёте</label>
+        <div class="checkbox-list" id="teacher_classes">
+          <span class="muted small">Сначала выберите школу.</span>
+        </div>
+        <span class="field__hint">Отметьте классы, в которых вы ведёте уроки. Остальные классы можно
+          добавить позже в кабинете.</span>
+      </div>
+    </div>
+
+    <!-- Родитель -->
+    <div class="role-block" data-role="parent">
+      <h2 class="section-title">👨‍👩‍👧 Привязка ребёнка</h2>
+      <div class="field">
+        <label for="child_code">Код ребёнка</label>
+        <input id="child_code" name="child_code" maxlength="8" placeholder="Например, A1B2C3"
+               style="text-transform:uppercase">
+        <span class="field__hint">Код показывает ребёнок в своём профиле. Можно привязать позже.</span>
+      </div>
+    </div>
+

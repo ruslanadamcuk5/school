@@ -252,6 +252,7 @@ def _register_context(app: Flask) -> None:
         from services import auth, learners as learners_service
         from services import progress as progress_service
         from services import topics as topics_service
+        from services import google_auth as google_auth_service
 
         learner = None
         stats = None
@@ -305,6 +306,7 @@ def _register_context(app: Flask) -> None:
             "ai_enabled": ai_enabled,
             "ai_available": ai_available,
             "ai_status": ai_status,
+            "google_auth_enabled": google_auth_service.is_configured(),
             "app_name": "Школьник",
             "app_full_name": "Общеобразовательная платформа обучения",
             "notifications_unread": notifications_unread,
