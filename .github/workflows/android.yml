@@ -1,3 +1,4 @@
+# Сборка debug-APK и публикация релиза apk-latest (зеркало на главной странице).
 name: Android APK
 
 on:
