@@ -175,8 +175,8 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_users_school ON users(school_id);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub
-    ON users(google_sub) WHERE google_sub IS NOT NULL;
+-- Уникальный индекс users(google_sub) создаётся в database.migrate():
+-- на существующей базе колонка появляется только после ALTER TABLE.
 
 -- Привязка аккаунта ученика к профилю прогресса
 CREATE TABLE IF NOT EXISTS learner_accounts (
