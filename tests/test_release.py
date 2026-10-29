@@ -59,7 +59,10 @@ class TestRelease(unittest.TestCase):
         self.assertEqual(body["version_name"], "1.1")
         self.assertEqual(body["size"], len(b"test apk payload"))
         self.assertEqual(len(body["sha256"]), 64)
-        self.assertTrue(body["download_url"].endswith("/download/android"))
+        self.assertTrue(
+            body["download_url"].split("?")[0].endswith("/download/android")
+        )
+        self.assertIn("v=2", body["download_url"])
 
     def test_apk_is_downloaded_with_versioned_name(self):
         self._publish()

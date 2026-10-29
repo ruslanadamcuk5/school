@@ -43,7 +43,7 @@
       </p>
     </div>
     <div class="row" style="gap:8px;">
-      <a class="btn btn--lg" href="{{ url_for('app_release.download') }}" download>⬇️ Скачать APK</a>
+      <a class="btn btn--lg" href="{{ url_for('app_release.download', v=app_release.version_code) }}" download>⬇️ Скачать APK</a>
     </div>
   </div>
 </section>

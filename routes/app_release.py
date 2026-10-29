@@ -45,7 +45,11 @@ def version():
             "ok": True,
             "version_code": item["version_code"],
             "version_name": item["version_name"],
-            "download_url": url_for("app_release.download", _external=True),
+            # Параметр версии делает ссылку уникальной: браузер не пытается
+            # докачать старый частично загруженный файл по тому же адресу.
+            "download_url": url_for(
+                "app_release.download", _external=True, v=item["version_code"]
+            ),
             "size": item["size"],
             "sha256": item["sha256"],
             "notes": item["notes"],
