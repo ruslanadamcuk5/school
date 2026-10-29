@@ -172,6 +172,42 @@ class BrowserFlowTestCase(unittest.TestCase):
         self.assertEqual(payload["user"]["role"], "student")
         self.assertEqual(auth.get_user_by_login("olga1")["google_sub"], "google-browser-user-1")
 
+    def test_site_session_does_not_block_app_return(self):
+        """Открытый на сайте кабинет не мешает вернуть код в приложение."""
+        existing = auth.create_user("petya", "secret123", auth.ROLE_PARENT, "Пётр")
+        with self.client.session_transaction() as sess:
+            sess["user_id"] = existing
+
+        response = self.callback()
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/auth/google/finish", response.headers["Location"])
+
+        page = self.client.get("/auth/google/finish")
+        self.assertEqual(page.status_code, 200)
+        html = page.get_data(as_text=True)
+        marker = 'name="csrf-token" content="'
+        start = html.find(marker) + len(marker)
+        csrf = html[start:html.find('"', start)]
+
+        created = self.client.post(
+            "/auth/google/finish",
+            data={
+                "csrf_token": csrf,
+                "role": "teacher",
+                "login": "olga2",
+                "first_name": "Ольга",
+                "last_name": "Иванова",
+            },
+        )
+        self.assertEqual(created.status_code, 302)
+        code = self.app_code(created)
+
+        exchanged = self.exchange(code)
+        self.assertEqual(exchanged.status_code, 200, exchanged.get_data(as_text=True))
+        payload = exchanged.get_json()
+        self.assertEqual(payload["user"]["role"], "teacher")
+        self.assertEqual(payload["user"]["login"], "olga2")
+
     def test_wrong_verifier_is_rejected(self):
         user_id = auth.create_user("olga", "secret123", auth.ROLE_PARENT, "Ольга")
         auth.update_user(user_id, google_sub="google-browser-user-1")

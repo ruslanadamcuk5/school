@@ -321,7 +321,9 @@ def google_finish():
     pending = session.get("google_pending")
     if not pending:
         return redirect(url_for("auth.login"))
-    if auth.current_user():
+    # Если в этом браузере уже открыт кабинет, регистрацию из приложения всё
+    # равно нужно довести до конца: иначе код возврата в приложение не выдаётся.
+    if auth.current_user() and not session.get("google_android_challenge"):
         session.pop("google_pending", None)
         return redirect(url_for("main.map_page"))
 
