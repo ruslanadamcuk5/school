@@ -79,6 +79,9 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
+    # Шаблоны перечитываются при изменении файла. Иначе uWSGI с lazy-apps
+    # держит старую версию страницы в воркере до перезапуска сайта.
+    TEMPLATES_AUTO_RELOAD = True
 
 
 class TestingConfig(Config):
