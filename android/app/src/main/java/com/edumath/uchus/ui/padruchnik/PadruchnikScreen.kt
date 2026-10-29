@@ -1,5 +1,6 @@
 package com.edumath.uchus.ui.padruchnik
 
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -311,6 +312,7 @@ fun PadruchnikScreen(
 
 @Composable
 private fun PadruchnikCard(item: PadruchnikItemDto, onImport: () -> Unit) {
+    val context = LocalContext.current
     Card(Modifier.fillMaxWidth()) {
         Column(
             Modifier.padding(14.dp),
@@ -337,6 +339,27 @@ private fun PadruchnikCard(item: PadruchnikItemDto, onImport: () -> Unit) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (!item.pdfUrl.isNullOrBlank()) {
+                OutlinedButton(
+                    onClick = {
+                        runCatching {
+                            context.startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse(item.pdfUrl))
+                            )
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp),
+                ) {
+                    Text("⬇️ Скачать PDF")
+                }
+                Text(
+                    "Скачали файл? Нажмите «Добавить в пособия» и выберите его кнопкой «Выбрать файл».",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             Button(
                 onClick = onImport,
                 modifier = Modifier
@@ -436,7 +459,7 @@ private fun ImportDialog(
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                ) { Text("📎 PDF не скачивается? Выбрать файл") }
+                ) { Text("📎 Уже скачали? Выбрать файл") }
             }
         },
         confirmButton = {

@@ -66,8 +66,13 @@
                   {% if item.author %}<div class="muted small">{{ item.author }}</div>{% endif %}
                   <div class="muted small">#{{ item.id }}</div>
                   {% if item.pdf_url %}
-                    <div class="muted small">
-                      <a href="{{ item.pdf_url }}" target="_blank" rel="noopener">Открыть PDF на портале</a>
+                    <div class="mt-2">
+                      <a class="btn btn--small" href="{{ item.pdf_url }}"
+                         target="_blank" rel="noopener" download>⬇️ Скачать PDF</a>
+                    </div>
+                    <div class="muted small mt-2">
+                      Скачайте файл, затем выберите его в поле «PDF» справа
+                      и нажмите «Загрузить PDF».
                     </div>
                   {% endif %}
                 </td>
@@ -98,13 +103,13 @@
                     </label>
                     <button class="btn btn--small mt-2" type="submit"
                             name="action" value="import">📥 Добавить в пособия</button>
-                    <details class="mt-2">
-                      <summary class="muted small">PDF не скачивается? Загрузите вручную</summary>
-                      <input class="mt-2" type="file" name="pdf"
+                    <div class="mt-3">
+                      <div class="muted small mb-2">Уже скачали PDF? Загрузите его:</div>
+                      <input type="file" name="pdf"
                              accept="application/pdf,application/x-pdf">
                       <button class="btn btn--ghost btn--small mt-2" type="submit"
                               name="action" value="upload">📎 Загрузить PDF</button>
-                    </details>
+                    </div>
                   </form>
                 </td>
               </tr>
