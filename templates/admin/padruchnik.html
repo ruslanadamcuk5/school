@@ -65,14 +65,19 @@
                   <b>{{ item.title }}</b>
                   {% if item.author %}<div class="muted small">{{ item.author }}</div>{% endif %}
                   <div class="muted small">#{{ item.id }}</div>
+                  {% if item.pdf_url %}
+                    <div class="muted small">
+                      <a href="{{ item.pdf_url }}" target="_blank" rel="noopener">Открыть PDF на портале</a>
+                    </div>
+                  {% endif %}
                 </td>
                 <td>{{ item.grade }}</td>
                 <td>{{ item.year }}</td>
                 <td class="small">{{ item.language }}</td>
                 <td>
-                  <form method="post" action="{{ url_for('admin.padruchnik_page') }}" class="small">
+                  <form method="post" action="{{ url_for('admin.padruchnik_page') }}"
+                        enctype="multipart/form-data" class="small">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="action" value="import">
                     <input type="hidden" name="book_id" value="{{ item.id }}">
                     <label class="field" style="margin-bottom:6px;">
                       <span>Предмет</span>
@@ -91,7 +96,15 @@
                       <input type="checkbox" name="auto_link" value="1" checked>
                       <span>Разобрать темы</span>
                     </label>
-                    <button class="btn btn--small mt-2" type="submit">📥 Добавить в пособия</button>
+                    <button class="btn btn--small mt-2" type="submit"
+                            name="action" value="import">📥 Добавить в пособия</button>
+                    <details class="mt-2">
+                      <summary class="muted small">PDF не скачивается? Загрузите вручную</summary>
+                      <input class="mt-2" type="file" name="pdf"
+                             accept="application/pdf,application/x-pdf">
+                      <button class="btn btn--ghost btn--small mt-2" type="submit"
+                              name="action" value="upload">📎 Загрузить PDF</button>
+                    </details>
                   </form>
                 </td>
               </tr>

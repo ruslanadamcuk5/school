@@ -496,22 +496,53 @@ def user_detail(user_id: int):
 def padruchnik_page():
     """Поиск пособия на e-padruchnik.adu.by и импорт в «Пособия (PDF)»."""
     if request.method == "POST":
-        if (request.form.get("action") or "") == "import":
+        action = (request.form.get("action") or "").strip()
+        if action in {"import", "upload"}:
             book_id = request.form.get("book_id", type=int)
             subject_id = request.form.get("subject_id", type=int)
             grade = request.form.get("grade", type=int) or 0
+            auto_link = bool(request.form.get("auto_link"))
             if not book_id or not subject_id:
                 flash("Выберите пособие и предмет", "error")
                 return redirect(url_for("admin.padruchnik_page"))
-            result = padruchnik.import_book(
-                book_id,
-                subject_id,
-                grade,
-                uploaded_by=auth.current_user()["id"],
-                auto_link=bool(request.form.get("auto_link")),
-            )
+            if action == "upload":
+                file_storage = request.files.get("pdf")
+                if not file_storage or not file_storage.filename:
+                    flash("Выберите файл PDF", "error")
+                    return redirect(url_for("admin.padruchnik_page"))
+                try:
+                    data = file_storage.read()
+                    filename, size = padruchnik.save_pdf_bytes(
+                        data, textbooks.upload_dir()
+                    )
+                    result = padruchnik.import_saved_pdf(
+                        filename,
+                        size,
+                        book_id,
+                        subject_id,
+                        grade,
+                        uploaded_by=auth.current_user()["id"],
+                        auto_link=auto_link,
+                    )
+                except ValueError as error:
+                    flash(f"Не удалось загрузить PDF: {error}", "error")
+                    return redirect(url_for("admin.padruchnik_page"))
+            else:
+                result = padruchnik.import_book(
+                    book_id,
+                    subject_id,
+                    grade,
+                    uploaded_by=auth.current_user()["id"],
+                    auto_link=auto_link,
+                )
             if not result.get("ok"):
-                flash(f"Не удалось добавить пособие: {result.get('error')}", "error")
+                message = f"Не удалось добавить пособие: {result.get('error')}"
+                if result.get("can_upload"):
+                    message += (
+                        " Скачайте PDF по прямой ссылке и загрузите его "
+                        "вручную в строке пособия."
+                    )
+                flash(message, "error")
                 return redirect(url_for("admin.padruchnik_page"))
             _log("import", "textbook", result["textbook_id"], f"e-padruchnik book {book_id}")
             flash(

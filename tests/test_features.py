@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import io
 import os
 import sqlite3
 import sys
@@ -383,8 +384,9 @@ class TestPadruchnikParsing(unittest.TestCase):
             captured.update(data)
             return page
 
-        with mock.patch.object(padruchnik, "_post", side_effect=fake_post):
-            result = padruchnik.search("Математика", grade=3)
+        with mock.patch.dict(os.environ, {"PADRUCHNIK_MODE": "live"}):
+            with mock.patch.object(padruchnik, "_post", side_effect=fake_post):
+                result = padruchnik.search("Математика", grade=3)
         self.assertTrue(result["ok"])
         self.assertEqual(len(result["items"]), 1)
         item = result["items"][0]
@@ -414,15 +416,56 @@ class TestPadruchnikParsing(unittest.TestCase):
                 return "book-viewer\\web\\viewer.html?file=https://e-padruchnik.adu.by/books/m.pdf"
             return card
 
-        with mock.patch.object(padruchnik, "_post", side_effect=fake_post):
-            padruchnik._cache.clear()
-            meta = padruchnik.book(1217)
+        with mock.patch.dict(os.environ, {"PADRUCHNIK_MODE": "live"}):
+            with mock.patch.object(padruchnik, "_post", side_effect=fake_post):
+                padruchnik._cache.clear()
+                meta = padruchnik.book(1217)
         self.assertEqual(meta["title"], "Математика (ч.1): учебное пособие")
         self.assertEqual(meta["grade"], 3)
         self.assertEqual(
             meta["pdf_url"], "https://e-padruchnik.adu.by/books/m.pdf"
         )
         self.assertTrue(any(url.endswith("getbookurl.php") for _, url in calls))
+
+    def test_catalog_search_works_without_network(self):
+        def boom(*args, **kwargs):
+            raise OSError("network down")
+
+        with mock.patch.dict(os.environ, {"PADRUCHNIK_MODE": "auto"}):
+            with mock.patch.object(padruchnik, "_post", side_effect=boom):
+                result = padruchnik.search("Математика", grade=3)
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["source"], "catalog")
+        self.assertTrue(any(item["id"] == 1217 for item in result["items"]))
+        self.assertTrue(all(item["pdf_url"] for item in result["items"]))
+
+    def test_catalog_folds_belarusian_spelling(self):
+        with mock.patch.dict(os.environ, {"PADRUCHNIK_MODE": "auto"}):
+            result = padruchnik.search("Информатика", grade=8)
+        self.assertTrue(result["ok"])
+        self.assertTrue(
+            any("нфармат" in item["title"].lower() for item in result["items"])
+        )
+
+    def test_catalog_book_has_pdf_link(self):
+        with mock.patch.dict(os.environ, {"PADRUCHNIK_MODE": "auto"}):
+            padruchnik._cache.clear()
+            meta = padruchnik.book(1217)
+        self.assertEqual(meta["grade"], 3)
+        self.assertTrue(meta["pdf_url"].endswith(".pdf"))
+        self.assertEqual(meta["source"], "catalog")
+
+    def test_save_pdf_bytes_rejects_non_pdf(self):
+        with self.assertRaises(ValueError):
+            padruchnik.save_pdf_bytes(b"not a pdf", tempfile.gettempdir())
+
+    def test_save_pdf_bytes_keeps_pdf(self):
+        data = b"%PDF-1.4\n1 0 obj<</Type /Page>>endobj\n%%EOF"
+        folder = tempfile.mkdtemp(prefix="padruchnik_")
+        name, size = padruchnik.save_pdf_bytes(data, folder)
+        self.assertTrue(name.endswith(".pdf"))
+        self.assertEqual(size, len(data))
+        self.assertTrue(os.path.exists(os.path.join(folder, name)))
 
     def test_download_rejects_foreign_domain(self):
         with self.assertRaises(ValueError):
@@ -573,6 +616,32 @@ class TestFeatureRoutes(FeatureTestCase):
         body = response.get_json()
         self.assertTrue(body["ok"])
         self.assertEqual(body["items"][0]["title"], "Книга")
+
+    def test_padruchnik_upload_accepts_pdf(self):
+        login = self.client.post(
+            "/api/v1/auth/login",
+            json={"login": "teacher_route", "password": "pass12345"},
+        )
+        self.assertEqual(login.status_code, 200, login.get_data(as_text=True))
+        token = login.get_json()["token"]
+        subject = query_one("SELECT id FROM subjects ORDER BY id LIMIT 1")
+        pdf = b"%PDF-1.4\n1 0 obj<</Type /Page>>endobj\n%%EOF"
+        response = self.client.post(
+            "/api/v1/padruchnik/upload",
+            data={
+                "book_id": "1217",
+                "subject_id": str(subject["id"]),
+                "grade": "3",
+                "class_ids": str(self.class_id),
+                "file": (io.BytesIO(pdf), "book.pdf"),
+            },
+            content_type="multipart/form-data",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        self.assertEqual(response.status_code, 201, response.get_data(as_text=True))
+        body = response.get_json()
+        self.assertTrue(body["ok"])
+        self.assertGreater(body["textbook_id"], 0)
 
     def test_parent_can_message_child(self):
         parent = make_user("parent_route", auth.ROLE_PARENT, "Ольга")

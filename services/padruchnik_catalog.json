@@ -1,0 +1,4947 @@
+{
+ "generated_at": "2026-10-29T03:41:42Z",
+ "source": "https://e-padruchnik.adu.by/",
+ "total": 494,
+ "books": [
+  {
+   "id": 197,
+   "title": "Асновы бяспекі жыццядзейнасці: вучэбны дапаможнік (2008)",
+   "author": "Фацін, С. Б",
+   "grade": 5,
+   "year": "",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/obj/ABZh-Facin-5kl-bel.pdf"
+  },
+  {
+   "id": 198,
+   "title": "Основы безопасности жизнедеятельности: учебное пособие (2008)",
+   "author": "Фатин, С. Б",
+   "grade": 5,
+   "year": "",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/obj/obj-fatin-5-6kl-rus.pdf"
+  },
+  {
+   "id": 199,
+   "title": "Основы безопасности жизнедеятельности: учебное пособие (2009)",
+   "author": "Мишкевич, М. К",
+   "grade": 7,
+   "year": "",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/obj/obj-mishkevich-7-8kl-rus.pdf"
+  },
+  {
+   "id": 407,
+   "title": "Основы безопасности жизнедеятельности: учебное пособие (2008)",
+   "author": "Фатин, С. Б",
+   "grade": 6,
+   "year": "",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/obj/obj-fatin-5_6kl-rus.pdf"
+  },
+  {
+   "id": 408,
+   "title": "Основы безопасности жизнедеятельности: учебное пособие (2009)",
+   "author": "Мишкевич, М. К",
+   "grade": 8,
+   "year": "",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/obj/obj-mishkevich-7_8kl-rus.pdf"
+  },
+  {
+   "id": 471,
+   "title": "Органическая химия: электронное пособие (учебник-навигатор) (2015)",
+   "author": "Колевич, Т. А. [и др.]",
+   "grade": 10,
+   "year": "",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/navigator/OrganicChemQuestions 10.epub"
+  },
+  {
+   "id": 475,
+   "title": "История Средних веков, V-XIII вв. Хрестоматия: пособие (2015)",
+   "author": "Евтухов, И. О. [и др.]",
+   "grade": 6,
+   "year": "",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/hrestomatiya-istorija-srednih-vekov-Evtuhov-6kl-bel-rus-2015.pdf"
+  },
+  {
+   "id": 476,
+   "title": "История Средних веков, XIV-XV вв. Хрестоматия: пособие (2015)",
+   "author": "Евтухов, И. О",
+   "grade": 6,
+   "year": "",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/hrestomatiya-istorija-srednih-vekov-Evtuhov-7kl-bel-rus-2015.pdf"
+  },
+  {
+   "id": 477,
+   "title": "Гісторыя Беларусі са старажытных часоў да сярэдзіны XIII ст.: хрэстаматыя: дапаможнік (2012)",
+   "author": "Цемушаў, С. М",
+   "grade": 6,
+   "year": "",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/hrestomatiya-gistoriya-Belarusi-Tsemushay-6kl-bel-rus-2012.pdf"
+  },
+  {
+   "id": 523,
+   "title": "Музыка: вучэбны дапаможнік",
+   "author": "Каваліў, В. В., Гарбунова, М. Б",
+   "grade": 1,
+   "year": "2016",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/muzyka/muzyka-Kavaliy-1kl-rus-bel-2016.pdf"
+  },
+  {
+   "id": 552,
+   "title": "Музыка: вучэбны дапаможнік",
+   "author": "Гуляева, А. Р., Гарбунова, М. Б., Яшчэмбская-Калёса, І. В",
+   "grade": 3,
+   "year": "2017",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/muzyka/muzika_Gulyaeva_3kl_bel_2017.pdf"
+  },
+  {
+   "id": 553,
+   "title": "Музыка: учебное пособие",
+   "author": "Гуляева, Е. Г., Горбунова, М. Б., Ящембская-Колёса, И. В",
+   "grade": 3,
+   "year": "2017",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/muzyka/muzika_Gulyaeva_3kl_rus_2017.pdf"
+  },
+  {
+   "id": 569,
+   "title": "Всемирная история Нового времени, XVI-XVIII вв. Хрестоматия: пособие",
+   "author": "Забельникова, О. В., Кудрявцева, С. А",
+   "grade": 7,
+   "year": "2016",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/hrestomatiya_vsem_ist_novogo_vremeni_Zabelnikova_7kl_bel_rus_2016.pdf"
+  },
+  {
+   "id": 582,
+   "title": "Французский язык / Французская мова: учебное пособие для гимназий. Ч.1",
+   "author": "Колосовская, И. Г., Скибская, Н. В., Поборцева, Т. В",
+   "grade": 9,
+   "year": "2017",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/francuzski_yazik_gimnazii_Kolosovskaya_9kl_bel_rus_ch1_2017.pdf"
+  },
+  {
+   "id": 587,
+   "title": "История Беларуси, XVI-XVIII вв.: учебное пособие",
+   "author": "Воронин, В. А. [и др.]",
+   "grade": 7,
+   "year": "2017",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Istoriya_Belarusi_XVI_XVIIIst_7k_Voronin_rus_2017.pdf"
+  },
+  {
+   "id": 588,
+   "title": "Гісторыя Беларусі, XVI-XVIII стст.: вучэбны дапаможнік",
+   "author": "Варонін, В. А",
+   "grade": 7,
+   "year": "2017",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Gistoriya_Belarusi_XVI_XVIIIst_Varonin_7kl_bel_2017.pdf"
+  },
+  {
+   "id": 590,
+   "title": "Испанский язык / Іспанская мова: учебное пособие для гимназий. Ч.1",
+   "author": "Цыбулёва, Т. Э., Пушкина, О. А",
+   "grade": 9,
+   "year": "2017",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanskij_Cibulyova_9kl_gymn_bel_rus_ch1_2017.pdf"
+  },
+  {
+   "id": 591,
+   "title": "Французский язык / Французская мова: учебное пособие для гимназий. Ч.2",
+   "author": "Колосовская, И. Г., Скибская, Н. В., Поборцева, Т. В",
+   "grade": 9,
+   "year": "2017",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/francuzski_yazik_gimnazii_Kolosovskaya_9kl_bel_rus_ch2_2017.pdf"
+  },
+  {
+   "id": 609,
+   "title": "Испанский язык / Іспанская мова: учебное пособие для гимназий. Ч.2",
+   "author": "Цыбулёва, Т. Э., Пушкина, О. А",
+   "grade": 9,
+   "year": "2018",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanskij_Cibulyova_9kl_gymn_bel_rus_ch2_2018.pdf"
+  },
+  {
+   "id": 623,
+   "title": "Чалавек і свет. Мая Радзіма — Беларусь: вучэбны дапаможнік",
+   "author": "Паноў, С. В., Тарасаў, С. В",
+   "grade": 4,
+   "year": "2018",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/chelovek-i-mir/Chal_i_svet_4kl_Panou_bel_rus_2018.pdf"
+  },
+  {
+   "id": 625,
+   "title": "Изобразительное искусство: учебное пособие",
+   "author": "Шкуратова, М. А., Лукашевич, Ю. А",
+   "grade": 4,
+   "year": "2018",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/iskusstvo/Iskusstvo_4kl_Shkuratova_rus_2018.pdf"
+  },
+  {
+   "id": 637,
+   "title": "Музыка: учебное пособие",
+   "author": "Гуляева, Е. Г., Простакова, С. А., Кобачевская, С. М",
+   "grade": 4,
+   "year": "2018",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/muzyka/muzika_4kl_Gulyaeva_rus_2018.pdf"
+  },
+  {
+   "id": 638,
+   "title": "Гісторыя Беларусі, канец XVIII- пачатак XX ст.: вучэбны дапаможнік",
+   "author": "Паноў, С. В., Марозава, С. В., Сосна, У. А",
+   "grade": 8,
+   "year": "2018",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Gist_Bel_kXVIII_pXX__8kl_Panoy_bel_2018.pdf"
+  },
+  {
+   "id": 640,
+   "title": "Всемирная история Нового времени, XIX - начало XX в. Хрестоматия: пособие",
+   "author": "Забельникова, О. В",
+   "grade": 8,
+   "year": "2016",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/hrestomatiya_vs_ist_novogo_vremeni_9kl_Zabelnikova_rus_bel_2016.pdf"
+  },
+  {
+   "id": 641,
+   "title": "Всемирная история Нового времени, XIX - начало XX в.: учебное пособие",
+   "author": "Кошелев, В. С., Кошелева, Н. В., Байдакова, Н. В",
+   "grade": 8,
+   "year": "2018",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/vs_ist_novogo_vremeni_8kl_koshelev_rus_2018.pdf"
+  },
+  {
+   "id": 645,
+   "title": "Выяўленчае мастацтва: вучэбны дапаможнік",
+   "author": "Шкуратава, М. А., Лукашэвіч, Ю. А",
+   "grade": 1,
+   "year": "2018",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/izo/izo_1kl_Shkuratova_bel_2018.pdf"
+  },
+  {
+   "id": 646,
+   "title": "Музыка: вучэбны дапаможнік",
+   "author": "Гуляева, А. Р., Прастакова, С. А., Кабачэўская, С. М",
+   "grade": 4,
+   "year": "2018",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/muzyka/muzika_4kl_Gulyaeva_bel_2018.pdf"
+  },
+  {
+   "id": 647,
+   "title": "Испанский язык / Іспанская мова: учебное пособие",
+   "author": "Гриневич, Е. К",
+   "grade": 8,
+   "year": "2018",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanskij_8kl_Grinevich_bel_rus_2018.pdf"
+  },
+  {
+   "id": 648,
+   "title": "Працоўнае навучанне: вучэбны дапаможнік",
+   "author": "Юрчанка, Н. А., Журба, А. Ф",
+   "grade": 2,
+   "year": "2018",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Pracoynae_navuchanne_2kl_Yurchanka_bel_2018.pdf"
+  },
+  {
+   "id": 649,
+   "title": "Трудовое обучение: учебное пособие",
+   "author": "Юрченко, Н. А., Журба, А. Ф",
+   "grade": 2,
+   "year": "2018",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Trudovoe_obuchenie_2kl_Yurchenko_rus_2018.pdf"
+  },
+  {
+   "id": 667,
+   "title": "Французский язык / Французская мова: учебное пособие",
+   "author": "Вадюшина, Д. С",
+   "grade": 10,
+   "year": "2018",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/francuzkij_10kl_Vadyushina_bel_rus_2018.pdf"
+  },
+  {
+   "id": 678,
+   "title": "Выяўленчае мастацтва: вучэбны дапаможнік",
+   "author": "Шкуратава, М. А., Лукашэвіч, Ю. А",
+   "grade": 4,
+   "year": "2018",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/izo/Viyaulenchae_mastactva_4kl_Shkuratava_bel_2018.pdf"
+  },
+  {
+   "id": 679,
+   "title": "Французский язык / Французская мова: учебное пособие. Ч.1",
+   "author": "Колосовская, И. Г., Скибская, Н. В., Поборцева, Т. В",
+   "grade": 10,
+   "year": "2018",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/franc_10kl_Kolosovskaja_ch1_bel_rus_2018.pdf"
+  },
+  {
+   "id": 686,
+   "title": "Сусветная гісторыя Новага часу, XIX - пачатак XX ст.: вучэбны дапаможнік",
+   "author": "Кошалеў, У. С., Кошалева, Н. У., Байдакова, Н. В",
+   "grade": 8,
+   "year": "2018",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Sus_gistoriya_Novaga_chasy_8kl_Koshaleu_bel_2018.pdf"
+  },
+  {
+   "id": 687,
+   "title": "Трудовое обучение. Обслуживающий труд: учебное пособие",
+   "author": "Столярова, С. И., Юрченко, Н. А., Кардаш, Н. Л",
+   "grade": 8,
+   "year": "2018",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Trud_OT_8kl_Stolyarova_rus_2018.pdf"
+  },
+  {
+   "id": 688,
+   "title": "Працоўнае навучанне. Абслуговая праца: вучэбны дапаможнік",
+   "author": "Сталярова, С. І., Юрчанка, Н. А., Кардаш, Н. Л",
+   "grade": 8,
+   "year": "2018",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Prac_nav_Absl_praca_8kl_Stalyarova_bel_2018.pdf"
+  },
+  {
+   "id": 691,
+   "title": "Трудовое обучение. Технический труд: учебное пособие",
+   "author": "Чернова, Е. Н., Дубина, И. В",
+   "grade": 6,
+   "year": "2018",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Trud_TT_6kl_Chernova_rus_2018.pdf"
+  },
+  {
+   "id": 692,
+   "title": "История Беларуси, конец XVIII - начало XX в.: учебное пособие",
+   "author": "Панов, С. В., Морозова, С. В., Сосно, В. А",
+   "grade": 8,
+   "year": "2018",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Istoriya_Belarusi_kXVIII_nXXv_8kl_Panov_rus_2018.pdf"
+  },
+  {
+   "id": 694,
+   "title": "Китайский язык / Кітайская мова: учебное пособие. Ч.2",
+   "author": "Пониматко, А. П. [и др.]",
+   "grade": 6,
+   "year": "2018",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/kitajskij/kitajskij_6kl_Ponimatko_ch2_bel_rus_2018.pdf"
+  },
+  {
+   "id": 699,
+   "title": "Працоўнае навучанне. Тэхнічная праца: вучэбны дапаможнік",
+   "author": "Чарнова, А. М., Дубіна, І. В",
+   "grade": 6,
+   "year": "2018",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Praz_nav_TP_6kl_Chаrnova_bel_2018.pdf"
+  },
+  {
+   "id": 701,
+   "title": "Английский язык / Англійская мова: учебное пособие. Ч.2",
+   "author": "Демченко, Н. В. [и др.]",
+   "grade": 6,
+   "year": "2018",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_yazik_6kl_Demchenko_bel_rus_ch2_2018.pdf"
+  },
+  {
+   "id": 702,
+   "title": "Испанский язык / Іспанская мова: учебное пособие. Ч.2",
+   "author": "Цыбулёва, Т. Э., Пушкина, О. А",
+   "grade": 6,
+   "year": "2018",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanskij_6kl_Cibulyova_ch2_bel_rus_2018.pdf"
+  },
+  {
+   "id": 705,
+   "title": "Французский язык / Французская мова: учебное пособие. Ч.2",
+   "author": "Колосовская, И. Г., Скибская, Н. В., Поборцева, Т. В",
+   "grade": 10,
+   "year": "2018",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/franc_10kl_Kolosovskaja_ch2_bel_rus_2018.pdf"
+  },
+  {
+   "id": 707,
+   "title": "Трудовое обучение. Обслуживающий труд: учебное пособие",
+   "author": "Столярова, С. И., Юрченко, Н. А",
+   "grade": 9,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Trud_OT_9kl_Stolyarova_rus_2019.pdf"
+  },
+  {
+   "id": 708,
+   "title": "Трудовое обучение. Технический труд: учебное пособие",
+   "author": "Чернова, Е. Н., Дубина, И. В",
+   "grade": 9,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Trud_TT_9kl_Chernova_rus_2019.pdf"
+  },
+  {
+   "id": 709,
+   "title": "Музыка: вучэбны дапаможнік",
+   "author": "Каваліў, В. В., Гарбунова, М. Б",
+   "grade": 2,
+   "year": "2019",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/muzyka/muzika_2kl_Kavaliy_bel_2019.pdf"
+  },
+  {
+   "id": 710,
+   "title": "Музыка: учебное пособие",
+   "author": "Ковалив, В. В., Горбунова, М. Б",
+   "grade": 2,
+   "year": "2019",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/muzyka/muzika_2kl_Kovaliv_rus_2019.pdf"
+  },
+  {
+   "id": 711,
+   "title": "Працоўнае навучанне: вучэбны дапаможнік",
+   "author": "Юрчанка, Н. А., Журба, А. Ф",
+   "grade": 3,
+   "year": "2019",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Pracoynae_navuchanne_3kl_Yurchanka_bel_2019.pdf"
+  },
+  {
+   "id": 712,
+   "title": "Трудовое обучение: учебное пособие",
+   "author": "Юрченко, Н. А., Журба, А. Ф",
+   "grade": 3,
+   "year": "2019",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Trudovoe_obuchenie_3kl_Yurchenko_rus_2019.pdf"
+  },
+  {
+   "id": 713,
+   "title": "Выяўленчае мастацтва: вучэбны дапаможнік",
+   "author": "Сакалова, А. А., Сянько, Д. С",
+   "grade": 2,
+   "year": "2019",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/izo/viyaulenchae_mastactva_Sakalova_2kl_bel_2019.pdf"
+  },
+  {
+   "id": 714,
+   "title": "Изобразительное искусство: учебное пособие",
+   "author": "Соколова, Е. О., Сенько, Д. С",
+   "grade": 2,
+   "year": "2019",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/izo/izo_Sokolova_2kl_rus_2019.pdf"
+  },
+  {
+   "id": 716,
+   "title": "Испанский язык / Іспанская мова: учебное пособие. Ч.1",
+   "author": "Цыбулёва, Т. Э., Пушкина, О. А., Карпиевич, Г. К",
+   "grade": 7,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanski_7kl_Cibulyova_ch1_bel_rus_2019.pdf"
+  },
+  {
+   "id": 719,
+   "title": "Працоўнае навучанне. Тэхнічная праца: вучэбны дапаможнік",
+   "author": "Чарнова, А. М., Дубіна, І. В",
+   "grade": 9,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Praz_nav_TP_9kl_Chаrnova_bel_2019.pdf"
+  },
+  {
+   "id": 720,
+   "title": "Працоўнае навучанне. Абслуговая праца: вучэбны дапаможнік",
+   "author": "Сталярова, С. І., Юрчанка, Н. А",
+   "grade": 9,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Prac_nav_AP_9kl_Stalyarova_bel_2019.pdf"
+  },
+  {
+   "id": 721,
+   "title": "Працоўнае навучанне. Тэхнічная праца: вучэбны дапаможнік",
+   "author": "Чарнова, А. М., Дубіна, І. В",
+   "grade": 7,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Praz_nav_TP_7kl_Chаrnova_bel_2019.pdf"
+  },
+  {
+   "id": 722,
+   "title": "Трудовое обучение. Технический труд: учебное пособие",
+   "author": "Чернова, Е. Н., Дубина, И. В",
+   "grade": 7,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Trud_obuch_TT_7kl_Chernova_rus_2019.pdf"
+  },
+  {
+   "id": 724,
+   "title": "Нямецкая мова: вучэбны дапаможнік. Ч.2",
+   "author": "Будзько, А. П., Урбановіч, І. Ю",
+   "grade": 4,
+   "year": "2019",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nyameckaya_mova_4kl_Bydzko_ch2_bel_2019.pdf"
+  },
+  {
+   "id": 729,
+   "title": "Французский язык / Французская мова: учебное пособие. Ч.1",
+   "author": "Вадюшина, Д. С",
+   "grade": 4,
+   "year": "2019",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/francuzki_4kl_Vadyushina_ch1_bel_rus_2019.pdf"
+  },
+  {
+   "id": 730,
+   "title": "Французский язык / Французская мова: учебное пособие",
+   "author": "Вадюшина, Д. С",
+   "grade": 11,
+   "year": "2019",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/francuzki_11kl_Vadyushina_bel_rus_2019.pdf"
+  },
+  {
+   "id": 731,
+   "title": "Китайский язык / Кітайская мова: учебное пособие. Ч.1",
+   "author": "Пониматко, А. П. [и др.]",
+   "grade": 7,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/kitajskij/kitajski_7kl_Ponimatko_ch1_bel_rus_2019.pdf"
+  },
+  {
+   "id": 734,
+   "title": "Английский язык: учебное пособие",
+   "author": "Юхнель, Н. В., Наумова, Е. Г., Демченко, Н. В",
+   "grade": 10,
+   "year": "2019",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_yazik_10kl_Yuhnel_rus_2019.pdf"
+  },
+  {
+   "id": 735,
+   "title": "Англійская мова: вучэбны дапаможнік",
+   "author": "Юхнель, Н. В., Навумава, А. Г., Дземчанка, Н. В",
+   "grade": 10,
+   "year": "2019",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliskaya_mova_10kl_Yuhnel_bel_2019.pdf"
+  },
+  {
+   "id": 736,
+   "title": "Алгебра: вучэбны дапаможнік",
+   "author": "Арэф’ева, І.Г., Пірутка, В.М",
+   "grade": 9,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Algebra_Arefieva_9kl_bel_2019.pdf"
+  },
+  {
+   "id": 737,
+   "title": "Алгебра: учебное пособие",
+   "author": "Арефьева, И.Г., Пирютко, О.Н",
+   "grade": 9,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Algebra_Arefieva_9kl_rus_2019.pdf"
+  },
+  {
+   "id": 741,
+   "title": "Трудовое обучение. Технический труд: учебное пособие",
+   "author": "Чернова, Е. Н., Дубина, И. В., Цареня, Д. В",
+   "grade": 8,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Trud_TT_8kl_Chernova_rus_2019.pdf"
+  },
+  {
+   "id": 747,
+   "title": "Информатика: учебное пособие",
+   "author": "Котов, В. М., Лапо, А. И., Быкадоров, Ю. А., Войтехович, Е. Н",
+   "grade": 9,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/informatika/informatika_9kl_Kotov_rus_2019.pdf"
+  },
+  {
+   "id": 749,
+   "title": "Сборник задач по математике: учебное пособие",
+   "author": "Пирютко, О. Н., Терешко, О. А., Герасимов, В. Д",
+   "grade": 5,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_sbornik_Piryutko_5kl_2019.pdf"
+  },
+  {
+   "id": 750,
+   "title": "Немецкий язык / Нямецкая мова: учебное пособие. Ч.1",
+   "author": "Лаптева, Н. Е. [и др.]",
+   "grade": 9,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_Lapteva_9kl_bel_rus_ch1_2019.pdf"
+  },
+  {
+   "id": 751,
+   "title": "Русская литература: учебное пособие",
+   "author": "Захарова, С.Н., Черкес, Н. И",
+   "grade": 9,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkaya-literatura/rus_lit_Zaharova_9kl_rus_bel_2019.pdf"
+  },
+  {
+   "id": 758,
+   "title": "Інфарматыка: вучэбны дапаможнік",
+   "author": "Котаў, У.М., Лапо, А.І., Быкадораў, Ю.А., Вайцеховіч, А.М",
+   "grade": 9,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/informatika/informatika_9kl_Kotov_bel_2019.pdf"
+  },
+  {
+   "id": 762,
+   "title": "Всемирная история Новейшего времени, 1918 - начало XXI в.: учебное пособие",
+   "author": "Кошелев, В. С., Краснова, М. А., Кошелева, Н. В",
+   "grade": 9,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/vs_ist_noveishego_vremeni_Koshelev_9kl_2019.pdf"
+  },
+  {
+   "id": 764,
+   "title": "География. Страны и народы: учебное пособие",
+   "author": "Лопух, П. С. [и др.]",
+   "grade": 8,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/geografija/Geografiya_8kl_Lopuh_rus_2019.pdf"
+  },
+  {
+   "id": 766,
+   "title": "История Беларуси, 1917 г. - начало XXI в.: учебное пособие",
+   "author": "Панов, С. В., Сидорцов, В. Н., Фомин, В. М",
+   "grade": 9,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Ist_Bel_1917_nXXI_9k_Panov_rus_2019.pdf"
+  },
+  {
+   "id": 767,
+   "title": "Испанский язык / Іспанская мова: учебное пособие",
+   "author": "Гриневич, Е. К., Янукенас, О. В",
+   "grade": 10,
+   "year": "2019",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanskij_10kl_Grinevich_bel_rus_2019.pdf"
+  },
+  {
+   "id": 768,
+   "title": "Английский язык / Англійская мова: учебное пособие. Ч.1",
+   "author": "Демченко, Н. В. [и др.]",
+   "grade": 7,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_yazik_7kl_Demchenko_bel_rus_ch1_2019.pdf"
+  },
+  {
+   "id": 769,
+   "title": "Китайский язык / Кітайская мова: учебное пособие. Ч.1",
+   "author": "Пониматко, А. П. [и др.]",
+   "grade": 8,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/kitajskij/kitajski_8kl_Ponimatko_ch1_bel_rus_2019.pdf"
+  },
+  {
+   "id": 770,
+   "title": "Французский язык / Французская мова: учебное пособие. Ч.1",
+   "author": "Колосовская, И. Г., Скибская, Н. В., Рябцева, Е. В",
+   "grade": 11,
+   "year": "2019",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/francuzki_11kl_kolosovskaja_bel_rus_2019.pdf"
+  },
+  {
+   "id": 771,
+   "title": "Сусветная гісторыя Навейшага часу, 1918 - пачатак XXI ст.: вучэбны дапаможнік",
+   "author": "Кошалеў, У. С., Краснова, М. А., Кошалева, Н. У",
+   "grade": 9,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Sysv_gistoriya_Naveishaga_chasy_9kl_Koshaley_bel_2019.pdf"
+  },
+  {
+   "id": 773,
+   "title": "Испанский язык / Іспанская мова: учебное пособие. Ч.1",
+   "author": "Цыбулёва, Т. Э., Пушкина, О. А., Карпиевич, Г. К",
+   "grade": 10,
+   "year": "2019",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanski_10kl_Cibulyova_ch1_bel_rus_2019.pdf"
+  },
+  {
+   "id": 774,
+   "title": "Геаграфія. Краіны і народы: вучэбны дапаможнік",
+   "author": "Лопух, П. С. [і інш.]",
+   "grade": 8,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/geografija/Geagrafiya_8kl_Lopuh_bel_2019.pdf"
+  },
+  {
+   "id": 776,
+   "title": "Нямецкая мова: вучэбны дапаможнік",
+   "author": "Будзько, А. П., Урбановіч, І. Ю",
+   "grade": 11,
+   "year": "2019",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nyameckaya_mova_11kl_Bydzko_bel_2019.pdf"
+  },
+  {
+   "id": 777,
+   "title": "Немецкий язык: учебное пособие",
+   "author": "Будько, А. Ф., Урбанович, И. Ю",
+   "grade": 11,
+   "year": "2019",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_11kl_Bydko_rus_2019.pdf"
+  },
+  {
+   "id": 778,
+   "title": "Гісторыя Беларусі, 1917 г. - пачатак XXI ст.: вучэбны дапаможнік",
+   "author": "Паноў, С. В., Сідарцоў, У. Н., Фамін, В. М",
+   "grade": 9,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Gist_Bel_1917_pXXI_9k_Panoy_bel_2019_.pdf"
+  },
+  {
+   "id": 780,
+   "title": "Французский язык / Французская мова: учебное пособие. Ч.2",
+   "author": "Вадюшина, Д. С",
+   "grade": 4,
+   "year": "2019",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/francuzki_4kl_Vadyushina_ch2_bel_rus_2019.pdf"
+  },
+  {
+   "id": 783,
+   "title": "Немецкий язык / Нямецкая мова: учебное пособие. Ч.2",
+   "author": "Лаптева, Н. Е. [и др.]",
+   "grade": 9,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_Lapteva_9kl_bel_rus_ch2_2019.pdf"
+  },
+  {
+   "id": 787,
+   "title": "Немецкий язык / Нямецкая мова: учебное пособие. Ч.1",
+   "author": "Лаптева, Н. Е. [и др.]",
+   "grade": 10,
+   "year": "2019",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_Lapteva_10kl_bel_rus_ch1_2019.pdf"
+  },
+  {
+   "id": 788,
+   "title": "История Древнего мира: учебное пособие. Ч.2",
+   "author": "Кошелев, В. С. [и др.]",
+   "grade": 5,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Istoriya_Dr_mira_5kl_Koshelev_ch2_rus_2019.pdf"
+  },
+  {
+   "id": 789,
+   "title": "Китайский язык / Кітайская мова: учебное пособие. Ч.2",
+   "author": "Пониматко, А. П. [и др.]",
+   "grade": 7,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/kitajskij/kitajski_7kl_Ponimatko_ch2_bel_rus_2019.pdf"
+  },
+  {
+   "id": 790,
+   "title": "Гісторыя Старажытнага свету: вучэбны дапаможнік. Ч.2",
+   "author": "Кошалеў, У. С., Перзашкевіч, А. В., Прохараў, А. А. [і інш.]",
+   "grade": 5,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Gistoriiya_starazhitnaga_svety_Koshaley_5kl_ch2_bel_2019.pdf"
+  },
+  {
+   "id": 792,
+   "title": "Працоўнае навучанне. Тэхнічная праца: вучэбны дапаможнік",
+   "author": "Чарнова, А. М., Дубіна, І. В., Царэня, Д. В",
+   "grade": 8,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Praz_nav_TP_8kl_Chаrnova_bel_2019.pdf"
+  },
+  {
+   "id": 794,
+   "title": "Обществоведение: учебное пособие",
+   "author": "Данилов, А. Н., Полейко, Е. А., Кушнер, Н. В",
+   "grade": 9,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/obschestvovedenie/Obschestvovedenie_Danilov_9kl_rus.pdf"
+  },
+  {
+   "id": 795,
+   "title": "Испанский язык / Іспанская мова: учебное пособие. Ч.2",
+   "author": "Гриневич, Е. К., Бахар, Л. Н",
+   "grade": 4,
+   "year": "2019",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanski_4kl_Grinevich_bel_rus_ch2_2019.pdf"
+  },
+  {
+   "id": 796,
+   "title": "Грамадазнаўства: вучэбны дапаможнік",
+   "author": "Данілаў, А. М. [і інш.]",
+   "grade": 9,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/obschestvovedenie/Gramadaznaystva_9kl_Danilov_bel_2020.pdf"
+  },
+  {
+   "id": 797,
+   "title": "Немецкий язык / Нямецкая мова: учебное пособие. Ч.2",
+   "author": "Лаптева, Н. Е. [и др.]",
+   "grade": 10,
+   "year": "2019",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_Lapteva_10kl_bel_rus_ch2_2019.pdf"
+  },
+  {
+   "id": 798,
+   "title": "Французский язык / Французская мова: учебное пособие. Ч.2",
+   "author": "Колосовская, И. Г., Скибская, Н. В., Рябцева, Е. В",
+   "grade": 11,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/francuzki_11kl_kolosovskaja_2ch_bel_rus_2019.pdf"
+  },
+  {
+   "id": 799,
+   "title": "Испанский язык / Іспанская мова: учебное пособие. Ч.2",
+   "author": "Цыбулёва, Т. Э., Пушкина, О. А., Карпиевич, Г. К",
+   "grade": 7,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanski_7kl_Cibulyova_ch2_bel_rus_2019.pdf"
+  },
+  {
+   "id": 800,
+   "title": "Испанский язык / Іспанская мова: учебное пособие. Ч.2",
+   "author": "Цыбулёва, Т. Э., Пушкина, О. А., Карпиевич, Г. К",
+   "grade": 10,
+   "year": "2019",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanski_10kl_Cibulyova_ch2_bel_rus_2019.pdf"
+  },
+  {
+   "id": 802,
+   "title": "Китайский язык / Кітайская мова: учебное пособие. Ч.2",
+   "author": "Пониматко, А. П. [и др.]",
+   "grade": 8,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/kitajskij/kitajski_8kl_Ponimatko_ch2_bel_rus_2020.pdf"
+  },
+  {
+   "id": 803,
+   "title": "Дапрызыўная падрыхтоўка: навучальны дапаможнік",
+   "author": "Драгуноў, В.В. [і інш.]",
+   "grade": 10,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/doprizyv-med/Dapriz_padrihtovka_Dragunoy_10-11_bel_2020.pdf"
+  },
+  {
+   "id": 804,
+   "title": "Дапрызыўная падрыхтоўка: навучальны дапаможнік",
+   "author": "Драгуноў, В.В. [і інш.]",
+   "grade": 11,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/doprizyv-med/Dapriz_padrihtovka_Dragunoy_10_11_bel_2020.pdf"
+  },
+  {
+   "id": 805,
+   "title": "Допризывная подготовка: учебное пособие",
+   "author": "Драгунов, В. В. [и др.]",
+   "grade": 10,
+   "year": "2019",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/doprizyv-med/Dopriz_podgotovka_Dragunov_10-11_rus_2019.pdf"
+  },
+  {
+   "id": 806,
+   "title": "Допризывная подготовка: учебное пособие",
+   "author": "Драгунов, В. В. [и др.]",
+   "grade": 11,
+   "year": "2019",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/doprizyv-med/Dopriz_podgotovka_Dragunov_10_11_rus_2019.pdf"
+  },
+  {
+   "id": 807,
+   "title": "Медыцынская падрыхтоўка: вучэбны дапаможнік",
+   "author": "Новік, І. М., Калян, Н. К., Мазец, Ж. Э",
+   "grade": 10,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/doprizyv-med/Med_padrihtovka_Novik_10-11_bel_2020.pdf"
+  },
+  {
+   "id": 808,
+   "title": "Медицинская подготовка: учебное пособие",
+   "author": "Новик, И. М., Колян, Н. К., Мазец, Ж. Э",
+   "grade": 10,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/doprizyv-med/Med_podgotovka_Novik_10-11_rus_2020.pdf"
+  },
+  {
+   "id": 809,
+   "title": "Медыцынская падрыхтоўка: вучэбны дапаможнік",
+   "author": "Новік, І. М., Калян, Н. К., Мазец, Ж. Э",
+   "grade": 11,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/doprizyv-med/Med_padrihtovka_Novik_10_11_bel_2020.pdf"
+  },
+  {
+   "id": 810,
+   "title": "Медицинская подготовка: учебное пособие",
+   "author": "Новик, И. М., Колян, Н. К., Мазец, Ж. Э",
+   "grade": 11,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/doprizyv-med/Med_podgotovka_Novik_10_11_rus_2020.pdf"
+  },
+  {
+   "id": 811,
+   "title": "Геометрия: учебное пособие",
+   "author": "Латотин, Л. А. [и др.]",
+   "grade": 10,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Geometriya_10kl_Latotin_rus_2020.pdf"
+  },
+  {
+   "id": 812,
+   "title": "Алгебра: учебное пособие",
+   "author": "Арефьева, И. Г., Пирютко, О. Н",
+   "grade": 10,
+   "year": "2019",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Algebra_10k_Arefieva_rus_2019.pdf"
+  },
+  {
+   "id": 813,
+   "title": "Сборник задач по алгебре: учебное пособие",
+   "author": "Арефьева, И. Г., Пирютко, О. Н",
+   "grade": 10,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Algebra_ZZadach_10kl_Arefieva_rus_2020.pdf"
+  },
+  {
+   "id": 814,
+   "title": "Физика: учебное пособие",
+   "author": "Громыко, Е. В. [и др.]",
+   "grade": 10,
+   "year": "2019",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/fizika/Fizika_10kl_Gromika_rus_2019.pdf"
+  },
+  {
+   "id": 815,
+   "title": "Химия: учебное пособие",
+   "author": "Колевич, Т. А. [и др.]",
+   "grade": 10,
+   "year": "2019",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/Himiya_10kl_Kolevich_rus_2019.pdf"
+  },
+  {
+   "id": 816,
+   "title": "Биология: учебное пособие",
+   "author": "Маглыш, С. С. [и др.]",
+   "grade": 10,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/biologija/Biologiya_10kl_Maglish_rus_2020.pdf"
+  },
+  {
+   "id": 819,
+   "title": "Русская литература: учебное пособие",
+   "author": "Захарова, С. Н. [и др.]",
+   "grade": 10,
+   "year": "2019",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkaya-literatura/Rus_lit_Zaharova_10kl_rus_bel_2019.pdf"
+  },
+  {
+   "id": 823,
+   "title": "Английский язык: учебное пособие. Ч.1",
+   "author": "Лапицкая, Л. М. [и др.]",
+   "grade": 5,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_yazik_5kl_ch1_Lapickaya_rus_2020.pdf"
+  },
+  {
+   "id": 824,
+   "title": "Французский язык / Французская мова: учебное пособие. Ч.1",
+   "author": "Вадюшина, Д. С",
+   "grade": 5,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/franc_5kl_ch1_Vadushina_rus_bel_2020.pdf"
+  },
+  {
+   "id": 828,
+   "title": "Геаметрыя: вучэбны дапаможнік",
+   "author": "Латоцін, Л. А. [і інш.]",
+   "grade": 10,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Geametriya_10kl_Latocin_bel_2020.pdf"
+  },
+  {
+   "id": 829,
+   "title": "Алгебра: вучэбны дапаможнік",
+   "author": "Арэф'ева, І. Г., Пірутка, В. М",
+   "grade": 10,
+   "year": "2019",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Algebra_10kl_Arefieva_bel_2019.pdf"
+  },
+  {
+   "id": 830,
+   "title": "Англійская мова: вучэбны дапаможнік. Ч.1",
+   "author": "Лапіцкая, Л. М. [і інш.]",
+   "grade": 5,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliskaya_mova_5kl_ch1_Lapickaya_bel_2020.pdf"
+  },
+  {
+   "id": 831,
+   "title": "Немецкий язык / Нямецкая мова: учебное пособие. Ч.1",
+   "author": "Зуевская, Е. В. [и др.]",
+   "grade": 5,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_5kl_ch1_Zuevskaya_rus_bel_2020.pdf"
+  },
+  {
+   "id": 832,
+   "title": "Зборнік задач па алгебры",
+   "author": "Арэф'ева, І. Г., Пірутка, В. М",
+   "grade": 10,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Algebra_ZZadach_10kl_Arefieva_bel_2020.pdf"
+  },
+  {
+   "id": 833,
+   "title": "Фізіка: вучэбны дапаможнік",
+   "author": "Грамыка, А. У. [і інш.]",
+   "grade": 10,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/fizika/Fizika_10kl_Gramika_bel_2020.pdf"
+  },
+  {
+   "id": 834,
+   "title": "Хімія: вучэбны дапаможнік",
+   "author": "Калевіч, Т. А. [і інш.]",
+   "grade": 10,
+   "year": "2019",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/Himiya_10kl_Kalevich_bel_2019.pdf"
+  },
+  {
+   "id": 835,
+   "title": "Біялогія: вучэбны дапаможнік",
+   "author": "Маглыш, С. С. [і інш.]",
+   "grade": 10,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/biologija/Biyalogiya_10kl_Maglish_bel_2020.pdf"
+  },
+  {
+   "id": 839,
+   "title": "Немецкий язык: учебное пособие. Ч.1",
+   "author": "Будько, А. Ф., Урбанович, И. Ю",
+   "grade": 5,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_5kl_ch1_Bydko_rus_2020.pdf"
+  },
+  {
+   "id": 840,
+   "title": "Нямецкая мова: вучэбны дапаможнік. Ч.1",
+   "author": "Будзько, А. П., Урбановіч, І. Ю",
+   "grade": 5,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nyameckaya_mova_5kl_ch1_Bydzko_bel_2020.pdf"
+  },
+  {
+   "id": 841,
+   "title": "Черчение: учебное пособие",
+   "author": "Беженарь, Ю. П",
+   "grade": 10,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/cherchenie/Cherchenie_10kl_Bezhenar_rus_2020.pdf"
+  },
+  {
+   "id": 843,
+   "title": "Информатика: учебное пособие",
+   "author": "Котов, В. М. [и др.]",
+   "grade": 10,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/informatika/Informatika_10kl_Kotov_rus_2020.pdf"
+  },
+  {
+   "id": 845,
+   "title": "Беларуская мова: вучэбны дапаможнік",
+   "author": "Валочка, Г. М. [і інш.]",
+   "grade": 7,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-mova/Bel_mova_7kl_Valochka_rus_bel_2020.pdf"
+  },
+  {
+   "id": 846,
+   "title": "Інфарматыка: вучэбны дапаможнік",
+   "author": "Котаў, У. М. [і інш.]",
+   "grade": 10,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/informatika/informatika_10kl_Kotay_bel_2020.pdf"
+  },
+  {
+   "id": 847,
+   "title": "Беларуская мова: вучэбны дапаможнік",
+   "author": "Валочка, Г. М",
+   "grade": 10,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-mova/Bel_mova_10kl_Valochka_rus_bel_2020.pdf"
+  },
+  {
+   "id": 848,
+   "title": "Чарчэнне: вучэбны дапаможнік",
+   "author": "Бежанар, Ю. П",
+   "grade": 10,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/cherchenie/Charchenee_10kl_Bezhanar_bel_2020.pdf"
+  },
+  {
+   "id": 849,
+   "title": "Обществоведение: учебное пособие",
+   "author": "Данилов, А. Н",
+   "grade": 10,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/obschestvovedenie/Obschestvovedenie_10kl_Danilov_rus_2020.pdf"
+  },
+  {
+   "id": 850,
+   "title": "Русский язык: учебное пособие",
+   "author": "Леонович, В. Л. [и др.]",
+   "grade": 10,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkij-jazyk/Rus_yaz_10kl_Leonovich_rus_bel_2020.pdf"
+  },
+  {
+   "id": 851,
+   "title": "Беларуская мова: вучэбны дапаможнік",
+   "author": "Бадзевіч, З. І., Саматыя, І. М",
+   "grade": 8,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-mova/Bel_mova_8kl_Badzevich_rus_bel_2020.pdf"
+  },
+  {
+   "id": 852,
+   "title": "Беларуская літаратура: вучэбны дапаможнік",
+   "author": "Бязлепкіна-Чарнякевіч, А. П. [і інш.]",
+   "grade": 10,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-litaratura/bel_lit_10kl_Byazlipkina_bel_rus_2020.pdf"
+  },
+  {
+   "id": 854,
+   "title": "Грамадазнаўства: вучэбны дапаможнік",
+   "author": "Данілаў, А. М. [і інш.]",
+   "grade": 10,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/obschestvovedenie/Gramadaznaystva_10kl_Danilov_bel_2020.pdf"
+  },
+  {
+   "id": 855,
+   "title": "Немецкий язык: учебное пособие. Ч.2",
+   "author": "Будько, А. Ф., Урбанович, И. Ю",
+   "grade": 5,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_5kl_ch2_Bydko_rus_2020.pdf"
+  },
+  {
+   "id": 856,
+   "title": "Немецкий язык: учебное пособие",
+   "author": "Будько, А. Ф., Урбанович, И. Ю",
+   "grade": 6,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_6kl_Bydko_rus_2020.pdf"
+  },
+  {
+   "id": 858,
+   "title": "Испанский язык / Іспанская мова: учебное пособие",
+   "author": "Гриневич, Е. К., Янукенас, О. В",
+   "grade": 9,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanski_9kl_Grinevich_bel_rus_2020.pdf"
+  },
+  {
+   "id": 859,
+   "title": "Английский язык / Англійская мова: учебное пособие. Ч.1",
+   "author": "Демченко, Н. В. [и др.]",
+   "grade": 8,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_Demchenko_8kl_bel_rus_ch1_2020.pdf"
+  },
+  {
+   "id": 860,
+   "title": "Английский язык: учебное пособие. Ч.2",
+   "author": "Лапицкая, Л. М. [и др.]",
+   "grade": 5,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_yazik_5kl_ch2_Lapickaya_rus_2020.pdf"
+  },
+  {
+   "id": 861,
+   "title": "Французский язык / Французская мова: учебное пособие. Ч.1",
+   "author": "Колосовская, И. Г., Скибская, Н. В., Поборцева, Т. В",
+   "grade": 8,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/francuzski_Kolosovskaya_8kl_ch1_bel_rus_2020.pdf"
+  },
+  {
+   "id": 862,
+   "title": "Французский язык / Французская мова: учебное пособие",
+   "author": "Вадюшина, Д. С",
+   "grade": 6,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/francuzkij_6kl_Vadyushina_bel_rus_2020.pdf"
+  },
+  {
+   "id": 863,
+   "title": "Нямецкая мова: вучэбны дапаможнік. Ч.2",
+   "author": "Будзько, А. П., Урбановіч, І. Ю",
+   "grade": 5,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nyameckaya_mova_5kl_ch2_Bydzko_bel_2020.pdf"
+  },
+  {
+   "id": 864,
+   "title": "Нямецкая мова: вучэбны дапаможнік",
+   "author": "Будзько, А. П., Урбановіч, І. Ю",
+   "grade": 6,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nyameckaya_mova_6kl_Bydzko_bel_2020.pdf"
+  },
+  {
+   "id": 866,
+   "title": "Испанский язык / Іспанская мова: учебное пособие. Ч.1",
+   "author": "Цыбулёва, Т. Э., Пушкина, О. А",
+   "grade": 8,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanski_8kl_Cibulyova_ch1_bel_rus_2020.pdf"
+  },
+  {
+   "id": 867,
+   "title": "Китайский язык / Кітайская мова: учебное пособие",
+   "author": "Пониматко, А. П. [и др.]",
+   "grade": 9,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/kitajskij/kitajski_9kl_Ponimatko_bel_rus_2020.pdf"
+  },
+  {
+   "id": 868,
+   "title": "Французский язык / Французская мова: учебное пособие. Ч.2",
+   "author": "Вадюшина, Д. С",
+   "grade": 5,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/franc_5kl_ch2_Vadushina_rus_bel_2020.pdf"
+  },
+  {
+   "id": 869,
+   "title": "Немецкий язык / Нямецкая мова: учебное пособие. Ч.2",
+   "author": "Зуевская, Е. В. [и др.]",
+   "grade": 5,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_5kl_ch2_Zuevskaya_rus_bel_2020.pdf"
+  },
+  {
+   "id": 872,
+   "title": "Французский язык / Французская мова: учебное пособие. Ч.2",
+   "author": "Колосовская, И. Г., Скибская, Н. В., Поборцева, Т. В",
+   "grade": 8,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/francuzski_Kolosovskaya_8kl_ch2_bel_rus_2020.pdf"
+  },
+  {
+   "id": 873,
+   "title": "Англійская мова: вучэбны дапаможнік. Ч.2",
+   "author": "Лапіцкая, Л. М. [і інш.]",
+   "grade": 5,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliskaya_mova_5kl_ch2_Lapickaya_bel_2020.pdf"
+  },
+  {
+   "id": 874,
+   "title": "Испанский язык / Іспанская мова: учебное пособие. Ч.2",
+   "author": "Цыбулёва, Т. Э., Пушкина, О. А",
+   "grade": 8,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanski_8kl_Cibulyova_ch2_bel_rus_2020.pdf"
+  },
+  {
+   "id": 875,
+   "title": "Английский язык / Англійская мова: учебное пособие. Ч.2",
+   "author": "Демченко, Н. В. [и др.]",
+   "grade": 8,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_Demchenko_8kl_bel_rus_ch2_2020.pdf"
+  },
+  {
+   "id": 876,
+   "title": "Сборник задач по математике",
+   "author": "Пирютко, О. Н., Терешко, О. А",
+   "grade": 6,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_sbornik_Pirytko_6kl_rus_2020.pdf"
+  },
+  {
+   "id": 877,
+   "title": "Зборнік задач па матэматыцы",
+   "author": "Пірутка, В. М., Цярэшка, А. А., Герасімаў, В. Д",
+   "grade": 5,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_zbornik_Pirytko_5kl_bel_2019.pdf"
+  },
+  {
+   "id": 878,
+   "title": "Зборнік задач па матэматыцы",
+   "author": "Пірутка, В. М., Цярэшка, А. А",
+   "grade": 6,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_zbornik_Pirytko_6kl_bel_2020.pdf"
+  },
+  {
+   "id": 879,
+   "title": "Сборник задач по алгебре",
+   "author": "Арефьева, И. Г., Пирютко, О. Н",
+   "grade": 7,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_sbornik_algebra_Arefieva_7kl_rus_2020.pdf"
+  },
+  {
+   "id": 880,
+   "title": "Сборник задач по алгебре",
+   "author": "Арефьева, И. Г., Пирютко, О. Н",
+   "grade": 8,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_sbornik_algebra_Arefieva_8kl_rus_2020.pdf"
+  },
+  {
+   "id": 881,
+   "title": "Сборник задач по алгебре",
+   "author": "Арефьева, И. Г., Пирютко, О. Н",
+   "grade": 9,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_sbornik_algebra_Arefieva_9kl_rus_2020.pdf"
+  },
+  {
+   "id": 882,
+   "title": "Зборнік задач па алгебры",
+   "author": "Арэф'ева, І. Г., Пірутка, В. М",
+   "grade": 7,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_zbornik_algebra_Arefieva_7kl_bel_2020.pdf"
+  },
+  {
+   "id": 883,
+   "title": "Зборнік задач па алгебры",
+   "author": "Арэф'ева, І. Г., Пірутка, В. М",
+   "grade": 8,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_zbornik_algebra_Arefieva_8kl_bel_2020.pdf"
+  },
+  {
+   "id": 884,
+   "title": "Зборнік задач па алгебры",
+   "author": "Арэф'ева, І. Г., Пірутка, В. М",
+   "grade": 9,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_zbornik_algebra_Arefieva_9kl_bel_2020.pdf"
+  },
+  {
+   "id": 888,
+   "title": "Астрономия: учебник",
+   "author": "Галузо, И. В., Голубев, В. А., Шимбалев, А. А",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/astronomiya/Astronomiya_Galuzo_11_rus_2021.pdf"
+  },
+  {
+   "id": 889,
+   "title": "Нямецкая мова: вучэбны дапаможнік",
+   "author": "Будзько, А. П., Урбановіч, І. Ю",
+   "grade": 7,
+   "year": "2021",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/Nyameckaya_mova_Bydzko_7kl_bel_2021.pdf"
+  },
+  {
+   "id": 890,
+   "title": "Сборник задач по химии",
+   "author": "Хвалюк, В. Н., Резяпкин, В. И",
+   "grade": 8,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/himija_sbornik_Hvalyuk_8kl_rus_2019.pdf"
+  },
+  {
+   "id": 891,
+   "title": "Сборник задач по химии",
+   "author": "Хвалюк, В. Н., Резяпкин, В. И",
+   "grade": 9,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/himija_sbornik_Hvalyuk_9kl_rus_2020.pdf"
+  },
+  {
+   "id": 892,
+   "title": "Зборнік задач па хіміі",
+   "author": "Хвалюк, В. М., Рэзяпкін, В. І",
+   "grade": 8,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/himija_zbornik_Hvalyuk_8kl_bel_2019.pdf"
+  },
+  {
+   "id": 893,
+   "title": "Зборнік задач па хіміі",
+   "author": "Хвалюк, В. М., Рэзяпкін, В. І",
+   "grade": 9,
+   "year": "2020",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/himija_zbornik_Hvalyuk_9kl_bel_2020.pdf"
+  },
+  {
+   "id": 894,
+   "title": "Алгебра: учебное пособие",
+   "author": "Арефьева, И. Г., Пирютко, О. Н",
+   "grade": 11,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Algebra_11k_Arefieva_rus_2020.pdf"
+  },
+  {
+   "id": 896,
+   "title": "Геаграфія. Глабальныя праблемы чалавецтва: вучэбны дапаможнік",
+   "author": "Вітчанка, А. М. [і інш.]",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/geografija/Geagrafiya_Vitchanka_11kl_bel_2021.pdf"
+  },
+  {
+   "id": 897,
+   "title": "География. Глобальные проблемы человечества: учебное пособие",
+   "author": "Витченко, А. Н. [и др.]",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/geografija/Geografija_Vitchenko_11kl_rus_2021.pdf"
+  },
+  {
+   "id": 898,
+   "title": "Хімія: вучэбны дапаможнік",
+   "author": "Мычко, Д. І., Прахарэвіч, К. М., Барушка, І. І",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/Himiya_11kl_Miichko_bel_2021.pdf"
+  },
+  {
+   "id": 899,
+   "title": "Химия: учебное пособие",
+   "author": "Мычко, Д. И., Прохоревич, К. Н., Борушко, И. И",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/Himiya_11kl_Michko_rus_2021.pdf"
+  },
+  {
+   "id": 900,
+   "title": "Физика: учебное пособие",
+   "author": "Жилко, В. В., Маркович, Л. Г., Сокольский, А. А",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/fizika/Fizika_11kl_Zhilko_rus_2021.pdf"
+  },
+  {
+   "id": 901,
+   "title": "Геаметрыя: вучэбны дапаможнік",
+   "author": "Латоцін, Л. А. [і інш.]",
+   "grade": 11,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Geametriya_11kl_Latocin_bel_2020.pdf"
+  },
+  {
+   "id": 902,
+   "title": "Геометрия: учебное пособие",
+   "author": "Латотин, Л. А. [и др.]",
+   "grade": 11,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Geometriya_11kl_Latotin_rus_2020.pdf"
+  },
+  {
+   "id": 903,
+   "title": "Зборнік задач па алгебры",
+   "author": "Арэф'ева, І. Г., Пірутка, В. М",
+   "grade": 11,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Algebra_ZZadach_11kl_Arefieva_bel_2020.pdf"
+  },
+  {
+   "id": 904,
+   "title": "Беларуская літаратура: вучэбны дапаможнік",
+   "author": "Мельнікава, З. П. [і інш.]",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-litaratura/bel_lit_11kl_Melnikava_bel_rus_2021.pdf"
+  },
+  {
+   "id": 905,
+   "title": "Фізіка: вучэбны дапаможнік",
+   "author": "Жылко, В. У., Марковіч, Л. Р., Сакольскі, А. А",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/fizika/Fizika_Zhilko_11kl_bel_2021.pdf"
+  },
+  {
+   "id": 906,
+   "title": "Биология: учебник",
+   "author": "Лисов, Н. Д",
+   "grade": 6,
+   "year": "2021",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/biologija/Biologiya_Lisov_6kl_rus_2021.pdf"
+  },
+  {
+   "id": 910,
+   "title": "Немецкий язык: учебное пособие",
+   "author": "Будько, А. Ф., Урбанович, И. Ю",
+   "grade": 7,
+   "year": "2021",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_Bydko_7kl_rus_2021.pdf"
+  },
+  {
+   "id": 911,
+   "title": "Немецкий язык / Нямецкая мова: учебное пособие. Ч.1",
+   "author": "Лаптева, Н. Е. [и др.]",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_Lapteva_11kl_1ch_rus_bel_2021.pdf"
+  },
+  {
+   "id": 912,
+   "title": "Французский язык / Французская мова: учебное пособие",
+   "author": "Вадюшина, Д. С",
+   "grade": 7,
+   "year": "2021",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/francuzkij_Vadyushina_7kl_bel_rus_2021.pdf"
+  },
+  {
+   "id": 913,
+   "title": "Немецкий язык / Нямецкая мова: учебное пособие. Ч.2",
+   "author": "Лаптева, Н. Е. [и др.]",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_Lapteva_11kl_2ch_bel_rus_2021.pdf"
+  },
+  {
+   "id": 914,
+   "title": "Русский язык: учебное пособие",
+   "author": "Долбик, Е. Е. [и др.]",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkij-jazyk/Rus_yaz_11kl_Dolbik_bel_rus_2021.pdf"
+  },
+  {
+   "id": 915,
+   "title": "Русская литература: учебное пособие",
+   "author": "Сенькевич, Т. В., Капшай, Н. П., Кушнерёва, Л. А., Темушева, Е. А",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkaya-literatura/rus_lit_11k_Senkevich_rus_bel_2021.pdf"
+  },
+  {
+   "id": 916,
+   "title": "Алгебра: вучэбны дапаможнік",
+   "author": "Арэф'ева, І. Г., Пірутка, В. М",
+   "grade": 11,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Algebra_11kl_Arefieva_bel_2020.pdf"
+  },
+  {
+   "id": 917,
+   "title": "Английский язык: учебное пособие",
+   "author": "Юхнель, Н. В., Демченко, Н. В., Романчук, В. Р",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_yazik_11kl_Yuhnel_rus_2021.pdf"
+  },
+  {
+   "id": 918,
+   "title": "Астраномія: падручнік",
+   "author": "Галуза, І. В., Голубеў, У. А., Шымбалёў, А. А",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/astronomiya/Astranomiya_11kl_Galuza_bel_2021.pdf"
+  },
+  {
+   "id": 919,
+   "title": "Беларуская літаратура: вучэбны дапаможнік. Ч.1",
+   "author": "Жуковіч, М. В., Праскаловіч, В. У., Цітова, Л. К",
+   "grade": 5,
+   "year": "2021",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-litaratura/Bel_lit_5k_Zhukovich_ch1_bel_rus_2021.pdf"
+  },
+  {
+   "id": 920,
+   "title": "Беларуская мова: вучэбны дапаможнік",
+   "author": "Валочка, Г.М., Васюковіч, Л.С., Зелянко, В.У",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-mova/Bel_mova_11kl_Valochka_rus_bel_2021.pdf"
+  },
+  {
+   "id": 921,
+   "title": "Биология: учебное пособие",
+   "author": "Дашков, М. Л., Песнякевич, А. Г., Головач, А. М",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/biologija/Biologiya_11k_Dashkov_rus_2021.pdf"
+  },
+  {
+   "id": 922,
+   "title": "Біялогія: вучэбны дапаможнік",
+   "author": "Дашкоў, М. Л., Песнякевіч, А. Г., Галавач, А. М",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/biologija/Biyalogiya_11kl_Dashkoy_bel_2021.pdf"
+  },
+  {
+   "id": 923,
+   "title": "Информатика: учебное пособие",
+   "author": "Котов, В. М., Лапо, А. И., Быкадоров, Ю. А., Войтехович, Е. Н",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/informatika/Informatika_11kl_Kotov_rus_2021.pdf"
+  },
+  {
+   "id": 924,
+   "title": "Сборник задач по алгебре",
+   "author": "Арефьева, И. Г., Пирютко, О. Н",
+   "grade": 11,
+   "year": "2020",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_sbornik_algebra_Arefieva_11kl_rus_2020.pdf"
+  },
+  {
+   "id": 931,
+   "title": "Інфарматыка: вучэбны дапаможнік",
+   "author": "Котаў, У.М., Лапо, А.І., Быкадораў, Ю.А., Вайцеховіч, А.М",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/informatika/infarmatika_11kl_Kotay_bel_2021.pdf"
+  },
+  {
+   "id": 932,
+   "title": "Английский язык / Англійская мова: учебное пособие. Ч.1",
+   "author": "Демченко, Н. В. [и др.]",
+   "grade": 10,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_Demchenko_10kl_bel_rus_ch1_2021.pdf"
+  },
+  {
+   "id": 933,
+   "title": "Английский язык: учебное пособие",
+   "author": "Лапицкая, Л. М. [и др.]",
+   "grade": 8,
+   "year": "2021",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_yazik_8kl_Lapickaya_rus_2021.pdf"
+  },
+  {
+   "id": 935,
+   "title": "Біялогія: вучэбны дапаможнік",
+   "author": "Лісаў, М. Д",
+   "grade": 6,
+   "year": "2021",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/biologija/Biyalogiya_6k_Lisay_bel_2021.pdf"
+  },
+  {
+   "id": 937,
+   "title": "Французский язык / Французская мова: учебное пособие",
+   "author": "Вадюшина, Д. С",
+   "grade": 8,
+   "year": "2021",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/francuzki_8kl_Vadyushina_rus_bel_2021.pdf"
+  },
+  {
+   "id": 938,
+   "title": "Обществоведение: учебное пособие",
+   "author": "Чуприс, О. И. [и др.]",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/obschestvovedenie/Obschestvovedenie_11kl_Chupris_rus_2021.pdf"
+  },
+  {
+   "id": 939,
+   "title": "Испанский язык / Іспанская мова: учебное пособие",
+   "author": "Гриневич, Е. К., Янукенас, О. В",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanski_11k_Grinevich_bel_rus_2021.pdf"
+  },
+  {
+   "id": 940,
+   "title": "Грамадазнаўства: вучэбны дапаможнік",
+   "author": "Чупрыс, В. І. [і інш.]",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/obschestvovedenie/Gramadaznaystva_11kl_Chupriis_bel_2021.pdf"
+  },
+  {
+   "id": 943,
+   "title": "Працоўнае навучанне: вучэбны дапаможнік",
+   "author": "Юрчанка, Н. А., Журба, А. Ф",
+   "grade": 4,
+   "year": "2021",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Pracoynae_navuchanne_4kl_Yurchanka_bel_2021.pdf"
+  },
+  {
+   "id": 944,
+   "title": "Трудовое обучение: учебное пособие",
+   "author": "Юрченко, Н. А., Журба, А. Ф",
+   "grade": 4,
+   "year": "2021",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Trudovoe_obuchenie_4kl_Yurchenko_rus_2021.pdf"
+  },
+  {
+   "id": 945,
+   "title": "Испанский язык / Іспанская мова: учебное пособие. Ч.1",
+   "author": "Цыбулёва, Т. Э., Пушкина, О. А., Карпиевич, Г. К",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanski_11k_Cibulyova_ch1_bel_rus_2021.pdf"
+  },
+  {
+   "id": 946,
+   "title": "Англійская мова: вучэбны дапаможнік",
+   "author": "Юхнель, Н. В. [і інш.]",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliskaya_mova_11kl_Yuhnel_bel_2021.pdf"
+  },
+  {
+   "id": 948,
+   "title": "Зборнік задач па геаметрыі: вучэбны дапаможнік",
+   "author": "Латоцін, Л. А., Чабатарэўскі, Б. Д",
+   "grade": 10,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Geametriya_ZZadach_10kl_Latocin_bel_2021.pdf"
+  },
+  {
+   "id": 949,
+   "title": "Зборнік задач па геаметрыі: вучэбны дапаможнік",
+   "author": "Латоцін, Л. А., Чабатарэўскі, Б. Д",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Geametriya_ZZadach_11kl_Latocin_bel_2021.pdf"
+  },
+  {
+   "id": 950,
+   "title": "Сборник задач по химии",
+   "author": "Хвалюк, В. Н., Резяпкин, В. И",
+   "grade": 7,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/himija_sbornik_Hvalyuk_7kl_rus_2019.pdf"
+  },
+  {
+   "id": 951,
+   "title": "Зборнік задач па хіміі",
+   "author": "Хвалюк, В. М., Рэзяпкін, В. І",
+   "grade": 7,
+   "year": "2019",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/himija_zbornik_Hvalyuk_7kl_bel_2019.pdf"
+  },
+  {
+   "id": 952,
+   "title": "Литературное чтение: учебник. Ч.2",
+   "author": "Стремок, И. М",
+   "grade": 2,
+   "year": "2021",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/lit_chtenie_2kl_ch2_Stremok_bel_2021.pdf"
+  },
+  {
+   "id": 956,
+   "title": "Сборник задач по химии: учебное пособие",
+   "author": "Матулис, Вадим Э. [и др.]",
+   "grade": 10,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/himija_sbornik_10kl_Matulis_rus_2021.pdf"
+  },
+  {
+   "id": 957,
+   "title": "Беларуская літаратура: вучэбны дапаможнік. Ч.2",
+   "author": "Жуковіч, М. В., Праскаловіч, В. У., Цітова, Л. К",
+   "grade": 5,
+   "year": "2021",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-litaratura/Bel_lit_5k_Zhukovich_ch2_bel_rus_2021.pdf"
+  },
+  {
+   "id": 958,
+   "title": "Сборник задач по геометрии",
+   "author": "Латотин, Л. А., Чеботаревский, Б. Д",
+   "grade": 10,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matem_sbornik_geomet_10kl_Latotin_rus_2021.pdf"
+  },
+  {
+   "id": 959,
+   "title": "Сборник задач по геометрии",
+   "author": "Латотин, Л. А., Чеботаревский, Б. Д",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matem_sbornik_geomet_11kl_Latotin_rus_2021.pdf"
+  },
+  {
+   "id": 960,
+   "title": "Зборнік задач па хіміі",
+   "author": "Матуліс, Вадзім Э",
+   "grade": 10,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/himija_zbornik_10kl_Matulis_bel_2021.pdf"
+  },
+  {
+   "id": 961,
+   "title": "Английский язык / Англійская мова: учебное пособие. Ч.2",
+   "author": "Демченко, Н. В. [и др.]",
+   "grade": 10,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_Demchenko_10kl_bel_rus_ch2_2021.pdf"
+  },
+  {
+   "id": 962,
+   "title": "Английский язык: учебное пособие",
+   "author": "Юхнель, Н. В., Наумова, Е. Г., Малиновская (Родовская), Е. А",
+   "grade": 6,
+   "year": "2021",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_yazik_6k_Yuhnel_rus_2021.pdf"
+  },
+  {
+   "id": 964,
+   "title": "Англійская мова: вучэбны дапаможнік",
+   "author": "Юхнель, Н.В., Навумава, А. Г., Маліноўская, А. А",
+   "grade": 6,
+   "year": "2021",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliskaya_mova_6kl_Yuhnel_bel_2021.pdf"
+  },
+  {
+   "id": 965,
+   "title": "Испанский язык / Іспанская мова: учебное пособие. Ч.2",
+   "author": "Цыбулёва, Т. Э., Пушкина, О. А., Карпиевич, Г. К",
+   "grade": 11,
+   "year": "2021",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanski_11k_Cibulyova_ch2_bel_rus_2021.pdf"
+  },
+  {
+   "id": 966,
+   "title": "Алгебра: учебное пособие",
+   "author": "Арефьева, И. Г., Пирютко, О. Н",
+   "grade": 7,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Algebra_7kl_Arefieva_rus_2022.pdf"
+  },
+  {
+   "id": 967,
+   "title": "Математика: учебное пособие",
+   "author": "Герасимов, В. Д., Пирютко, О. Н",
+   "grade": 6,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Matematika_6kl_Gerasimov_rus_2022.pdf"
+  },
+  {
+   "id": 968,
+   "title": "Немецкий язык / Нямецкая мова: учебное пособие. Ч.1",
+   "author": "Зуевская, Е. В., Салынская, С. И., Негурэ, О. В",
+   "grade": 6,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/nemecki_yazik_Zuevskaya_6kl_ch1_bel_rus_2022.pdf"
+  },
+  {
+   "id": 969,
+   "title": "Французский язык / Французская мова: учебное пособие. Ч.1",
+   "author": "Колосовская, И. Г., Скибская, Н. В",
+   "grade": 5,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/francuzki_kolosovskaja_5kl_1ch_bel_rus_2022.pdf"
+  },
+  {
+   "id": 970,
+   "title": "Биология: учебное пособие",
+   "author": "Лисов, Н. Д",
+   "grade": 7,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/biologija/Biologiya_7kl_Lisov_rus_2022.pdf"
+  },
+  {
+   "id": 971,
+   "title": "Геометрия: учебное пособие",
+   "author": "Казаков, В. В",
+   "grade": 7,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Geometriya_7kl_Kazakov_rus_2022.pdf"
+  },
+  {
+   "id": 972,
+   "title": "Искусство (отечественная и мировая художественная культура): учебное пособие",
+   "author": "Колбышева, С. И., Захарина, Ю. Ю., Грачева, О. О",
+   "grade": 5,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/iskusstvo/Iskusstvo_5kl_Kolbisheva_rus_2022.pdf"
+  },
+  {
+   "id": 973,
+   "title": "Немецкий язык / Нямецкая мова: учебное пособие. Ч.2",
+   "author": "Зуевская, Е. В., Салынская, С. И., Негурэ, О. В",
+   "grade": 6,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_6kl_ch2_Zuevskaya_bel_rus_2022.pdf"
+  },
+  {
+   "id": 974,
+   "title": "Человек и мир: учебное пособие",
+   "author": "Лопух, П. С., Сарычева, О. В., Шкель, Л. В",
+   "grade": 5,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/chelovek-i-mir/Chel_i_mir_5kl_Lopuh_rus_2022.pdf"
+  },
+  {
+   "id": 976,
+   "title": "Русский язык: учебное пособие. Ч.1",
+   "author": "Гулецкая, Е. А., Федорович, Г. М",
+   "grade": 2,
+   "year": "2022",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkij-jazyk/Rus_yaz_2kl_ch1_Guleckaya_rus_2022.pdf"
+  },
+  {
+   "id": 977,
+   "title": "Литературное чтение: учебное пособие. Ч.1",
+   "author": "Воропаева, В. С., Куцанова, Т. С",
+   "grade": 2,
+   "year": "2022",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/lit_chtenie_2k_ch1_Voropaeva_rus_2022.pdf"
+  },
+  {
+   "id": 978,
+   "title": "Матэматыка: вучэбны дапаможнік",
+   "author": "Герасімаў, В. Д., Пірутка, В. М",
+   "grade": 6,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Matematika_6kl_Gerasimay_bel_2022.pdf"
+  },
+  {
+   "id": 979,
+   "title": "Математика: учебное пособие. Ч.1",
+   "author": "Муравьёва, Г. Л., Урбан, М. А",
+   "grade": 4,
+   "year": "2022",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_4kl_ch1_Muravyova_rus_2022.pdf"
+  },
+  {
+   "id": 980,
+   "title": "Физика: учебник",
+   "author": "Исаченкова, Л. А., Громыко, Е. В., Лещинский, Ю. Д",
+   "grade": 7,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/fizika/Fizika_Isachenkova_7kl_rus_2022.pdf"
+  },
+  {
+   "id": 981,
+   "title": "Геаметрыя: вучэбны дапаможнік",
+   "author": "Казакоў, В. У",
+   "grade": 7,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Geametriya_Kazakoy_7kl_bel_2022.pdf"
+  },
+  {
+   "id": 982,
+   "title": "География. Физическая география: учебное пособие",
+   "author": "Кольмакова, Е. Г., Пикулик, В. В",
+   "grade": 6,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/geografija/Geografiya_Kolmakova_6k_rus_2022.pdf"
+  },
+  {
+   "id": 983,
+   "title": "Немецкий язык / Нямецкая мова: учебное пособие. Ч.1",
+   "author": "Лаптева, Н. Е. [и др.]",
+   "grade": 8,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_Lapteva_8kl_1ch_rus_bel_2022.pdf"
+  },
+  {
+   "id": 984,
+   "title": "Біялогія: вучэбны дапаможнік",
+   "author": "Лісаў, М. Д",
+   "grade": 7,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/biologija/Biyalogiya_7kl_Lisay_bel_2022.pdf"
+  },
+  {
+   "id": 985,
+   "title": "Чалавек і свет: вучэбны дапаможнік",
+   "author": "Лопух, П. С., Сарычава, В. У., Шкель, Л. В",
+   "grade": 5,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/chelovek-i-mir/Chal_i_svet_5kl_Lopuh_bel_2022.pdf"
+  },
+  {
+   "id": 986,
+   "title": "Английский язык / Англійская мова: учебное пособие. Ч.1",
+   "author": "Демченко, Н. В. [и др.]",
+   "grade": 11,
+   "year": "2022",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_Demchenko_11kl_bel_rus_ch1_2022.pdf"
+  },
+  {
+   "id": 987,
+   "title": "Изобразительное искусство: учебное пособие",
+   "author": "Волкова, И. Г. , Семёнова, О. Г",
+   "grade": 3,
+   "year": "2022",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/izo/izo_Volkova_3kl_rus_2022.pdf"
+  },
+  {
+   "id": 988,
+   "title": "Испанский язык / Іспанская мова: учебное пособие. Ч.1",
+   "author": "Гриневич, Е. К",
+   "grade": 5,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanski_5kl_ch1_Grinevich_bel_rus_2022.pdf"
+  },
+  {
+   "id": 989,
+   "title": "Фiзiка: вучэбны дапаможнік",
+   "author": "Ісачанкава, Л.А., Грамыка, А. У., Ляшчынскі, Ю. Д",
+   "grade": 7,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/fizika/Fizika_7kl_Isachenkova_bel_2022.pdf"
+  },
+  {
+   "id": 990,
+   "title": "Сборник задач по физике",
+   "author": "Дорофейчик, В. В., Белая, О. Н",
+   "grade": 10,
+   "year": "2022",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/fizika/Fizika_sbornik_Dorofeichik_10kl_rus_2022.pdf"
+  },
+  {
+   "id": 991,
+   "title": "Матэматыка: вучэбны дапаможнік. Ч.1",
+   "author": "Мураўёва, Г. Л., Урбан, М. А",
+   "grade": 4,
+   "year": "2022",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_4kl_ch1_Murauyova_bel_2022.pdf"
+  },
+  {
+   "id": 992,
+   "title": "Мастацтва: вучэбны дапаможнік",
+   "author": "Колбышава, С.І. [і інш.]",
+   "grade": 5,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/iskusstvo/Mastactva_5kl_Kolbishava_bel_2022.pdf"
+  },
+  {
+   "id": 993,
+   "title": "Беларуская літаратура: вучэбны дапаможнік",
+   "author": "Бельскі, А. І., Навумчык, М. І., Цітова, Л. К.,",
+   "grade": 6,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-litaratura/bel_lit_6kl_Belski_bel_rus_2022.pdf"
+  },
+  {
+   "id": 994,
+   "title": "Геаграфія. Фізічная геаграфія: вучэбны дапаможнік",
+   "author": "Кальмакова, А. Г., Пікулік, В. У",
+   "grade": 6,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/geografija/Geagrafiya_Kalmakova_6k_bel_2022.pdf"
+  },
+  {
+   "id": 995,
+   "title": "Беларуская мова: вучэбны дапаможнік. Ч.1",
+   "author": "Антановіч, Н. М., Антонава, Н. У",
+   "grade": 2,
+   "year": "2022",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-mova/Bel_mova_2k_ch1_Antanovich_bel_2022.pdf"
+  },
+  {
+   "id": 996,
+   "title": "Літаратурнае чытанне: вучэбны дапаможнік. Ч.1",
+   "author": "Жуковіч, М. В",
+   "grade": 2,
+   "year": "2022",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/lit_chitanne_2kl_ch1_Zhukovich_2022.pdf"
+  },
+  {
+   "id": 997,
+   "title": "Трудовое обучение. Обслуживающий труд: учебное пособие",
+   "author": "Сысоева, И. А., Ганина, М. В., Уласевич, Т. П",
+   "grade": 6,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Trud_OT_6kl_Sisoeva_rus_2022.pdf"
+  },
+  {
+   "id": 998,
+   "title": "Английский язык / Англійская мова: учебное пособие. Ч.1",
+   "author": "Демченко, Н. В. [и др.]",
+   "grade": 9,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_Demchenko_9kl_ch1_bel_rus_2022.pdf"
+  },
+  {
+   "id": 999,
+   "title": "Китайский язык / Кітайская мова: учебное пособие. Ч.1",
+   "author": "Пониматко, А. П. [и др.]",
+   "grade": 5,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/kitajskij/kitajski_5kl_ch1_Ponimatko_bel_rus_2022.pdf"
+  },
+  {
+   "id": 1000,
+   "title": "Працоўнае навучанне. Абслуговая праца: вучэбны дапаможнік",
+   "author": "Сысоева, І. А., Ганіна, М. У., Уласевіч, Т. П",
+   "grade": 6,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Prac_nav_AP_6kl_Siisoeva_bel_2022.pdf"
+  },
+  {
+   "id": 1003,
+   "title": "Выяўленчае мастацтва: вучэбны дапаможнік",
+   "author": "Волкава, І. Г., Сямёнава, В. Г",
+   "grade": 3,
+   "year": "2022",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/izo/viyaulenchae_mastactva_Volkava_3kl_bel_2022.pdf"
+  },
+  {
+   "id": 1006,
+   "title": "Русский язык: учебное пособие. Ч.2",
+   "author": "Гулецкая, Е. А., Федорович, Г. М",
+   "grade": 2,
+   "year": "2022",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkij-jazyk/Rus_yaz_2kl_ch2_Guleckaya_rus_2022.pdf"
+  },
+  {
+   "id": 1009,
+   "title": "Испанский язык / Іспанская мова: учебное пособие. Ч.2",
+   "author": "Гриневич, Е. К",
+   "grade": 5,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanski_5kl_ch2_Grinevich_bel_rus_2022.pdf"
+  },
+  {
+   "id": 1012,
+   "title": "Немецкий язык / Нямецкая мова: учебное пособие. Ч.2",
+   "author": "Лаптева, Н. Е. [и др.]",
+   "grade": 8,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_Lapteva_8k_2ch_rus_bel_2022.pdf"
+  },
+  {
+   "id": 1013,
+   "title": "История Беларуси. Великая Отечественная война советского народа (в контексте Второй мировой войны): учебное пособие",
+   "author": "Коваленя, А. А. [и др.]",
+   "grade": 9,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/VOV_soveckogo_naroda_9kl_kovalenya_rus_2022.pdf"
+  },
+  {
+   "id": 1014,
+   "title": "История Беларуси. Великая Отечественная война советского народа (в контексте Второй мировой войны): учебное пособие",
+   "author": "Коваленя, А. А. [и др.]",
+   "grade": 11,
+   "year": "2022",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/VOV_soveckogo_naroda_11kl_kovalenya_rus_2022.pdf"
+  },
+  {
+   "id": 1015,
+   "title": "Английский язык / Англійская мова: учебное пособие. Ч.2",
+   "author": "Демченко, Н. В. [и др.]",
+   "grade": 11,
+   "year": "2022",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_Demchenko_11kl_bel_rus_ch2_2022.pdf"
+  },
+  {
+   "id": 1016,
+   "title": "Математика: учебное пособие. Ч.2",
+   "author": "Муравьёва, Г. Л., Урбан, М. А",
+   "grade": 4,
+   "year": "2022",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_4kl_ch2_Muravyova_rus_2022.pdf"
+  },
+  {
+   "id": 1017,
+   "title": "Зборнік задач па фізіцы",
+   "author": "Дарафейчык, У. У., Белая, В. М",
+   "grade": 10,
+   "year": "2022",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/fizika/Fizika_zbornik_10kl_Darafeichik_bel_2022.pdf"
+  },
+  {
+   "id": 1018,
+   "title": "Французский язык / Французская мова: учебное пособие. Ч.2",
+   "author": "Колосовская, И. Г., Скибская, Н. В",
+   "grade": 5,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/francuzki_kolosovskaja_5kl_2ch_bel_rus_2022.pdf"
+  },
+  {
+   "id": 1019,
+   "title": "Английский язык / Англійская мова: учебное пособие. Ч.2",
+   "author": "Демченко, Н. В. [и др.]",
+   "grade": 9,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_Demchenko_9kl_ch2_bel_rus_2022.pdf"
+  },
+  {
+   "id": 1020,
+   "title": "Беларуская мова: вучэбны дапаможнік. Ч.2",
+   "author": "Антановіч, Н. М., Антонава, Н. У",
+   "grade": 2,
+   "year": "2022",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-mova/Bel_mova_2k_ch2_Antanovich_bel_2022.pdf"
+  },
+  {
+   "id": 1021,
+   "title": "Матэматыка: вучэбны дапаможнік. Ч.2",
+   "author": "Мураўёва, Г. Л., Урбан, М. А",
+   "grade": 4,
+   "year": "2022",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_4kl_ch2_Murauyova_bel_2022.pdf"
+  },
+  {
+   "id": 1022,
+   "title": "Літаратурнае чытанне: вучэбны дапаможнік. Ч.2",
+   "author": "Жуковіч, М. В",
+   "grade": 2,
+   "year": "2022",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/lit_chitanne_2kl_ch2_Zhukovich_2022.pdf"
+  },
+  {
+   "id": 1023,
+   "title": "Китайский язык / Кітайская мова: учебное пособие. Ч.2",
+   "author": "Пониматко, А. П. [и др.]",
+   "grade": 5,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/kitajskij/kitajski_5kl_ch2_Ponimatko_bel_rus_2022.pdf"
+  },
+  {
+   "id": 1024,
+   "title": "Гісторыя Беларусі. Вялікая Айчынная вайна савецкага народа (у кантэксце Другой сусветнай вайны): вучэбны дапаможнік",
+   "author": "Каваленя, А. А. [і інш.]",
+   "grade": 9,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/VAV_saveckaga_naroda_9kl_kavalenya_bel_2022.pdf"
+  },
+  {
+   "id": 1025,
+   "title": "Гісторыя Беларусі. Вялікая Айчынная вайна савецкага народа (у кантэксце Другой сусветнай вайны): вучэбны дапаможнік",
+   "author": "Каваленя, А. А. [і інш.]",
+   "grade": 11,
+   "year": "2022",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/VAV_saveckaga_naroda_11kl_kavalenya_bel_2022.pdf"
+  },
+  {
+   "id": 1026,
+   "title": "Хрестоматия. Великая Отечественная война советского народа (в контексте Второй мировой войны): учебное пособие",
+   "author": "Коваленя, А. А. [и др.]",
+   "grade": 9,
+   "year": "2022",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Hrestomatiya_VOV_soveckogo_naroda_9kl_kovalenya_rus_bel_2022.pdf"
+  },
+  {
+   "id": 1027,
+   "title": "Хрестоматия. Великая Отечественная война советского народа (в контексте Второй мировой войны): учебное пособие",
+   "author": "Коваленя, А. А. [и др.]",
+   "grade": 11,
+   "year": "2022",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Hrestomatiya_VOV_soveckogo_naroda_11kl_kovalenya_rus_bel_2022.pdf"
+  },
+  {
+   "id": 1028,
+   "title": "Литературное чтение: учебное пособие. Ч.2",
+   "author": "Воропаева, В. С., Куцанова, Т. С",
+   "grade": 2,
+   "year": "2022",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/lit_chtenie_2k_ch2_Voropaeva_rus_2022.pdf"
+  },
+  {
+   "id": 1029,
+   "title": "Трудовое обучение. Обслуживающий труд: учебное пособие",
+   "author": "Столярова, С. И., Юрченко, Н. А",
+   "grade": 7,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Trud_OT_7kl_Stolyarova_rus_2023.pdf"
+  },
+  {
+   "id": 1030,
+   "title": "Беларуская мова: вучэбны дапаможнік. Ч.1",
+   "author": "Свірыдзенка, В. І",
+   "grade": 3,
+   "year": "2023",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-mova/bel_mova_Sviridenka_3kl_rus_bel_ch1_2023.pdf"
+  },
+  {
+   "id": 1031,
+   "title": "История Средних веков: учебное пособие",
+   "author": "Прохоров, А. А. [и др.]",
+   "grade": 6,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Istorija_Srednih_vekov_6kl_Prohorov_rus_2023.pdf"
+  },
+  {
+   "id": 1032,
+   "title": "Китайский язык / Кітайская мова: учебное пособие. Ч.1",
+   "author": "Пониматко, А. П., Молоткова, Ю. В., Букатая, А. М., Вэй Вэй",
+   "grade": 3,
+   "year": "2023",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/kitajskij/kit_Ponimatko_3kl_ch1_bel_rus_2023.pdf"
+  },
+  {
+   "id": 1033,
+   "title": "Биология: учебное пособие",
+   "author": "Бедарик, И. Г., Бедарик, А. Е., Иванов, В. Н",
+   "grade": 8,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/biologija/Biologiya_8kl_Bedarik_rus_2023.pdf"
+  },
+  {
+   "id": 1034,
+   "title": "Літаратурнае чытанне: вучэбны дапаможнік. Ч.1",
+   "author": "Жуковіч, М. В",
+   "grade": 3,
+   "year": "2023",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/lit_chitanne_Zhukovich_3kl_ch1_rus_bel_2023.pdf"
+  },
+  {
+   "id": 1035,
+   "title": "Англійская мова: вучэбны дапаможнік. Ч.1",
+   "author": "Лапіцкая, Л. М. [і інш.]",
+   "grade": 3,
+   "year": "2023",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/Angliskaya_mova_3kl_ch1_Lapickaya_bel_2023.pdf"
+  },
+  {
+   "id": 1036,
+   "title": "Біялогія: вучэбны дапаможнік",
+   "author": "Бядарык, І. Г., Бядарык, А. Я., Іваноў, У. М",
+   "grade": 8,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/biologija/Biyalogiya_8kl_Byadariik_bel_2023.pdf"
+  },
+  {
+   "id": 1037,
+   "title": "Сборник задач по физике",
+   "author": "Дорофейчик, В. В., Силенков, М. А",
+   "grade": 11,
+   "year": "2023",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/fizika/Fizika_sbornik_11kl_Dorofeichik_rus_2023.pdf"
+  },
+  {
+   "id": 1038,
+   "title": "География. Материки и океаны: учебное пособие",
+   "author": "Кольмакова, Е. Г., Лопух, П. С., Сарычева, О. В",
+   "grade": 7,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/geografija/Geografiya_7kl_Kolmakova_rus_2023.pdf"
+  },
+  {
+   "id": 1039,
+   "title": "Гісторыя Сярэдніх вякоў: вучэбны дапаможнік",
+   "author": "Прохараў, А. А. [і інш.]",
+   "grade": 6,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Gistoriya_SV_6kl_Proharay_bel_2023.pdf"
+  },
+  {
+   "id": 1040,
+   "title": "Зборнік задач па хіміі",
+   "author": "Хвалюк, В. М., Рэзяпкін, В. І",
+   "grade": 11,
+   "year": "2023",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/Himija_11kl_zbornik_Hvalyuk_bel_2023.pdf"
+  },
+  {
+   "id": 1041,
+   "title": "Химия: учебное пособие",
+   "author": "Шиманович, И. Е. [и др.]",
+   "grade": 7,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/Himiya_7kl_Shimanovich_rus_2023.pdf"
+  },
+  {
+   "id": 1042,
+   "title": "Мастацтва (айчынная і сусветная мастацкая культура): вучэбны дапаможнік",
+   "author": "Захарына, Ю. Ю. [і інш.]",
+   "grade": 6,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/iskusstvo/Mastactva_6kl_Zahariina_bel_2023.pdf"
+  },
+  {
+   "id": 1043,
+   "title": "Русский язык: учебное пособие. Ч.1",
+   "author": "Антипова, М. Б., Верниковская, А. В., Грабчикова, Е. С",
+   "grade": 3,
+   "year": "2023",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkij-jazyk/Rus_yaz_3kl_Antipova_ch1_rus_bel_2023.pdf"
+  },
+  {
+   "id": 1044,
+   "title": "Сборник задач по химии",
+   "author": "Хвалюк, В. Н., Резяпкин, В. И",
+   "grade": 11,
+   "year": "2023",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/Himija_11kl_sbornik_Hvalyuk_rus_2023.pdf"
+  },
+  {
+   "id": 1045,
+   "title": "Искусство (отечественная и мировая художественная культура): учебное пособие",
+   "author": "Захарина, Ю. Ю. [и др.]",
+   "grade": 6,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/iskusstvo/Iskusstvo_6kl_Zaharina_rus_2023.pdf"
+  },
+  {
+   "id": 1046,
+   "title": "Русская литература: учебное пособие. Ч.1",
+   "author": "Захарова, С. Н., Петровская, Л. К",
+   "grade": 7,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkaya-literatura/rus_lit_7kl_Zaharova_ch1_bel_rus_2023.pdf"
+  },
+  {
+   "id": 1047,
+   "title": "Человек и мир: учебное пособие",
+   "author": "Трафимова, Г. В., Трафимов, С. А",
+   "grade": 1,
+   "year": "2023",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/chelovek-i-mir/Chel_i_mir_1kl_Trafimova_rus_2023.pdf"
+  },
+  {
+   "id": 1048,
+   "title": "Чалавек і свет: вучэбны дапаможнік",
+   "author": "Трафімава, Г. У., Трафімаў, С. А",
+   "grade": 1,
+   "year": "2023",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/chelovek-i-mir/Chal_i_svet_1kl_Trafimava_bel_2023.pdf"
+  },
+  {
+   "id": 1049,
+   "title": "Английский язык: учебное пособие. Ч.1",
+   "author": "Лапицкая, Л. М. [и др.]",
+   "grade": 3,
+   "year": "2023",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_yazik_3kl_Lapickaya_rus_ch1_2023.pdf"
+  },
+  {
+   "id": 1050,
+   "title": "Беларуская літаратура: вучэбны дапаможнік",
+   "author": "Лазарук, М. А., Логінава, Т. У., Сухава, Г. А",
+   "grade": 7,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-litaratura/bel_lit_7kl_Lazaruk_rus_bel_2023.pdf"
+  },
+  {
+   "id": 1051,
+   "title": "Английский язык: учебное пособие",
+   "author": "Юхнель, Н. В., Демченко, Н. В., Наумова, Е.Г., Романчук, В. Р",
+   "grade": 7,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_yazik_7kl_Yuhnel_rus_2023.pdf"
+  },
+  {
+   "id": 1052,
+   "title": "Гісторыя Беларусі са старажытных часоў да канца XV ст.: вучэбны дапаможнік",
+   "author": "Цемушаў, С. М., Бохан, Ю. М",
+   "grade": 6,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Gistoriiya_Belarusi_6kl_Cemushay_bel_2023.pdf"
+  },
+  {
+   "id": 1053,
+   "title": "Допризывная и медицинская подготовка: учебное пособие",
+   "author": "Баранов, А. А., Биндей, А. А., Богдан, В. Г",
+   "grade": 8,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/doprizyv-med/Dop_med_podgotovka_8kl_Baranov_rus_2023.pdf"
+  },
+  {
+   "id": 1054,
+   "title": "История Беларуси с древнейших времен до конца XV в.: учебное пособие",
+   "author": "Темушев, С. Н., Бохан, Ю. Н",
+   "grade": 6,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Istoriya_Bel_sdr_dokonca15v_6kl_Temyshev_rus_2023.pdf"
+  },
+  {
+   "id": 1056,
+   "title": "Беларуская мова: вучэбны дапаможнік. Ч.2",
+   "author": "Свірыдзенка, В. І",
+   "grade": 3,
+   "year": "2023",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-mova/bel_mova_Sviridenka_3kl_rus_bel_ch2_2023.pdf"
+  },
+  {
+   "id": 1057,
+   "title": "Зборнік задач па фізіцы",
+   "author": "Дарафейчык, У. У., Сілянкоў, М. А",
+   "grade": 11,
+   "year": "2023",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/fizika/Fizika_zbornik_11kl_Darafeichik_bel_2023.pdf"
+  },
+  {
+   "id": 1058,
+   "title": "Хімія: вучэбны дапаможнік",
+   "author": "Шымановіч, І. Я. [і інш.]",
+   "grade": 7,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/Himiya_7kl_Shimanovich_bel_2023.pdf"
+  },
+  {
+   "id": 1059,
+   "title": "Китайский язык / Кітайская мова: учебное пособие. Ч.2",
+   "author": "Пониматко, А. П., Молоткова, Ю. В., Букатая, А. М., Вэй Вэй",
+   "grade": 3,
+   "year": "2023",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/kitajskij/kit_Ponimatko_3kl_ch2_bel_rus_2023.pdf"
+  },
+  {
+   "id": 1060,
+   "title": "Английский язык: учебное пособие. Ч.2",
+   "author": "Лапицкая, Л. М. [и др.]",
+   "grade": 3,
+   "year": "2023",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_yazik_3kl_Lapickaya_rus_ch2_2023.pdf"
+  },
+  {
+   "id": 1061,
+   "title": "Русский язык: учебное пособие. Ч.2",
+   "author": "Антипова, М. Б., Верниковская, А. В., Грабчикова, Е. С",
+   "grade": 3,
+   "year": "2023",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkij-jazyk/Rus_yaz_3kl_Antipova_ch2_rus_bel_2023.pdf"
+  },
+  {
+   "id": 1062,
+   "title": "Англійская мова: вучэбны дапаможнік. Ч.2",
+   "author": "Лапіцкая, Л. М. [і інш.]",
+   "grade": 3,
+   "year": "2023",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/Angliskaya_mova_3kl_ch2_Lapickaya_bel_2023.pdf"
+  },
+  {
+   "id": 1063,
+   "title": "Літаратурнае чытанне: вучэбны дапаможнік. Ч.2",
+   "author": "Жуковіч, М. В",
+   "grade": 3,
+   "year": "2023",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/lit_chitanne_Zhukovich_3kl_ch2_rus_bel_2023.pdf"
+  },
+  {
+   "id": 1064,
+   "title": "Русская литература: учебное пособие. Часть 2",
+   "author": "Захарова, С. Н., Петровская, Л. К",
+   "grade": 7,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkaya-literatura/rus_lit_Zaharova_6kl_ch2_rus_bel_2023.pdf"
+  },
+  {
+   "id": 1065,
+   "title": "Сборник задач по геометрии",
+   "author": "Кононов, С. Г. [и др.]",
+   "grade": 7,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matem_sbornik_geomet_7kl_Kononov_rus_2023.pdf"
+  },
+  {
+   "id": 1066,
+   "title": "Сборник задач по геометрии",
+   "author": "Кононов, С. Г. [и др.]",
+   "grade": 8,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matem_sbornik_geomet_8kl_Kononov_rus_2023.pdf"
+  },
+  {
+   "id": 1067,
+   "title": "Сборник задач по геометрии",
+   "author": "Кононов, С. Г. [и др.]",
+   "grade": 9,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matem_sbornik_geomet_9kl_Kononov_rus_2023.pdf"
+  },
+  {
+   "id": 1068,
+   "title": "Зборнік задач па геаметрыі: вучэбны дапаможнік",
+   "author": "Конанаў, С. Г., Адамовіч, Т. А., Яфімцава, І. В., Ячэйка, Т. У",
+   "grade": 7,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matem_zbornik_geamet_7kl_Konanau_bel_2023.pdf"
+  },
+  {
+   "id": 1069,
+   "title": "Зборнік задач па геаметрыі: вучэбны дапаможнік",
+   "author": "Конанаў, С. Г., Адамовіч, Т. А., Яфімцава, І. В., Ячэйка, Т. У",
+   "grade": 8,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matem_zbornik_geamet_8kl_Konanau_bel_2023.pdf"
+  },
+  {
+   "id": 1070,
+   "title": "Зборнік задач па геаметрыі: вучэбны дапаможнік",
+   "author": "Конанаў, С. Г., Адамовіч, Т. А., Яфімцава, І. В., Ячэйка, Т. У",
+   "grade": 9,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matem_zbornik_geamet_9kl_Konanau_bel_2023.pdf"
+  },
+  {
+   "id": 1072,
+   "title": "Математика: учебник (ч.1)",
+   "author": "Г.Л. Муравьёва, М.А. Урбан",
+   "grade": 1,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika-muravjova-1kl-ch1-rus_2024.pdf"
+  },
+  {
+   "id": 1073,
+   "title": "Человек и мир: учебное пособие",
+   "author": "Трафимова Г.В., Трафимов С.А",
+   "grade": 2,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/chelovek-i-mir/Chel_i_mir_Trafimova_2kl_rus_2024.pdf"
+  },
+  {
+   "id": 1076,
+   "title": "Немецкий язык: учебник (ч.1)",
+   "author": "Будько А.Ф., Урбанович И.Ю",
+   "grade": 3,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemeckij_3kl_Budko_ch1_rus_2024.pdf"
+  },
+  {
+   "id": 1077,
+   "title": "Нямецкая мова: падручнік (ч.1)",
+   "author": "Будзько А.П., Урбановіч І.Ю",
+   "grade": 3,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nyameckaya_mova_3kl_Bydzko_ch1_bel_2024.pdf"
+  },
+  {
+   "id": 1078,
+   "title": "Чалавек і свет: вучэбны дапаможнік",
+   "author": "Трафімава Г.У., Трафімаў С.А",
+   "grade": 2,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/chelovek-i-mir/Chal_i_svet_Trafimava_2kl_bel_2024.pdf"
+  },
+  {
+   "id": 1079,
+   "title": "Литературное чтение: учебник (ч.1)",
+   "author": "Воропаева В.С., Куцанова Т.С., Стремок И.М",
+   "grade": 3,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/lit_chtenie_Voropaeva_3kl_ch1_2024.pdf"
+  },
+  {
+   "id": 1080,
+   "title": "Французский язык / Французская мова: учебное пособие (ч.1)",
+   "author": "Вадюшина Д.С",
+   "grade": 3,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/francuzkij_3kl_Vadyushina_ch1_2024.pdf"
+  },
+  {
+   "id": 1082,
+   "title": "Испанский язык / Іспанская мова: учебник (ч.1)",
+   "author": "Е.К. Гриневич, Л.Н. Бахар",
+   "grade": 3,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanskij_3kl_Grinevich_ch1_2024.pdf"
+  },
+  {
+   "id": 1083,
+   "title": "Беларуская мова (ч.1): вучэбны дапаможнік",
+   "author": "Свірыдзенка В. І",
+   "grade": 4,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-mova/Bel_mova_4kl_Cviridzenka_ch1_2024.pdf"
+  },
+  {
+   "id": 1084,
+   "title": "Испанский язык / Іспанская мова: учебное пособие",
+   "author": "Гриневич Е. К",
+   "grade": 6,
+   "year": "2024",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/Ispanskij_6kl_Grinevich_2024.pdf"
+  },
+  {
+   "id": 1085,
+   "title": "Алгебра: учебное пособие",
+   "author": "Арефьева И. Г., Пирютко О. Н",
+   "grade": 8,
+   "year": "2024",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Algebra_8kl_Arefieva_rus_2024.pdf"
+  },
+  {
+   "id": 1086,
+   "title": "Геометрия: учебное пособие",
+   "author": "Казаков В. В., Казакова О. О",
+   "grade": 8,
+   "year": "2024",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Geometriya_8kl_Kazakov_rus_2024.pdf"
+  },
+  {
+   "id": 1087,
+   "title": "Русский язык: учебник. Ч.1",
+   "author": "М.Б. Антипова, Е.С. Грабчикова",
+   "grade": 4,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkij-jazyk/Rus_jaz_4kl_Antipova_ch1_2024.pdf"
+  },
+  {
+   "id": 1088,
+   "title": "Химия: учебное пособие",
+   "author": "И. Е. Шиманович, В. А. Красицкий, О. И. Сечко, В. Н. Хвалюк",
+   "grade": 8,
+   "year": "2024",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/Himiya_8kl_Shimanovich_rus_2024.pdf"
+  },
+  {
+   "id": 1089,
+   "title": "Алгебра: вучэбны дапаможнік",
+   "author": "Арэф'ева І. Г., Пірутка, В. М",
+   "grade": 8,
+   "year": "2024",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Algebra_8kl_Arefieva_bel_2024.pdf"
+  },
+  {
+   "id": 1090,
+   "title": "Искусство (отечественная и мировая художественная культура)",
+   "author": "Ю.Ю. Захарина, С.И. Колбышева, М.Л. Карпенкова, И.Г. Томашева, М.А. Волк",
+   "grade": 7,
+   "year": "2024",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/iskusstvo/Iskusstvo_7kl_Kolbisheva_rus_2024.pdf"
+  },
+  {
+   "id": 1091,
+   "title": "Геаметрыя: вучэбны дапаможнік",
+   "author": "Казакоў В.У., Казакова В.А",
+   "grade": 8,
+   "year": "2024",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Geometriya_8kl_Kazakov_bel_2024.pdf"
+  },
+  {
+   "id": 1092,
+   "title": "Информатика: учебное пособие",
+   "author": "В.М. Котов, Н.П. Макарова, А.И. Лапо, Е.Н. Войтехович",
+   "grade": 6,
+   "year": "2024",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/informatika/Informatika_6kl_Kotov_rus_2024.pdf"
+  },
+  {
+   "id": 1093,
+   "title": "Інфарматыка: вучэбны дапаможнік",
+   "author": "У.М. Котаў, Н.П. Макарава, А.І. Лапо, А.М. Вайцеховіч",
+   "grade": 6,
+   "year": "2024",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/informatika/Informatika_6kl_Kotov_bel_2024.pdf"
+  },
+  {
+   "id": 1094,
+   "title": "Геаграфія: вучэбны дапаможнік",
+   "author": "Кальмакова А.Г., Лопух П.С., Сарычава В.У",
+   "grade": 7,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/geografija/Geografiya_7kl_Kolmakova_bel_2023.pdf"
+  },
+  {
+   "id": 1095,
+   "title": "Працоўнае навучанне. Абслуговая праца: вучэбны дапаможнік",
+   "author": "Сталярова С.І., Юрчанка Н.А",
+   "grade": 7,
+   "year": "2023",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/trud_obsl_7kl_Stolyrova_bel_2023.pdf"
+  },
+  {
+   "id": 1096,
+   "title": "Буквар: вучэбны дапаможнік",
+   "author": "Свірыдзенка В.І., Цірынава В.І",
+   "grade": 1,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/bukvar/Bukvar_1kl_Sviridenko_bel_2024.pdf"
+  },
+  {
+   "id": 1097,
+   "title": "Физика: учебник",
+   "author": "Л.А. Исаченкова, Е.В. Громыко, В.В. Дорофейчик, Ю.Д. Лещинский",
+   "grade": 8,
+   "year": "2024",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/fizika/Fizika_8kl_Isachenkova_rus_2024.pdf"
+  },
+  {
+   "id": 1098,
+   "title": "Английский язык (ч.1): учебное пособие",
+   "author": "Лапицкая Л.М., Седунова Н.М",
+   "grade": 4,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_yazik_4kl_Lapickaya_rus_ch1_2024.pdf"
+  },
+  {
+   "id": 1099,
+   "title": "Букварь: учебник",
+   "author": "Тиринова О.И",
+   "grade": 1,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/bukvar/Bukvar_1kl_Tirinova_rus2024.pdf"
+  },
+  {
+   "id": 1100,
+   "title": "Китайский язык / Кітайская мова (ч.1): учебное пособие",
+   "author": "А.П. Пониматко, Ю.В. Молоткова, А.М. Букатая, Вэй Вэй (魏薇)",
+   "grade": 4,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/kitajskij/kitajskij_4kl_Ponimatko_ch1_2024.pdf"
+  },
+  {
+   "id": 1101,
+   "title": "Літаратурнае чытанне: падручнік (ч.1)",
+   "author": "М.В. Жуковіч, В.У. Праскаловіч",
+   "grade": 4,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/lit_chitanne_Zhukovich_4kl_ch1_2024.pdf"
+  },
+  {
+   "id": 1102,
+   "title": "Всемирная история Нового времени, XVI-XVIII вв.: учебное пособие",
+   "author": "В.С. Кошелев, Н.В. Кошелева, С.А. Кудрявцева, Г.Э. Давидовская",
+   "grade": 7,
+   "year": "2024",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/vs_ist_7kl_koshelev_rus_2024.pdf"
+  },
+  {
+   "id": 1103,
+   "title": "Хімія: вучэбны дапаможнік",
+   "author": "І.Я. Шымановіч, В.А. Красіцкі, В.І. Сячко, В.М. Хвалюк",
+   "grade": 8,
+   "year": "2024",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/Himiya_8kl_Shimanovich_bel_2024.pdf"
+  },
+  {
+   "id": 1104,
+   "title": "Беларуская мова (ч.1): падручнік",
+   "author": "Г.М. Валочка, В.У. Зелянко, С.В. Мартынкевіч, С.М. Якуба",
+   "grade": 5,
+   "year": "2024",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-mova/Bel_mova_5kl_Valochka_ch1_2024.pdf"
+  },
+  {
+   "id": 1105,
+   "title": "Русский язык: учебное пособие",
+   "author": "Л.А. Мурина, Е.Е. Долбик, В.Л. Леонович, Ж.Ф. Жадейко",
+   "grade": 8,
+   "year": "2024",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkij-jazyk/Rus_jaz_Murina_8kl_2024.pdf"
+  },
+  {
+   "id": 1106,
+   "title": "Допризывная и медицинская подготовка (учебное пособие для кадетских училищ, специализированных лицеев, суворовских военных училищ)",
+   "author": "Под редакцией А.А. Павлющика",
+   "grade": 9,
+   "year": "2024",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/doprizyv-med/Dop_med_podgotovka_9kl_Pavlyschik_rus_2024.pdf"
+  },
+  {
+   "id": 1107,
+   "title": "Основы безопасности жизнедеятельности: учебное пособие",
+   "author": "Аброськина Т.Ю., Кузнецова Л.Ф., Одновол Л.А",
+   "grade": 2,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/obj/OBJ_2kl_Abroskina_rus_2024.pdf"
+  },
+  {
+   "id": 1108,
+   "title": "Асновы бяспекі жыццядзейнасці: вучэбны дапаможнік",
+   "author": "Аброськіна Т.Ю., Аднавол Л.А., Кузняцова Л.Ф",
+   "grade": 2,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/obj/OBJ_2kl_Abroskina_bel_2024.pdf"
+  },
+  {
+   "id": 1109,
+   "title": "История Беларуси в контексте всемирной истории (ч.1): учебное пособие",
+   "author": "Кохановский А.Г., Кошелев В.С., Темушев С.Н. и др",
+   "grade": 10,
+   "year": "2024",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Ist.Bel_v_kontekste_Vs_Ist_Kohanovski_10kl_ch1_2024.pdf"
+  },
+  {
+   "id": 1110,
+   "title": "Беларуская мова: вучэбны дапаможнік",
+   "author": "Антонава Н.У., Галяш Г.А",
+   "grade": 1,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-mova/Bel_mova_1kl_Antonava_2024.pdf"
+  },
+  {
+   "id": 1111,
+   "title": "Англійская мова (ч.1): вучэбны дапаможнік",
+   "author": "Лапіцкая Л.М., Седунова Н.М",
+   "grade": 4,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliskaya_mova_4kl_Lapickaya_bel_ch1_2024.pdf"
+  },
+  {
+   "id": 1112,
+   "title": "Мастацва (айчынная і сусветная мастацкая культура): вучэбны дапаможнік",
+   "author": "Ю.Ю. Захарына, С.І. Колбышава, М.Л. Карпянкова, І.Р. Томашава, М.А. Волк",
+   "grade": 7,
+   "year": "2024",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/iskusstvo/Mastatstva_7kl_Kolbyshava_bel_2024.pdf"
+  },
+  {
+   "id": 1113,
+   "title": "Фізіка: падручнік",
+   "author": "Л.А. Ісачанкава, А.У. Грамыка, У.У. Дарафейчык, Ю.Д. Ляшчынскі",
+   "grade": 8,
+   "year": "2024",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/fizika/Fizika_8kl_Isachenkova_bel_2024.pdf"
+  },
+  {
+   "id": 1114,
+   "title": "Китайский язык / Кітайская мова: учебное пособие",
+   "author": "А.П. Пониматко, Н.В. Михалькова, М.С. Филимонова, Сяо И",
+   "grade": 10,
+   "year": "2024",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/kitajskij/Kitajskij_10kl_Ponimatko_2024.pdf"
+  },
+  {
+   "id": 1115,
+   "title": "Матэматыка (ч.1): падручнік",
+   "author": "Г.Л. Мураўёва, М.А. Урбан",
+   "grade": 1,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Matematika_1kl_Muravjova_ch1_bel_2024.pdf"
+  },
+  {
+   "id": 1116,
+   "title": "Беларуская літаратура: падручнік",
+   "author": "М.А. Лазарук, В.І. Русілка, І.М. Слесарава, І.У. Рэпенка",
+   "grade": 8,
+   "year": "2024",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-litaratura/Bel_lit_8kl_Lazaruk_2024.pdf"
+  },
+  {
+   "id": 1117,
+   "title": "Русский язык: учебное пособие",
+   "author": "Антипова М.Б., Грабчикова Е.С",
+   "grade": 1,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkij-jazyk/Rus_yaz_1kl_Antipova_bel_2024.pdf"
+  },
+  {
+   "id": 1118,
+   "title": "Сусветная гісторыя Новага часу, XVI—XVIII стст. : вучэбны дапаможнік",
+   "author": "У.С. Кошалеў, Н.У. Кошалева, С.А. Кудраўцава, Г.Э. Давідоўская",
+   "grade": 7,
+   "year": "2024",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/vs_ist_7kl_koshelev_bel_2024.pdf"
+  },
+  {
+   "id": 1119,
+   "title": "Гісторыя Беларусі ў кантэксце сусветнай гісторыі (ч.1): вучэбны дапаможнік",
+   "author": "А.Г. Каханоўскі, У.С. Кошалеў, С.М. Цемушаў, С.А. Чарапко, В.А. Белазаровіч, М.І. Мацюшэўская, Я.Р. Рыер, С.М. Ходзін",
+   "grade": 10,
+   "year": "2024",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Ist.Bel_v_kontekste_Vs_Ist_Kohanovski_10kl_ch1_bel_2024.pdf"
+  },
+  {
+   "id": 1120,
+   "title": "Математика: учебник (ч.2)",
+   "author": "Г.Л. Муравьёва, М.А. Урбан",
+   "grade": 1,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika-muravjova-1kl-ch2-rus_2024.pdf"
+  },
+  {
+   "id": 1121,
+   "title": "Англійская мова (ч.2): вучэбны дапаможнік",
+   "author": "Лапіцкая Л.М., Седунова Н.М",
+   "grade": 4,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliskaya_mova_4kl_Lapickaya_bel_ch2_2024.pdf"
+  },
+  {
+   "id": 1122,
+   "title": "Английский язык (ч.2): учебное пособие",
+   "author": "Лапицкая Л.М., Седунова Н.М",
+   "grade": 4,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliskaya_mova_4kl_Lapickaya_rus_ch2_2024.pdf"
+  },
+  {
+   "id": 1124,
+   "title": "Матэматыка (ч.2): падручнік",
+   "author": "Мураўёва Г.Л., Урбан М.А",
+   "grade": 1,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Matematika_1kl_Muravjova_ch2_bel_2024_1.pdf"
+  },
+  {
+   "id": 1125,
+   "title": "Беларуская мова (ч.2): вучэбны дапаможнік",
+   "author": "Свірыдзенка В.І",
+   "grade": 4,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-mova/Bel_mova_4kl_Cviridzenka_ch2_2024.pdf"
+  },
+  {
+   "id": 1126,
+   "title": "Беларуская мова (ч.2): падручнік",
+   "author": "Г.М. Валочка, В.У. Зелянко, С.В. Мартынкевіч, С.М. Якуба",
+   "grade": 5,
+   "year": "2024",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-mova/Bel_mova_5kl_Valochka_ch2_2024.pdf"
+  },
+  {
+   "id": 1127,
+   "title": "Літаратурнае чытанне: падручнік (ч.2)",
+   "author": "Жуковіч М.В., Праскаловіч В.У",
+   "grade": 4,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/lit_chitanne_Zhukovich_4kl_ch2_2024.pdf"
+  },
+  {
+   "id": 1128,
+   "title": "История Беларуси в контексте всемирной истории (ч.2): учебное пособие",
+   "author": "Кохановский А.Г., Кошелев В.С., Темушев С.Н. и др",
+   "grade": 10,
+   "year": "2024",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Ist.Bel_v_kontekste_Vs_Ist_Kohanovski_10kl_ch2_2024.pdf"
+  },
+  {
+   "id": 1129,
+   "title": "Китайский язык / Кітайская мова (ч.2): учебное пособие",
+   "author": "А.П. Пониматко, Ю.В. Молоткова, А.М. Букатая, Вэй Вэй (魏薇)",
+   "grade": 4,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/kitajskij/kitajskij_4kl_Ponimatko_ch2_2024.pdf"
+  },
+  {
+   "id": 1130,
+   "title": "Испанский язык / Іспанская мова: учебник (ч.2)",
+   "author": "Е.К. Гриневич, Л.Н. Бахар",
+   "grade": 3,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanskij_3kl_Grinevich_ch2_2024.pdf"
+  },
+  {
+   "id": 1131,
+   "title": "Русский язык: учебник. Ч.2",
+   "author": "М.Б. Антипова, Е.С. Грабчикова",
+   "grade": 4,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkij-jazyk/Rus_jaz_4kl_Antipova_ch2_2024.pdf"
+  },
+  {
+   "id": 1132,
+   "title": "Нямецкая мова: падручнік (ч.2)",
+   "author": "Будзько А.П., Урбановіч І.Ю",
+   "grade": 3,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nyameckaya_mova_3kl_Bydzko_ch2_bel_2024.pdf"
+  },
+  {
+   "id": 1133,
+   "title": "Гісторыя Беларусі ў кантэксце сусветнай гісторыі (ч.2): вучэбны дапаможнік",
+   "author": "А.Г. Каханоўскі, У.С. Кошалеў, С.М. Цемушаў, С.А. Чарапко, В.А. Белазаровіч, М.І. Мацюшэўская, Я.Р. Рыер, С.М. Ходзін",
+   "grade": 10,
+   "year": "2024",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Ist.Bel_v_kontekste_Vs_Ist_Kohanovski_10kl_ch2_bel_2024.pdf"
+  },
+  {
+   "id": 1134,
+   "title": "Литературное чтение: учебник (ч.2)",
+   "author": "Воропаева В.С., Куцанова Т.С., Стремок И.М",
+   "grade": 3,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/lit_chtenie_Voropaeva_3kl_ch2_2024.pdf"
+  },
+  {
+   "id": 1135,
+   "title": "Французский язык / Французская мова: учебное пособие (ч.2)",
+   "author": "Вадюшина Д.С",
+   "grade": 3,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/francuzkij_3kl_Vadyushina_ch2_2024.pdf"
+  },
+  {
+   "id": 1136,
+   "title": "Немецкий язык: учебник (ч.2)",
+   "author": "Будько А.Ф., Урбанович И.Ю",
+   "grade": 3,
+   "year": "2024",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemeckij_3kl_Budko_ch2_rus_2024.pdf"
+  },
+  {
+   "id": 1137,
+   "title": "Немецкий язык: учебное пособие",
+   "author": "Будько А. Ф",
+   "grade": 8,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_Bydko_8kl_rus_2025.pdf"
+  },
+  {
+   "id": 1138,
+   "title": "Нямецкая мова: вучэбны дапаможнік",
+   "author": "Будзько А.П",
+   "grade": 8,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_Bydko_8kl_bel_2025.pdf"
+  },
+  {
+   "id": 1139,
+   "title": "Геометрия: учебное пособие",
+   "author": "Казаков В.В., Казакова О.О",
+   "grade": 9,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Geоmetriya_Kazakoy_9kl_rus_2025.pdf"
+  },
+  {
+   "id": 1140,
+   "title": "Геаметрыя: вучэбны дапаможнік",
+   "author": "Казакоў В.У., Казакова В.А",
+   "grade": 9,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Geоmetriya_Kazakoy_9kl_bel_2025.pdf"
+  },
+  {
+   "id": 1141,
+   "title": "Человек и мир: учебник",
+   "author": "Трафимова Г.В., Трафимов С.А",
+   "grade": 3,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/chelovek-i-mir/Chel_i_mir_3kl_Trafimava_rus_2025.pdf"
+  },
+  {
+   "id": 1142,
+   "title": "Чалавек і свет: падручнік",
+   "author": "Трафімава Г.У., Трафімаў С.А",
+   "grade": 3,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/chelovek-i-mir/Chel_i_mir_3kl_Trafimava_bel_2025.pdf"
+  },
+  {
+   "id": 1143,
+   "title": "Математика (ч.1): учебное пособие",
+   "author": "Муравьёва Г.Л., Урбан М.А",
+   "grade": 2,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_2kl_1ch_Muravyova_rus_2025.pdf"
+  },
+  {
+   "id": 1144,
+   "title": "Матэматыка (ч.1): вучэбны дапаможнік",
+   "author": "Мураўёва Г.Л., Урбан М.А",
+   "grade": 2,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_2kl_1ch_Muravyova_bel_2025.pdf"
+  },
+  {
+   "id": 1145,
+   "title": "Трудовой обучение. Працоўнае навучанне: учебник",
+   "author": "Юрчанка Н.А., Журба А.Ф",
+   "grade": 1,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Trudovoe_obuchenie_1kl_Yurchenko_2025.pdf"
+  },
+  {
+   "id": 1146,
+   "title": "Русский язык (ч.1): учебное пособие",
+   "author": "Антипова М.Б",
+   "grade": 2,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkij-jazyk/Rus_yaz_Antipova_2kl_ch1_bel_2025.pdf"
+  },
+  {
+   "id": 1147,
+   "title": "Русский язык (ч.1): учебное пособие",
+   "author": "Мурина  Л.А., Долбик Е.Е., Леонович В.Л., Жадейко Ж.Ф",
+   "grade": 5,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkij-jazyk/Rus_yaz_Murina_5kl_ch1_2025.pdf"
+  },
+  {
+   "id": 1148,
+   "title": "Беларуская мова (ч.1): вучэбны дапаможнік",
+   "author": "Свірыдзенка В.І",
+   "grade": 2,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-mova/Bel_mova_2kl_ch1_Sviridzenka_rus_2025.pdf"
+  },
+  {
+   "id": 1149,
+   "title": "Математика (ч.1): учебное пособие",
+   "author": "Герасимов В.Д., Пирютко О.Н., Лобанов А.П",
+   "grade": 5,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Matematika_5kl_ch1_Gerasimov_rus_2025.pdf"
+  },
+  {
+   "id": 1150,
+   "title": "Матэматыка (ч.1): вучэбны дапаможнік",
+   "author": "Герасімаў В.Д., Пірутка В.М., Лабанаў А.П",
+   "grade": 5,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Matematika_5kl_ch1_Gerasimov_bel_2025.pdf"
+  },
+  {
+   "id": 1151,
+   "title": "Трудовое обучение. Технический труд: учебник",
+   "author": "Чернова Е.Н., Цареня Д.В., Ильин М.В",
+   "grade": 5,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Trud_TT_5kl_Chernova_rus_2025.pdf"
+  },
+  {
+   "id": 1152,
+   "title": "Працоўнае навучанне. Тэхнічная праца: падручнік",
+   "author": "Чарнова А. Н., Царэня Д. В., Ільін М. В",
+   "grade": 5,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/Trud_TT_5kl_Chernova_bel_2025.pdf"
+  },
+  {
+   "id": 1153,
+   "title": "Испанский язык / Іспанская мова (ч.1): учебное пособие",
+   "author": "Цыбулёва Т.Э., Пушкина О.А",
+   "grade": 5,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanskij_Cibulyova_5kl_пов_ch1_2025.pdf"
+  },
+  {
+   "id": 1154,
+   "title": "Французский язык (Французская мова) (повышенный уровень) (ч.1): учебник",
+   "author": "Колосовская И.Г., Скибская Н.В",
+   "grade": 6,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/franc_Kolosovskaja_6kl_пов_ch1_2025.pdf"
+  },
+  {
+   "id": 1155,
+   "title": "История Беларуси в контексте всемирной истории (ч.1): учебное пособие",
+   "author": "А.Г. Кохановский, В.С. Кошелев, С.Н. Темушев, Е.Н. Мох, Н.Н. Мезга, А.И. Корсак, А.И. Маскевич, С.Н. Ходин",
+   "grade": 11,
+   "year": "2025",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Ist.Bel_v_kontekste_Vs_Ist_Kohanovski_11kl_ch1_rus_2025.pdf"
+  },
+  {
+   "id": 1156,
+   "title": "Беларуская мова: падручнік",
+   "author": "Валочка Г.М., Зелянко В.У., Мартынкевіч С.В., Якуба С.М., Бажкова Т.І",
+   "grade": 6,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-mova/Bel_mova_6kl_Valochka_2025.pdf"
+  },
+  {
+   "id": 1157,
+   "title": "Биология: учебник",
+   "author": "Борисов О.Л., Антипенко А.А., Рогожников О.Н",
+   "grade": 9,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/biologija/Biologiya_Borisov_9kl_rus_2025.pdf"
+  },
+  {
+   "id": 1158,
+   "title": "Біялогія: падручнік",
+   "author": "Барысаў А.Л., Анціпенка А.А., Рагожнікаў А.М",
+   "grade": 9,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/biologija/Biologiya_Borisov_9kl_bel_2025.pdf"
+  },
+  {
+   "id": 1159,
+   "title": "Химия: учебное пособие",
+   "author": "Шиманович И.Е., Василевская Е.И., Зураев А.В., Красицкий В.А., Сечко О.И",
+   "grade": 9,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/Himiya_Shimanovich_9kl_rus_2025.pdf"
+  },
+  {
+   "id": 1160,
+   "title": "Хімія: вучэбны дапаможнік",
+   "author": "Шымановіч І.Я., Васілеўская А.І., Зураеў А.В., Красіцкі В.А., Сячко В.І",
+   "grade": 9,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/Himiya_Shimanovich_9kl_bel_2025.pdf"
+  },
+  {
+   "id": 1161,
+   "title": "Русский язык: учебник",
+   "author": "Мурина Л.А., Литвинко Ф.М., Долбик Е.Е",
+   "grade": 9,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkij-jazyk/Rus_yaz_Murina_9kl_2025.pdf"
+  },
+  {
+   "id": 1162,
+   "title": "Русская литература",
+   "author": "Захарова С.Н., Морозова Т.А., Чепелева Г.М",
+   "grade": 8,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkaya-literatura/Rus_lit_Zaharova_8kl_2025.pdf"
+  },
+  {
+   "id": 1163,
+   "title": "Французский язык / Французская мова: учебное пособие",
+   "author": "Вадюшина Д.С",
+   "grade": 9,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/francuzkij_9kl_Vadyushina_2025.pdf"
+  },
+  {
+   "id": 1164,
+   "title": "Беларуская мова: падручнік",
+   "author": "Г.М. Валочка, Л.С. Васюковіч, В.У. Зелянко, С.М. Якуба, С.І. Байкова",
+   "grade": 9,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-mova/Bel_mova_Valochka_9kl_2025.pdf"
+  },
+  {
+   "id": 1165,
+   "title": "География. География Беларуси: учебное пособие",
+   "author": "Брилевский М.Н., Климович А.В",
+   "grade": 9,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/geografija/Geografiya_9kl_Brilevski_rus_2025.pdf"
+  },
+  {
+   "id": 1166,
+   "title": "Геаграфія. Геаграфія Беларусі: вучэбны дапаможнік",
+   "author": "Брылеўскі М.М., Клімовіч А.У",
+   "grade": 9,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/geografija/Geografiya_9kl_Brilevski_bel_2025.pdf"
+  },
+  {
+   "id": 1167,
+   "title": "Немецкий язык: учебник",
+   "author": "Будько А.Ф., Курьян В.В",
+   "grade": 9,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_Bydko_9kl_rus_2025.pdf"
+  },
+  {
+   "id": 1168,
+   "title": "Нямецкая мова: падручнік",
+   "author": "Будзько А.П., Кур'ян У.У",
+   "grade": 9,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_Bydko_9kl_bel_2025.pdf"
+  },
+  {
+   "id": 1169,
+   "title": "Основы безопасности жизнедеятельности (ОБЖ): учебное пособие",
+   "author": "Аброськина Т.Ю., Кузнецова Л.Ф., Одновол Л.А",
+   "grade": 3,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/obj/OBJ_3kl_Abroskina_rus_2025.pdf"
+  },
+  {
+   "id": 1170,
+   "title": "Литературное чтение (ч.1): учебник",
+   "author": "Воропаева В.С., Куцанова Т.С., Стремок И.М",
+   "grade": 4,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/lit_chtenie_Voropaeva_4kl_ch1_2025.pdf"
+  },
+  {
+   "id": 1171,
+   "title": "Асновы бяспекі жыццядзейнасці: вучэбны дапаможнік",
+   "author": "Аброськіна Т.Ю., Кузняцова Л.Ф., Аднавол Л.А",
+   "grade": 3,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/obj/OBJ_3kl_Abroskina_bel_2025.pdf"
+  },
+  {
+   "id": 1172,
+   "title": "Гісторыя Беларусі ў кантэксце сусветнай гісторыі (ч.1): вучэбны дапаможнік",
+   "author": "пад рэд. А.Г. Каханоўскага",
+   "grade": 11,
+   "year": "2025",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Ist.Bel_v_kontekste_Vs_Ist_Kohanovski_11kl_ch1_bel_2025.pdf"
+  },
+  {
+   "id": 1173,
+   "title": "Трудовое обучение. Обслуживающий труд: учебное пособие",
+   "author": "Шарапова В.Е., Сысоева И.А",
+   "grade": 5,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/trud_ОТ_5kl_Sharapova_rus_2025.pdf"
+  },
+  {
+   "id": 1174,
+   "title": "Працоунае навучанне. Абслуговая праца: вучэбны дапаможнік",
+   "author": "Шарапава В.Я., Сысоева І.А",
+   "grade": 5,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/trud/trud_ОТ_5kl_Sharapova_bel_2025.pdf"
+  },
+  {
+   "id": 1175,
+   "title": "Математика (ч.2): учебное пособие",
+   "author": "Герасимов В.Д., Пирютко О.Н., Терешко О.А., Лобанов А.П",
+   "grade": 5,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Matematika_5kl_ch2_Gerasimov_rus_2025.pdf"
+  },
+  {
+   "id": 1176,
+   "title": "История Беларуси в контексте всемирной истории (ч.2): учебное пособие",
+   "author": "А.Г. Кохановский, В.С. Кошелев, С.Н. Темушев, Е.Н. Мох, Н.Н. Мезга, А.И. Корсак, А.И. Маскевич, С.Н. Ходин",
+   "grade": 11,
+   "year": "2025",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Ist.Bel_v_kontekste_Vs_Ist_Kohanovski_11kl_ch2_rus_2025.pdf"
+  },
+  {
+   "id": 1177,
+   "title": "Китайский язык / Китайская мова: учебное пособие",
+   "author": "Пониматко А.П., Михалькова Н.В., Филимонова М.С., Сяо И",
+   "grade": 11,
+   "year": "2025",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/kitajskij/kitajskij-ponimatko-11kl-2025.pdf"
+  },
+  {
+   "id": 1178,
+   "title": "Испанский язык / Iспанская мова: учебное пособие",
+   "author": "Гриневич Е.К., Янукенас О.В",
+   "grade": 7,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanskij-grinevich-7kl-2025.pdf"
+  },
+  {
+   "id": 1179,
+   "title": "Беларуская мова (ч.2): вучэбны дапаможнік",
+   "author": "Свірыдзенка В.І",
+   "grade": 2,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-mova/Bel_mova_2kl_ch2_Sviridzenka_rus_2025.pdf"
+  },
+  {
+   "id": 1180,
+   "title": "Матэматыка (ч.2): вучэбны дапаможнік",
+   "author": "Герасімаў В.Д., Пірутка В.М., Лабанаў А.П",
+   "grade": 5,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/Matematika_5kl_ch2_Gerasimov_bel_2025.pdf"
+  },
+  {
+   "id": 1181,
+   "title": "Математика (ч.2): учебное пособие",
+   "author": "Муравьёва Г.Л., Урбан М.А",
+   "grade": 2,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_2kl_ch2_Muravyova_rus_2025.pdf"
+  },
+  {
+   "id": 1182,
+   "title": "Русский язык (ч.2): учебное пособие",
+   "author": "Мурина Л.А., Долбик Е.Е., Леонович В.Л., Жадейко Ж.Ф",
+   "grade": 5,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkij-jazyk/Rus_yaz_Murina_5kl_ch2_2025.pdf"
+  },
+  {
+   "id": 1183,
+   "title": "Русский язык (ч.2): учебное пособие",
+   "author": "Антипова М.Б",
+   "grade": 2,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkij-jazyk/Rus_yaz_Antipova_2kl_ch2_bel.pdf"
+  },
+  {
+   "id": 1184,
+   "title": "Немецкий язык / Нямецкая мова (ч.1): учебное пособие (повышенный уровень)",
+   "author": "Н.Е. Лаптева, Е.В. Зуевская, А.М. Леус, Н.Г. Шиманская",
+   "grade": 7,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/Nemecki_yazik_7kl_ch1_Lapteva_pov_2025.pdf"
+  },
+  {
+   "id": 1185,
+   "title": "Матэматыка (ч.2): вучэбны дапаможнік",
+   "author": "Мураўёва Г.Л., Урбан М.А",
+   "grade": 2,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_2kl_2ch_Muravyova_bel_2025.pdf"
+  },
+  {
+   "id": 1186,
+   "title": "Литературное чтение (ч.2): учебник",
+   "author": "Воропаева В.С., Куцанова Т.С., Стремок И.М",
+   "grade": 4,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/lit_chtenie_Voropaeva_4kl_ch2_2025.pdf"
+  },
+  {
+   "id": 1187,
+   "title": "Испанский язык / Іспанская мова (ч.2): учебное пособие",
+   "author": "Цыбулёва Т.Э., Пушкина О.А",
+   "grade": 5,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanskij_Cibulyova_5kl_пов_ch2_2025.pdf"
+  },
+  {
+   "id": 1188,
+   "title": "Гісторыя Беларусі ў кантэксце сусветнай гісторыі (ч.2): вучэбны дапаможнік",
+   "author": "пад рэд. А.Г. Каханоўскага",
+   "grade": 11,
+   "year": "2025",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Ist.Bel_v_kontekste_Vs_Ist_Kohanovski_11kl_ch2_bel_2025.pdf"
+  },
+  {
+   "id": 1189,
+   "title": "Информатика: учебное пособие",
+   "author": "В.М. Котов, А.И. Лапо",
+   "grade": 7,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/informatika/Informatika_7kl_Kotov_rus_2025.pdf"
+  },
+  {
+   "id": 1190,
+   "title": "Французский язык (Французская мова) (повышенный уровень) (ч.2): учебник",
+   "author": "Колосовская И.Г., Скибская Н.В",
+   "grade": 6,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/franc_Kolosovskaja_6kl_пов_ch2_2025.pdf"
+  },
+  {
+   "id": 1191,
+   "title": "История Древнего мира. Хрестоматия: учебное пособие",
+   "author": "О.В. Забельникова, С.А. Кудрявцева",
+   "grade": 5,
+   "year": "2015",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Ist_Drevnego_mira_5kl_Hrestomatiа.pdf"
+  },
+  {
+   "id": 1192,
+   "title": "Литературное чтение. Внеклассное чтение. Хрестоматия",
+   "author": "составитель: Академия образования",
+   "grade": 2,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/Внеклассное чтение. II класс. Хрестоматия (рус).pdf"
+  },
+  {
+   "id": 1193,
+   "title": "Литературное чтение. Внеклассное чтение. Хрестоматия",
+   "author": "составитель: Академия образования",
+   "grade": 2,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/Внеклассное чтение. II класс. Хрестоматия (бел).pdf"
+  },
+  {
+   "id": 1194,
+   "title": "Літаратурнае чытанне. Пазакласнае чытанне. Хрэстаматыя",
+   "author": "складальнік: Акадэмія адукацыі",
+   "grade": 2,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/Пазакласнае чытанне. II клас. Хрэстаматыя (рус).pdf"
+  },
+  {
+   "id": 1195,
+   "title": "Літаратурнае чытанне. Пазакласнае чытанне. Хрэстаматыя",
+   "author": "складальнік: Акадэмія адукацыі",
+   "grade": 2,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/Пазакласнае чытанне. II клас. Хрэстаматыя (бел).pdf"
+  },
+  {
+   "id": 1196,
+   "title": "Літаратурнае чытанне. Пазакласнае чытанне. Хрэстаматыя",
+   "author": "складальнік: Акадэмія адукацыі",
+   "grade": 3,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/Пазакласнае чытанне. 3 клас. Хрэстаматыя.pdf"
+  },
+  {
+   "id": 1197,
+   "title": "Литературное чтение. Внеклассное чтение. Хрестоматия",
+   "author": "составитель: Академия образования",
+   "grade": 3,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/Внеклассное чтение. 3 класс. Хрестоматия.pdf"
+  },
+  {
+   "id": 1198,
+   "title": "Литературное чтение. Внеклассное чтение. Хрестоматия",
+   "author": "составитель: Академия образования",
+   "grade": 4,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/Внеклассное чтение. IV класс. Хрестоматия.pdf"
+  },
+  {
+   "id": 1199,
+   "title": "Літаратурнае чытанне. Пазакласнае чытанне. Хрэстаматыя",
+   "author": "складальнік: Акадэмія адукацыі",
+   "grade": 4,
+   "year": "2025",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/Пазакласнае чытанне. IV клас. Хрэстаматыя.pdf"
+  },
+  {
+   "id": 1200,
+   "title": "Беларуская літаратура. Хрэстаматыя",
+   "author": "складальнік: Акадэмія адукацыі",
+   "grade": 9,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-litaratura/Беларуская літаратура. IX клас. Хрэстаматыя.pdf"
+  },
+  {
+   "id": 1201,
+   "title": "Беларуская літаратура. Хрэстаматыя",
+   "author": "складальнік: Акадэмія адукацыі",
+   "grade": 10,
+   "year": "2025",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-litaratura/Беларуская літаратура. X клас. Хрэстаматыя.pdf"
+  },
+  {
+   "id": 1202,
+   "title": "Беларуская літаратура. Хрэстаматыя",
+   "author": "складальнік: Акадэмія адукацыі",
+   "grade": 11,
+   "year": "2025",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/belaruskaja-litaratura/Беларуская літаратура. XI клас. Хрэстаматыя.pdf"
+  },
+  {
+   "id": 1203,
+   "title": "Русская литература. Хрестоматия",
+   "author": "составитель: Академия образования",
+   "grade": 9,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkaya-literatura/Русская литература. IX класс. Хрестоматия.pdf"
+  },
+  {
+   "id": 1204,
+   "title": "Русская литература. Хрестоматия (часть 1)",
+   "author": "составитель: Академия образования",
+   "grade": 10,
+   "year": "2025",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkaya-literatura/Русская литература. X класс. Хрестоматия (часть 1).pdf"
+  },
+  {
+   "id": 1205,
+   "title": "Русская литература. Хрестоматия (часть 2, Роман «Преступление и наказание»)",
+   "author": "составитель: Академия образования",
+   "grade": 10,
+   "year": "2025",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkaya-literatura/Русская литература. X класс. Хрестоматия (часть 2).pdf"
+  },
+  {
+   "id": 1206,
+   "title": "Русская литература. Хрестоматия (часть 3, Роман «Война и мир»)",
+   "author": "составитель: Академия образования",
+   "grade": 10,
+   "year": "2025",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkaya-literatura/Русская литература. X класс. Хрестоматия (часть 3).pdf"
+  },
+  {
+   "id": 1207,
+   "title": "Русская литература. Хрестоматия (часть 1)",
+   "author": "составитель: Академия образования",
+   "grade": 11,
+   "year": "2025",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkaya-literatura/Русская литература. XI класс. Хрестоматия (часть 1).pdf"
+  },
+  {
+   "id": 1208,
+   "title": "Русская литература. Хрестоматия (часть 2, Роман «Мастер и Маргарита», повесть «Собачье сердце»)",
+   "author": "составитель: Академия образования",
+   "grade": 11,
+   "year": "2025",
+   "level": "III (10-11кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkaya-literatura/Русская литература. XI класс. Хрестоматия (часть 2).pdf"
+  },
+  {
+   "id": 1209,
+   "title": "Інфарматыка: вучэбны дапаможнік",
+   "author": "У.М. Котаў, А.І. Лапо",
+   "grade": 7,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/informatika/Informatika_7kl_Kotov_bel_2025.pdf"
+  },
+  {
+   "id": 1210,
+   "title": "Немецкий язык / Нямецкая мова (ч.2): учебное пособие (повышенный уровень)",
+   "author": "Н.Е. Лаптева, Е.В. Зуевская, А.М. Леус, Н.Г. Шиманская",
+   "grade": 7,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/Nemecki_yazik_7kl_ch2_Lapteva_pov_2025.pdf"
+  },
+  {
+   "id": 1211,
+   "title": "Английский язык: учебное пособие",
+   "author": "Л.М. Лапицкая, Н.В. Демченко, Н.В. Юхнель, А.В. Волков",
+   "grade": 9,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_yazik_9kl_Lapickaya_rus_2026.pdf"
+  },
+  {
+   "id": 1212,
+   "title": "Англійская мова: вучэбны дапаможнік",
+   "author": "Л.М. Лапіцкая, Н.В. Дземчанка, А.В. Волкаў, А.І. Калішэвіч",
+   "grade": 9,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_yazik_9kl_Lapickaya_bel_2026.pdf"
+  },
+  {
+   "id": 1213,
+   "title": "Искусство (отечественная и мировая художественная культура): учебное пособие",
+   "author": "С.И. Колбышева, И.Г. Томашева, Ю.Ю. Захарина, М.Л. Карпенкова, М.А. Волк",
+   "grade": 8,
+   "year": "2026",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/iskusstvo/Iskusstvo_8kl_Kolbisheva_rus_2026.pdf"
+  },
+  {
+   "id": 1214,
+   "title": "Мастацтва (айчынная і сусветная мастацкая культура): вучэбны дапаможнік",
+   "author": "С.І. Колбышава, І.Р. Томашава, Ю.Ю. Захарына, М.Л. Карпянкова, М.А. Волк",
+   "grade": 8,
+   "year": "2026",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/iskusstvo/Iskusstvo_8kl_Kolbisheva_bel_2026.pdf"
+  },
+  {
+   "id": 1215,
+   "title": "Літаратурнае чытанне (ч.1): падручнік",
+   "author": "Антонава Н.У., Буторына І.А., Галяш Г.А",
+   "grade": 2,
+   "year": "2026",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/lit_chitanne_2kl_ch1_Antonava_rus_2026.pdf"
+  },
+  {
+   "id": 1216,
+   "title": "Литературное чтение: учебник",
+   "author": "Стремок И.М",
+   "grade": 2,
+   "year": "2026",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/lit_chtenie_2kl_ch1_Stremok_bel_2026.pdf"
+  },
+  {
+   "id": 1217,
+   "title": "Математика (ч.1): учебное пособие",
+   "author": "Муравьёва Г.Л., Урбан М.А",
+   "grade": 3,
+   "year": "2026",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_3kl_ch1_Muravyova_rus_2026.pdf"
+  },
+  {
+   "id": 1218,
+   "title": "Фізіка: падручнік",
+   "author": "Л.А. Ісачанкава, А.А. Сакольскі, К.В. Захарэвіч, У.У. Дарафейчык",
+   "grade": 9,
+   "year": "2026",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/fizika/Fizika_8kl_Isachenkova_bel_2026.pdf"
+  },
+  {
+   "id": 1219,
+   "title": "Русский язык: учебник",
+   "author": "Т.Н. Волынец, Ф.М. Литвинко, Е.Е. Долбик, И.В. Таяновская, И.Р. Винник",
+   "grade": 7,
+   "year": "2026",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkij-jazyk/Rus_yaz_7kl_Volynec_2026.pdf"
+  },
+  {
+   "id": 1220,
+   "title": "Русский язык: учебное пособие",
+   "author": "Л.А. Мурина, В.Л. Леонович, Ж.Ф. Жадейко, И.В. Таяновская",
+   "grade": 6,
+   "year": "2026",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkij-jazyk/Rus_yaz_6kl_Murina_2026.pdf"
+  },
+  {
+   "id": 1221,
+   "title": "Русская литература (ч.1): учебник",
+   "author": "Захарова С.Н., Юстинская Г.М",
+   "grade": 6,
+   "year": "2026",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkaya-literatura/rus_lit_Zaharova_6k_ch1_2026.pdf"
+  },
+  {
+   "id": 1222,
+   "title": "Русская литература (ч.2): учебник",
+   "author": "Захарова С.Н., Юстинская Г.М",
+   "grade": 6,
+   "year": "2026",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkaya-literatura/rus_lit_Zaharova_6k_ch2_2026.pdf"
+  },
+  {
+   "id": 1223,
+   "title": "Русская литература (ч.1): учебное пособие",
+   "author": "Т.Ф. Мушинская, Е.В. Перевозная, С.Н. Каратай, А.И. Гаранина, И.В. Монич",
+   "grade": 5,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkaya-literatura/rus_lit_mushinskaja_5k_ch1_2025.pdf"
+  },
+  {
+   "id": 1224,
+   "title": "Русская литература (ч.2): учебное пособие",
+   "author": "Т.Ф. Мушинская, Е.В. Перевозная, С.Н. Каратай, А.И. Гаранина, И.В. Монич",
+   "grade": 5,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/russkaya-literatura/rus_lit_mushinskaja_5k_ch2_2025.pdf"
+  },
+  {
+   "id": 1225,
+   "title": "Социально-экономическая география: учебное пособие с электронным приложением для повышенного уровня",
+   "author": "Антипова Е.А., Гузова О.Н",
+   "grade": 10,
+   "year": "2026",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/geografija/Geagrafiya_Antipova_10_rus_2026.pdf"
+  },
+  {
+   "id": 1226,
+   "title": "Сацыяльна-эканамічнай геаграфіі свету: вучэбны дапаможнік з электронным дадаткам для павышанага ўзроўню",
+   "author": "Анціпава К.А., Гузава В.М",
+   "grade": 10,
+   "year": "2026",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/geografija/Geagrafiya_Antipova_10_bel_2026.pdf"
+  },
+  {
+   "id": 1227,
+   "title": "Физика: учебник",
+   "author": "Исаченкова Л.А., Сокольский А.А., Захаревич Е.В., Дорофейчик В.В",
+   "grade": 9,
+   "year": "2026",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/fizika/Fizika_8kl_Isachenkova_rus_2026.pdf"
+  },
+  {
+   "id": 1228,
+   "title": "Искусство (отечественная и мировая художественная культура): учебник",
+   "author": "С.И. Колбышева, Ю.Ю. Захарина, И.Г. Томашева, И.Г. Волкова, М.А. Шатарова",
+   "grade": 9,
+   "year": "2026",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/iskusstvo/Iskusstvo_9kl_Kolbisheva_rus_2026.pdf"
+  },
+  {
+   "id": 1229,
+   "title": "Информатика: учебное пособие",
+   "author": "Котов В.М., Лапо А.И., Быкадоров Ю.А",
+   "grade": 8,
+   "year": "2026",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/informatika/Informatika_8kl_Kotov_rus_2026.pdf"
+  },
+  {
+   "id": 1230,
+   "title": "История Древнего мира (ч.1): учебник",
+   "author": "В.С. Кошелев, О.В. Перзашкевич, А.А. Прохоров, О.Г. Журавлевич",
+   "grade": 5,
+   "year": "2026",
+   "level": "II (5-9кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Istoriya_Dr_mira_Koshelev_5kl_ch1_rus_2026.pdf"
+  },
+  {
+   "id": 1231,
+   "title": "Матэматыка (ч.1): вучэбны дапаможнік",
+   "author": "Мураўёва Г.Л., Урбан М.А",
+   "grade": 3,
+   "year": "2026",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_3kl_ch1_Muravyova_bel_2026.pdf"
+  },
+  {
+   "id": 1232,
+   "title": "Химия: учебное пособие (базовый и повышенный уровни)",
+   "author": "Т.А. Колевич, Вадим Э. Матулис, Виталий Э. Матулис",
+   "grade": 10,
+   "year": "2025",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/Himiya_Kolevich_10kl_rus_2025.pdf"
+  },
+  {
+   "id": 1233,
+   "title": "Хімія: вучэбны дапаможнік (базавы і павышаны ўзроўні)",
+   "author": "Т.А. Калевіч, Вадзім Э. Матуліс, Віталій Э. Матуліс",
+   "grade": 10,
+   "year": "2026",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/himija/Himiya_Kolevich_10kl_bel_2026.pdf"
+  },
+  {
+   "id": 1234,
+   "title": "Английский язык / Англійская мова (ч.1): учебное пособие (повышенный уровень)",
+   "author": "Н.В. Демченко, Л.М. Лапицкая, Н.В. Юхнель, В.Р. Романчук",
+   "grade": 5,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_yazik_Demchenko_5kl_ch1_2025.pdf"
+  },
+  {
+   "id": 1235,
+   "title": "Английский язык / Англійская мова (ч.2): учебное пособие (повышенный уровень)",
+   "author": "Н.В. Демченко, Н.В. Юхнель, Л.М. Лапицкая, В.Р. Романчук, Э.В. Бушуева",
+   "grade": 5,
+   "year": "2025",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_yazik_Demchenko_5kl_ch2_2025.pdf"
+  },
+  {
+   "id": 1236,
+   "title": "Английский язык / Англійская мова (ч.1): учебное пособие (повышенный уровень)",
+   "author": "Н.В. Демченко, Э.В. Бушуева, и [др.]",
+   "grade": 6,
+   "year": "2026",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/english/angliski_yazik_Demchenko_6kl_ch1_2026.pdf"
+  },
+  {
+   "id": 1237,
+   "title": "Китайский язык / Кітайская мова (ч.1): учебное пособие",
+   "author": "Пониматко А.П., Михалькова Н.В., Филимонова М.С., Сяо И",
+   "grade": 6,
+   "year": "2026",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/kitajskij/kitayski_yazik_Ponimatko_6kl_ch1_2026.pdf"
+  },
+  {
+   "id": 1238,
+   "title": "Французский язык / Французская мова (ч.1): учебное пособие (повышенный уровень)",
+   "author": "Колосовская И.Г., Скибская Н.В",
+   "grade": 7,
+   "year": "2026",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/francuzki_kolosovskaja_7kl_ch1_2026.pdf"
+  },
+  {
+   "id": 1239,
+   "title": "Французский язык / Французская мова (ч.2): учебное пособие (повышенный уровень)",
+   "author": "Колосовская И.Г., Скибская Н.В",
+   "grade": 7,
+   "year": "2026",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/francuzskij/francuzki_kolosovskaja_7kl_ch2_2026.pdf"
+  },
+  {
+   "id": 1240,
+   "title": "Немецкий язык (ч.1): учебник",
+   "author": "Будько А.Ф., Кохановская А.Л",
+   "grade": 4,
+   "year": "2026",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik__budyko_4kl_ch1_rus_2026.pdf"
+  },
+  {
+   "id": 1241,
+   "title": "Немецкая мова (ч.1): падручнік",
+   "author": "Будзько А.П., Каханоўская Г.Л",
+   "grade": 4,
+   "year": "2026",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik__budyko_4kl_ch1_bel_2026.pdf"
+  },
+  {
+   "id": 1242,
+   "title": "Основы безопаснсти жизнедеятельности: учебное пособие",
+   "author": "Т.Ю. Аброськина, Л.Ф. Кузнецова, Л.А. Одновол",
+   "grade": 4,
+   "year": "2026",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/obj/OBJ_Abroskina_4kl_rus_2026.pdf"
+  },
+  {
+   "id": 1243,
+   "title": "Інфарматыка: вучэбны дапаможнік",
+   "author": "Котаў У.М., Лапо А.І., Быкадораў Ю.А",
+   "grade": 8,
+   "year": "2026",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/informatika/Informatika_8kl_Kotov_bel_2026.pdf"
+  },
+  {
+   "id": 1244,
+   "title": "Испанский язык / Іспанская мова (ч.1): учебник",
+   "author": "Гриневич Е.К., Бахар Л.Н",
+   "grade": 4,
+   "year": "2026",
+   "level": "I (1-4кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanski_yazik_Grinevich_4kl_ch1_2026.pdf"
+  },
+  {
+   "id": 1245,
+   "title": "Испанский язык / Іспанская мова (ч.1): учебное пособие (повышенный уровень)",
+   "author": "Цыбулёва Т.Э., Пушкина О.А",
+   "grade": 6,
+   "year": "2026",
+   "level": "II (5-9кл.)",
+   "language": "Русский и белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/ispanski/ispanski_yazik_Tsibuliova_6kl_ch1_2026.pdf"
+  },
+  {
+   "id": 1247,
+   "title": "Немецкий язык: учебник",
+   "author": "Будько А.Ф., Курьян В.В",
+   "grade": 10,
+   "year": "2026",
+   "level": "III (10-11кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_Budko_10kl_rus_2026.pdf"
+  },
+  {
+   "id": 1248,
+   "title": "Асновы бяспекі жыццядзейнасці: вучэбны дапаможнік",
+   "author": "Т.Ю. Аброськіна, Л.Ф. Кузняцова, Л.А. Аднавол",
+   "grade": 4,
+   "year": "2026",
+   "level": "I (1-4кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/obj/OBJ_Abroskina_4kl_bel_2026.pdf"
+  },
+  {
+   "id": 1249,
+   "title": "Гісторыя Старажытнага свету (ч.1): падручнік",
+   "author": "У.С. Кошалеў, А.В. Перзашкевіч, А.А. Прохараў, В.Г. Жураўлевіч",
+   "grade": 5,
+   "year": "2026",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/istorija/Istoriya_Dr_mira_Koshelev_5kl_ch1_bel_2026.pdf"
+  },
+  {
+   "id": 1250,
+   "title": "Мастацтва (айчынная і сусветная мастацкая культура): падручнік",
+   "author": "С.І. Колбышава, Ю.Ю. Захарына, І.Р. Томашава, І.Г. Волкава, М.А. Шатарава",
+   "grade": 9,
+   "year": "2026",
+   "level": "II (5-9кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/iskusstvo/iskusstvo_9kl_kolbisheva_bel_2026.pdf"
+  },
+  {
+   "id": 1251,
+   "title": "Нямецкая мова: падручнік",
+   "author": "Будзько А.П., Кур’ян У.У",
+   "grade": 10,
+   "year": "2026",
+   "level": "III (10-11кл.)",
+   "language": "Белорусский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik_budko_10kl_bel_2026.pdf"
+  },
+  {
+   "id": 1252,
+   "title": "Математика (ч.2): учебное пособие",
+   "author": "Муравьева Г.Л., Урбан М.А",
+   "grade": 3,
+   "year": "2026",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/matematika/matematika_3kl_ch2_Muravyova_rus_2026.pdf"
+  },
+  {
+   "id": 1253,
+   "title": "Літаратурнае чытанне (ч.2): падручнік",
+   "author": "Антонава Н.У. і інш",
+   "grade": 2,
+   "year": "2026",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/literaturnoe-chtenie/lit_chitanne_2kl_ch2_Antonava_rus_2026.pdf"
+  },
+  {
+   "id": 1254,
+   "title": "Немецкий язык (ч.2): учебник",
+   "author": "Будько А.Ф., Кохановская А.Л",
+   "grade": 4,
+   "year": "2026",
+   "level": "I (1-4кл.)",
+   "language": "Русский",
+   "pdf_url": "https://e-padruchnik.adu.by/books/nemeckij/nemecki_yazik__budyko_4kl_ch2_rus_2026+.pdf"
+  }
+ ]
+}

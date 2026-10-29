@@ -270,6 +270,16 @@ interface ApiService {
     suspend fun padruchnikImport(@Body body: PadruchnikImportRequest): PadruchnikImportDto
 
     @Multipart
+    @POST("padruchnik/upload")
+    suspend fun padruchnikUpload(
+        @Part file: MultipartBody.Part,
+        @Part("book_id") bookId: RequestBody,
+        @Part("subject_id") subjectId: RequestBody,
+        @Part("grade") grade: RequestBody,
+        @Part("class_ids") classIds: RequestBody,
+    ): PadruchnikImportDto
+
+    @Multipart
     @POST("teacher/textbooks")
     suspend fun uploadTextbook(
         @Part file: MultipartBody.Part,

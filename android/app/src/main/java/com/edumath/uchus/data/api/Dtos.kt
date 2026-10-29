@@ -1246,6 +1246,7 @@ data class PadruchnikItemDto(
     @SerializedName("year") val year: String? = null,
     @SerializedName("level") val level: String? = null,
     @SerializedName("language") val language: String? = null,
+    @SerializedName("pdf_url") val pdfUrl: String? = null,
 )
 
 data class PadruchnikSearchDto(
@@ -1254,6 +1255,9 @@ data class PadruchnikSearchDto(
     @SerializedName("page") val page: Int = 0,
     @SerializedName("has_next") val hasNext: Boolean = false,
     @SerializedName("error") val error: String? = null,
+    @SerializedName("source") val source: String? = null,
+    @SerializedName("total") val total: Int? = null,
+    @SerializedName("generated_at") val generatedAt: String? = null,
 )
 
 data class PadruchnikSubjectsDto(

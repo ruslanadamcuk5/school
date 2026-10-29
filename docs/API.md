@@ -540,6 +540,13 @@ POST /api/v1/daily/start   {"generator": "add.within20"}
 | GET | `/padruchnik/search?q=…&grade=3&page=0` | поиск пособий; `items` — карточки, `has_next` — есть ли следующая страница |
 | GET | `/padruchnik/subjects` | предметы для выбора при импорте |
 | POST | `/padruchnik/import` | скачать PDF, создать пособие и разобрать темы |
+| POST | `/padruchnik/upload` | загрузить PDF вручную (multipart), если сервер не может скачать его сам |
+
+Поиск работает по локальному снимку каталога портала
+(`services/padruchnik_catalog.json`), поэтому отвечает мгновенно и не зависит
+от доступности `e-padruchnik.adu.by` с сервера. В ответе есть `source`
+(`catalog` или `e-padruchnik.adu.by`), `total` и `generated_at`; у каждой
+карточки — `pdf_url` с прямой ссылкой на PDF и `language`.
 
 Тело импорта: `{"book_id": 1217, "subject_id": 1, "grade": 3, "class_ids": [4, 5]}`.
 Учитель обязан передать хотя бы один свой класс: импортированное пособие сразу
@@ -550,6 +557,15 @@ POST /api/v1/daily/start   {"generator": "add.within20"}
 Импорт синхронный и может занимать до минуты (скачивание PDF до 80 МБ).
 Портал не имеет официального API, поэтому возможны ошибки `import_failed` —
 текст причины возвращается в `message`.
+
+Если сервер не может скачать PDF (например, портал блокирует его IP), ответ
+`import_failed` содержит `can_upload: true`, а в `message` — прямую ссылку.
+Приложение в этом случае предлагает выбрать файл на устройстве и отправляет
+его в `POST /padruchnik/upload`:
+
+`multipart/form-data`: `file` (PDF), `book_id`, `subject_id`, `grade`,
+`class_ids` (повторяющееся поле или строка `4,5`). Ответ — тот же, что у
+`/padruchnik/import` (`201`).
 
 ### Семейные профили
 

@@ -575,7 +575,8 @@ def padruchnik_page():
     user = auth.current_user()
     classes = _own_classes()
     if request.method == "POST":
-        if (request.form.get("action") or "") == "import":
+        action = (request.form.get("action") or "").strip()
+        if action in {"import", "upload"}:
             book_id = request.form.get("book_id", type=int)
             subject_id = request.form.get("subject_id", type=int)
             grade = request.form.get("grade", type=int) or 0
@@ -593,16 +594,46 @@ def padruchnik_page():
                     "error",
                 )
                 return redirect(url_for("teacher.padruchnik_page"))
-            result = padruchnik.import_book(
-                book_id,
-                subject_id,
-                grade,
-                uploaded_by=int(user["id"]),
-                class_ids=chosen,
-                auto_link=True,
-            )
+            if action == "upload":
+                file_storage = request.files.get("pdf")
+                if not file_storage or not file_storage.filename:
+                    flash("Выберите файл PDF", "error")
+                    return redirect(url_for("teacher.padruchnik_page"))
+                try:
+                    data = file_storage.read()
+                    filename, size = padruchnik.save_pdf_bytes(
+                        data, textbooks.upload_dir()
+                    )
+                    result = padruchnik.import_saved_pdf(
+                        filename,
+                        size,
+                        book_id,
+                        subject_id,
+                        grade,
+                        uploaded_by=int(user["id"]),
+                        class_ids=chosen,
+                        auto_link=True,
+                    )
+                except ValueError as error:
+                    flash(f"Не удалось загрузить PDF: {error}", "error")
+                    return redirect(url_for("teacher.padruchnik_page"))
+            else:
+                result = padruchnik.import_book(
+                    book_id,
+                    subject_id,
+                    grade,
+                    uploaded_by=int(user["id"]),
+                    class_ids=chosen,
+                    auto_link=True,
+                )
             if not result.get("ok"):
-                flash(f"Не удалось добавить пособие: {result.get('error')}", "error")
+                message = f"Не удалось добавить пособие: {result.get('error')}"
+                if result.get("can_upload"):
+                    message += (
+                        " Скачайте PDF по прямой ссылке и загрузите его "
+                        "вручную в строке пособия."
+                    )
+                flash(message, "error")
                 return redirect(url_for("teacher.padruchnik_page"))
             flash(
                 f"«{result['title']}» добавлено в пособия и библиотеку: "

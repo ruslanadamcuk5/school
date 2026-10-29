@@ -1,5 +1,8 @@
 package com.edumath.uchus.ui.padruchnik
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -28,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.edumath.uchus.core.AppContainer
@@ -42,7 +46,12 @@ import com.edumath.uchus.ui.common.InfoBox
 import com.edumath.uchus.ui.common.LoadingBox
 import com.edumath.uchus.ui.common.ScreenScaffold
 import com.edumath.uchus.ui.common.SectionTitle
+import java.io.File
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 /**
  * Поиск пособий на национальном портале e-padruchnik.adu.by.
@@ -68,6 +77,52 @@ fun PadruchnikScreen(
     var classes by remember { mutableStateOf<List<ClassDto>>(emptyList()) }
     var importTarget by remember { mutableStateOf<PadruchnikItemDto?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
+    var uploadTarget by remember { mutableStateOf<UploadTarget?>(null) }
+    var uploading by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    val pdfPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        val target = uploadTarget
+        uploadTarget = null
+        if (uri == null || target == null) return@rememberLauncherForActivityResult
+        val file = copyPdfToCache(context, uri)
+        if (file == null) {
+            notice = "Не удалось прочитать выбранный файл"
+            return@rememberLauncherForActivityResult
+        }
+        uploading = true
+        notice = "Загружаем PDF и разбираем темы…"
+        scope.launch {
+            runCatching {
+                apiCall {
+                    container.api.padruchnikUpload(
+                        MultipartBody.Part.createFormData(
+                            "file",
+                            file.name,
+                            file.asRequestBody("application/pdf".toMediaType()),
+                        ),
+                        target.item.id.toString().toRequestBody(PLAIN_TEXT),
+                        target.subjectId.toString().toRequestBody(PLAIN_TEXT),
+                        target.grade.toString().toRequestBody(PLAIN_TEXT),
+                        target.classIds.joinToString(",").toRequestBody(PLAIN_TEXT),
+                    )
+                }
+            }.onSuccess { result ->
+                notice = if (result.ok) {
+                    "«${result.title ?: target.item.title}» добавлено: " +
+                        "${result.pages} стр., тем — ${result.linked}."
+                } else {
+                    result.message ?: result.error ?: "Не удалось добавить пособие"
+                }
+            }.onFailure {
+                notice = it.message ?: "Не удалось загрузить PDF"
+            }
+            uploading = false
+            file.delete()
+        }
+    }
 
     LaunchedEffect(Unit) {
         runCatching { apiCall { container.api.padruchnikSubjects() } }
@@ -164,6 +219,10 @@ fun PadruchnikScreen(
                 }
             }
 
+            if (uploading) {
+                item { LoadingBox("Загружаем PDF и разбираем темы…") }
+            }
+
             notice?.let { text ->
                 item { InfoBox(text) }
             }
@@ -214,6 +273,11 @@ fun PadruchnikScreen(
             classes = classes,
             requireClasses = isTeacher,
             onDismiss = { importTarget = null },
+            onPickFile = { subjectId, gradeValue, classIds ->
+                uploadTarget = UploadTarget(item, subjectId, gradeValue, classIds)
+                importTarget = null
+                pdfPicker.launch("application/pdf")
+            },
             onImport = { subjectId, gradeValue, classIds ->
                 scope.launch {
                     runCatching {
@@ -292,6 +356,7 @@ private fun ImportDialog(
     classes: List<ClassDto>,
     requireClasses: Boolean,
     onDismiss: () -> Unit,
+    onPickFile: (subjectId: Int, grade: Int, classIds: List<Int>) -> Unit,
     onImport: (subjectId: Int, grade: Int, classIds: List<Int>) -> Unit,
 ) {
     var subjectId by remember(item.id) { mutableStateOf(subjects.firstOrNull()?.id ?: 0) }
@@ -360,6 +425,18 @@ private fun ImportDialog(
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
+
+                OutlinedButton(
+                    onClick = {
+                        when {
+                            subjectId == 0 -> validation = "Выберите предмет"
+                            requireClasses && chosen.isEmpty() ->
+                                validation = "Выберите хотя бы один класс"
+                            else -> onPickFile(subjectId, grade, chosen.toList())
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text("📎 PDF не скачивается? Выбрать файл") }
             }
         },
         confirmButton = {
@@ -382,3 +459,22 @@ private fun ImportDialog(
         },
     )
 }
+
+
+private val PLAIN_TEXT = "text/plain".toMediaType()
+
+private data class UploadTarget(
+    val item: PadruchnikItemDto,
+    val subjectId: Int,
+    val grade: Int,
+    val classIds: List<Int>,
+)
+
+/** Скопировать выбранный PDF во временный файл, чтобы отправить его на сервер. */
+private fun copyPdfToCache(context: android.content.Context, uri: Uri): File? = runCatching {
+    val file = File(context.cacheDir, "padruchnik_${System.currentTimeMillis()}.pdf")
+    context.contentResolver.openInputStream(uri)?.use { input ->
+        file.outputStream().use { output -> input.copyTo(output) }
+    }
+    file.takeIf { it.length() > 0 }
+}.getOrNull()
