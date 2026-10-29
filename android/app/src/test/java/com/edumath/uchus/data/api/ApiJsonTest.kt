@@ -87,4 +87,48 @@ class ApiJsonTest {
             start.task?.widget?.asJsonObject?.get("kind")?.asString,
         )
     }
+
+    @Test
+    fun parsesGoogleSignupOffer() {
+        val json = """
+            {
+              "ok": true,
+              "needs_signup": true,
+              "signup_token": "signed-token",
+              "email": "ivan@example.com",
+              "first_name": "Иван",
+              "last_name": "Петров",
+              "picture": "https://example.com/a.png",
+              "suggested_login": "ivan"
+            }
+        """.trimIndent()
+
+        val response = ApiJson.gson.fromJson(json, GoogleLoginResponse::class.java)
+
+        assertTrue(response.needsSignup)
+        assertEquals("signed-token", response.signupToken)
+        assertEquals("ivan@example.com", response.email)
+        assertEquals("ivan", response.suggestedLogin)
+        assertTrue(response.token == null)
+    }
+
+    @Test
+    fun parsesGoogleSessionResponse() {
+        val json = """
+            {
+              "ok": true,
+              "token": "token",
+              "user": {"id": 3, "login": "ivan", "role": "parent"},
+              "learner": null,
+              "theme": "adult"
+            }
+        """.trimIndent()
+
+        val response = ApiJson.gson.fromJson(json, GoogleLoginResponse::class.java)
+        val session = response.toSession()
+
+        assertFalse(response.needsSignup)
+        assertEquals("token", session.token)
+        assertEquals("parent", session.user?.role)
+    }
 }

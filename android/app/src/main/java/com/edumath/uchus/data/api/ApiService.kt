@@ -26,6 +26,12 @@ interface ApiService {
     @POST("auth/login")
     suspend fun login(@Body body: LoginRequest): SessionDto
 
+    @POST("auth/google")
+    suspend fun googleLogin(@Body body: GoogleLoginRequest): GoogleLoginResponse
+
+    @POST("auth/google/finish")
+    suspend fun googleFinishSignup(@Body body: GoogleFinishRequest): SessionDto
+
     @POST("auth/logout")
     suspend fun logout(): SimpleOkDto
 

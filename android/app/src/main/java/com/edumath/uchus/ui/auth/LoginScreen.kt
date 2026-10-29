@@ -36,8 +36,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -45,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.edumath.uchus.data.api.LearnerDto
 import com.edumath.uchus.ui.common.ErrorBox
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(vm: AuthViewModel) {
@@ -58,6 +61,10 @@ fun LoginScreen(vm: AuthViewModel) {
     var childPin by remember { mutableStateOf("") }
     var pinFor by remember { mutableStateOf<LearnerDto?>(null) }
     var pinValue by remember { mutableStateOf("") }
+    var googleBusy by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) { vm.refreshLearners() }
 
@@ -129,6 +136,48 @@ fun LoginScreen(vm: AuthViewModel) {
         state.error?.let { message ->
             ErrorBox(message)
         }
+
+        OutlinedButton(
+            onClick = {
+                if (googleBusy) return@OutlinedButton
+                googleBusy = true
+                vm.clearError()
+                scope.launch {
+                    try {
+                        val result = GoogleSignIn.signIn(context)
+                        vm.googleLogin(result.idToken, result.nonce)
+                    } catch (e: GoogleSignInException) {
+                        vm.showError(e.message)
+                    } catch (e: Exception) {
+                        vm.showError(
+                            "Не удалось войти через Google: " +
+                                (e.message ?: "неизвестная ошибка")
+                        )
+                    } finally {
+                        googleBusy = false
+                    }
+                }
+            },
+            enabled = !state.busy && !googleBusy,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+        ) {
+            if (googleBusy) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            } else {
+                Text("Войти через Google")
+            }
+        }
+        Text(
+            "Аккаунт Google создаётся и на сайте: роль и имя выберете при первом входе.",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
 
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
@@ -255,6 +304,94 @@ fun LoginScreen(vm: AuthViewModel) {
             },
             dismissButton = {
                 TextButton(onClick = { pinFor = null }) { Text("Отмена") }
+            },
+        )
+    }
+    val signup = state.googlePrompt
+    if (signup != null) {
+        var role by remember(signup) { mutableStateOf("student") }
+        var firstName by remember(signup) { mutableStateOf(signup.firstName) }
+        var lastName by remember(signup) { mutableStateOf(signup.lastName) }
+        var newLogin by remember(signup) { mutableStateOf(signup.suggestedLogin) }
+        var childCode by remember(signup) { mutableStateOf("") }
+
+        AlertDialog(
+            onDismissRequest = { if (!state.busy) vm.cancelGoogleSignup() },
+            title = { Text("Регистрация через Google") },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(
+                        "Вы вошли как ${signup.email}. Осталось выбрать роль и имя — " +
+                            "пароль не нужен, входить будете через Google.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+
+                    Text("Кто вы?", style = MaterialTheme.typography.labelMedium)
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        items(listOf("student" to "Ученик", "teacher" to "Учитель", "parent" to "Родитель")) { item ->
+                            FilterChip(
+                                selected = role == item.first,
+                                onClick = { role = item.first },
+                                label = { Text(item.second) },
+                            )
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = firstName,
+                        onValueChange = { firstName = it },
+                        label = { Text("Имя") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = lastName,
+                        onValueChange = { lastName = it },
+                        label = { Text("Фамилия (необязательно)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = newLogin,
+                        onValueChange = { newLogin = it.trim().take(32) },
+                        label = { Text("Логин для входа на сайте") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (role == "parent") {
+                        OutlinedTextField(
+                            value = childCode,
+                            onValueChange = { childCode = it.trim().uppercase().take(12) },
+                            label = { Text("Код ребёнка (необязательно)") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+
+                    state.error?.let { message ->
+                        Text(
+                            message,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        vm.googleFinishSignup(role, newLogin, firstName, lastName, childCode)
+                    },
+                    enabled = !state.busy,
+                ) {
+                    Text(if (state.busy) "Создаём…" else "Создать аккаунт")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { vm.cancelGoogleSignup() }) { Text("Отмена") }
             },
         )
     }

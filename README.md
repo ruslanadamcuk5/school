@@ -138,8 +138,24 @@ GOOGLE_REDIRECT_URI=https://virusadk.alwaysdata.net/auth/google/callback
 
 Кнопка появляется сразу после сохранения файла — перезапуск не нужен.
 
-В Android-приложении кнопки Google пока нет: там вход по логину и паролю
-(задайте пароль в профиле, если регистрировались через Google).
+В Android-приложении на экране входа есть кнопка **«Войти через Google»**.
+Она работает через Credential Manager и тот же Web Client ID: приложение
+получает Google ID token и отправляет его на сервер
+(`POST /api/v1/auth/google`). Новый пользователь выбирает роль, имя и логин
+прямо в приложении, пароль не нужен. Отдельный Android-клиент OAuth для
+Credential Manager создавать не требуется; если Google вернёт `DEVELOPER_ERROR`,
+создайте в консоли **Credentials → Create credentials → OAuth client ID →
+Android** с package `com.edumath.uchus` и SHA-1 debug-ключа из
+`android/keystore/uchus-debug.keystore`
+(`F5:06:F6:8C:08:C4:31:DC:3F:70:49:CF:5C:88:8A:26:78:FA:70:96`).
+
+Web Client ID зашит в сборку по умолчанию. Другой проект Google можно указать
+при сборке APK:
+
+```bash
+cd android
+gradle assembleDebug -PgoogleClientId=…apps.googleusercontent.com
+```
 
 ---
 
@@ -506,6 +522,8 @@ python tools/prod_check.py
   экраны остаются доступными; полноценной офлайн-записи нет.
 * **Адрес сервера** задаётся на экране входа и запоминается. Значение по умолчанию
   задаётся при сборке: `-PserverUrl=https://…`.
+* **Вход через Google** — кнопка на экране входа (Credential Manager). Новый
+  пользователь выбирает роль, имя и логин прямо в приложении, пароль не нужен.
 * Все тексты интерфейса — на русском; внешних CDN и аналитики нет.
 
 ### Сборка APK через GitHub Actions
@@ -601,6 +619,8 @@ data/releases/version.json
 
 ```http
 POST /api/v1/auth/login          {"login": "…", "password": "…"} → {"token": "…"}
+POST /api/v1/auth/google         {"id_token": "…", "nonce": "…"} → сессия или needs_signup
+POST /api/v1/auth/google/finish  {"signup_token": "…", "role": "student", …} → сессия
 GET  /api/v1/map                 Authorization: Bearer <token>
 GET  /api/v1/learners            X-Device-Id: <uuid>   # семейные профили
 ```

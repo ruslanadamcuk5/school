@@ -14,7 +14,7 @@ REST-интерфейс для Android-приложения и внешних к
 
 ## Аутентификация
 
-Два способа входа, оба возвращают **непрозрачный Bearer-токен** (не JWT). Токен
+Три способа входа, все возвращают **непрозрачный Bearer-токен** (не JWT). Токен
 хранится в БД в виде SHA-256-хэша, его можно отозвать, срок жизни — 180 дней.
 
 ### Аккаунт (учитель, ученик, родитель, администратор)
@@ -38,6 +38,59 @@ POST /api/v1/auth/login
 
 У ученика дополнительно приходит `learner` — профиль прогресса (`id`, `name`, `grade`,
 `xp`, `coins`, `streak_days`, `has_pin`).
+
+### Вход через Google (Android)
+
+Приложение получает Google ID token через Credential Manager и отправляет его
+на сервер вместе с nonce:
+
+```http
+POST /api/v1/auth/google
+{"id_token": "eyJhbGciOi…", "nonce": "случайная-строка-не-короче-16-символов"}
+```
+
+Сервер проверяет токен через `oauth2.googleapis.com/tokeninfo`: подпись, `aud`
+(должен совпадать с Web Client ID), `iss`, `exp`, `email_verified` и `nonce`.
+Для существующего аккаунта ответ такой же, как у `/auth/login`: `token`,
+`user`, `learner`, `theme`. Если почта однозначно совпадает с существующим
+аккаунтом без привязанного Google, он привязывается автоматически.
+
+Новому пользователю аккаунт сразу не создаётся — сервер возвращает выбор роли:
+
+```json
+{
+  "ok": true,
+  "needs_signup": true,
+  "signup_token": "…",
+  "email": "ivan@example.com",
+  "first_name": "Иван",
+  "last_name": "Петров",
+  "picture": "https://…",
+  "suggested_login": "ivan"
+}
+```
+
+`signup_token` подписан секретным ключом сервера и действует 15 минут.
+Регистрация завершается запросом:
+
+```http
+POST /api/v1/auth/google/finish
+{"signup_token": "…", "role": "student", "login": "ivan",
+ "first_name": "Иван", "last_name": "Петров"}
+```
+
+* `role` — `student`, `teacher` или `parent`; администратором через Google стать нельзя;
+* `first_name` и `last_name` необязательны — берутся из Google, если не переданы;
+* `child_code` — только для родителя, необязателен; при совпадении ребёнок
+  сразу привязывается;
+* `avatar` — эмодзи, по умолчанию `🦊`.
+
+Ответ — обычная сессия с `token`, как после `/auth/login`.
+
+Ошибки: `google_disabled` (503 — ключи Google не настроены на сервере),
+`bad_request` / `bad_nonce` / `bad_role` / `bad_name` / `bad_login` /
+`signup_expired` (400), `google_token_invalid` (401), `inactive` (403),
+`login_taken` (409), `too_many_attempts` (429).
 
 ### Семейный профиль без аккаунта
 

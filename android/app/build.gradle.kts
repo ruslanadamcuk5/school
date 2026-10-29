@@ -12,8 +12,8 @@ android {
         applicationId = "com.edumath.uchus"
         minSdk = 24
         targetSdk = 35
-        versionCode = 14
-        versionName = "1.8.3"
+        versionCode = 15
+        versionName = "1.9.0"
 
         vectorDrawables { useSupportLibrary = true }
 
@@ -24,6 +24,14 @@ android {
             ?.takeIf { it.isNotEmpty() }
             ?: "https://virusadk.alwaysdata.net"
         buildConfigField("String", "DEFAULT_SERVER_URL", "\"$serverUrl\"")
+
+        // Web-клиент OAuth из Google Cloud. Именно он передаётся в Credential
+        // Manager как serverClientId; ID token приходит с aud = этому клиенту.
+        val googleClientId = (findProperty("googleClientId") as String?)
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?: "1012001456335-jjo5s9ptivbsr0j94qvfkpre2q72grvb.apps.googleusercontent.com"
+        buildConfigField("String", "GOOGLE_CLIENT_ID", "\"$googleClientId\"")
     }
 
     signingConfigs {
@@ -97,6 +105,11 @@ dependencies {
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+
+    // Вход через Google: Credential Manager + Google ID token.
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     testImplementation("junit:junit:4.13.2")

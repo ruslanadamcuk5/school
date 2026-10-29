@@ -98,6 +98,52 @@ data class LoginRequest(
     @SerializedName("password") val password: String,
 )
 
+// ---------------------------------------------------------- вход через Google
+
+data class GoogleLoginRequest(
+    @SerializedName("id_token") val idToken: String,
+    @SerializedName("nonce") val nonce: String,
+)
+
+/**
+ * Ответ сервера на вход по Google ID token.
+ *
+ * Либо сразу сессия (``token`` + пользователь), либо просьба завершить
+ * регистрацию: ``needsSignup`` и подписанный ``signupToken``.
+ */
+data class GoogleLoginResponse(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("token") val token: String? = null,
+    @SerializedName("user") val user: UserDto? = null,
+    @SerializedName("learner") val learner: LearnerDto? = null,
+    @SerializedName("theme") val theme: String? = null,
+    @SerializedName("needs_signup") val needsSignup: Boolean = false,
+    @SerializedName("signup_token") val signupToken: String? = null,
+    @SerializedName("email") val email: String? = null,
+    @SerializedName("first_name") val firstName: String? = null,
+    @SerializedName("last_name") val lastName: String? = null,
+    @SerializedName("picture") val picture: String? = null,
+    @SerializedName("suggested_login") val suggestedLogin: String? = null,
+) {
+    fun toSession(): SessionDto = SessionDto(
+        ok = ok,
+        token = token,
+        user = user,
+        learner = learner,
+        theme = theme,
+    )
+}
+
+data class GoogleFinishRequest(
+    @SerializedName("signup_token") val signupToken: String,
+    @SerializedName("role") val role: String,
+    @SerializedName("login") val login: String,
+    @SerializedName("first_name") val firstName: String? = null,
+    @SerializedName("last_name") val lastName: String? = null,
+    @SerializedName("avatar") val avatar: String? = null,
+    @SerializedName("child_code") val childCode: String? = null,
+)
+
 data class LearnerLoginRequest(
     @SerializedName("pin") val pin: String? = null,
 )
