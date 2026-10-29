@@ -33,6 +33,14 @@
       <p class="muted small" style="margin:4px 0 0;">
         При запуске приложение проверяет, нет ли на сайте новой версии, и предлагает обновление.
       </p>
+      <p class="muted small" style="margin:4px 0 0;">
+        Если Android пишет «файл повреждён» — удалите загруженный файл и скачайте
+        заново (обычно это неполная загрузка).
+        <a href="https://github.com/newvirusadk-cmd/school/releases/download/apk-latest/uchus-debug.apk">Зеркало на GitHub</a>.
+      </p>
+      <p class="muted small" style="margin:4px 0 0;">
+        SHA-256: <code style="font-size:0.75rem;">{{ app_release.sha256 }}</code>
+      </p>
     </div>
     <div class="row" style="gap:8px;">
       <a class="btn btn--lg" href="{{ url_for('app_release.download') }}" download>⬇️ Скачать APK</a>
