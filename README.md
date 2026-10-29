@@ -142,7 +142,9 @@ GOOGLE_REDIRECT_URI=https://virusadk.alwaysdata.net/auth/google/callback
 Она работает через Credential Manager и тот же Web Client ID: приложение
 получает Google ID token и отправляет его на сервер
 (`POST /api/v1/auth/google`). Новый пользователь выбирает роль, имя и логин
-прямо в приложении, пароль не нужен. Отдельный Android-клиент OAuth для
+прямо в приложении, пароль не нужен. Если на устройстве нет подходящего
+аккаунта, приложение показывает системную кнопку **«Войти через Google»** —
+через неё аккаунт можно добавить, не выходя из приложения. Отдельный Android-клиент OAuth для
 Credential Manager создавать не требуется; если Google вернёт `DEVELOPER_ERROR`,
 создайте в консоли **Credentials → Create credentials → OAuth client ID →
 Android** с package `com.edumath.uchus` и SHA-1 debug-ключа из
