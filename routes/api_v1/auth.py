@@ -7,6 +7,7 @@
 """
 from __future__ import annotations
 
+import hmac
 from functools import wraps
 
 from flask import g, jsonify, request
@@ -214,6 +215,30 @@ def google_finish():
             if child:
                 auth_service.link_parent_child(user_id, child["id"])
 
+    if not user["is_active"]:
+        fail(403, "inactive", "Аккаунт отключён. Обратитесь к администратору.")
+    return jsonify(_issue_token(user))
+
+
+@bp.post("/auth/google/exchange")
+def google_exchange():
+    """Обменять код из браузера на обычный bearer-токен (PKCE)."""
+    data = json_body()
+    code = str(data.get("code") or "").strip()
+    verifier = str(data.get("verifier") or "").strip()
+    if not code or len(verifier) < 32:
+        fail(400, "bad_request", "Не переданы код или verifier")
+    try:
+        info = google_auth.read_login_code(code)
+    except google_auth.GoogleAuthError as exc:
+        fail(400, "code_expired", str(exc))
+    if not hmac.compare_digest(
+        info["challenge"], google_auth.challenge_for(verifier)
+    ):
+        fail(400, "bad_verifier", "Не удалось подтвердить вход из браузера")
+    user = auth_service.get_user(info["user_id"])
+    if user is None:
+        fail(400, "code_expired", "Аккаунт не найден, войдите заново")
     if not user["is_active"]:
         fail(403, "inactive", "Аккаунт отключён. Обратитесь к администратору.")
     return jsonify(_issue_token(user))

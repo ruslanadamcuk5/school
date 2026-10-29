@@ -13,6 +13,7 @@ access token, полученному по HTTPS, поэтому подделка
 """
 from __future__ import annotations
 
+import base64
 import hashlib
 import hmac
 import json
@@ -25,7 +26,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from flask import current_app, url_for
+from flask import current_app, redirect, url_for
 from itsdangerous import BadData, URLSafeTimedSerializer
 
 AUTHORIZE_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -35,6 +36,10 @@ TOKENINFO_ENDPOINT = "https://oauth2.googleapis.com/tokeninfo"
 SCOPE = "openid email profile"
 # Сколько живёт подписанный токен регистрации из Android-приложения.
 SIGNUP_MAX_AGE = 900
+# Возврат в приложение после входа через браузер (Custom Tabs).
+ANDROID_CALLBACK = "uchus://auth"
+# Одноразовый код входа в приложении живёт пять минут.
+LOGIN_CODE_MAX_AGE = 300
 
 
 class GoogleAuthError(RuntimeError):
@@ -239,6 +244,63 @@ def read_signup_token(token: str) -> dict[str, Any]:
     if not isinstance(data, dict) or not data.get("sub") or not data.get("email"):
         raise GoogleAuthError("Некорректный токен регистрации")
     return data
+
+
+def challenge_for(verifier: str) -> str:
+    """S256-challenge для PKCE: base64url(SHA-256(verifier)) без «=»."""
+    digest = hashlib.sha256((verifier or "").encode("utf-8")).digest()
+    return base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
+
+
+def _login_serializer() -> URLSafeTimedSerializer:
+    return URLSafeTimedSerializer(
+        current_app.config["SECRET_KEY"], salt="google-login-code"
+    )
+
+
+def make_login_code(user_id: int, challenge: str) -> str:
+    """Короткоживущий код возврата в приложение после входа в браузере.
+
+    Код бесполезен без ``verifier``: приложение присылает его на обмен,
+    а сервер сверяет хеш с ``challenge`` из начала входа. Так перехват
+    ссылки ``uchus://auth`` другим приложением не даёт войти.
+    """
+    return _login_serializer().dumps(
+        {
+            "user_id": int(user_id),
+            "challenge": str(challenge),
+            "nonce": secrets.token_urlsafe(8),
+        }
+    )
+
+
+def read_login_code(token: str) -> dict[str, Any]:
+    try:
+        data = _login_serializer().loads(token or "", max_age=LOGIN_CODE_MAX_AGE)
+    except BadData as exc:
+        raise GoogleAuthError("Ссылка входа истекла, войдите через Google ещё раз") from exc
+    if not isinstance(data, dict):
+        raise GoogleAuthError("Некорректный код входа")
+    try:
+        user_id = int(data.get("user_id") or 0)
+    except (TypeError, ValueError):
+        user_id = 0
+    challenge = str(data.get("challenge") or "")
+    if user_id <= 0 or not challenge:
+        raise GoogleAuthError("Некорректный код входа")
+    return {"user_id": user_id, "challenge": challenge}
+
+
+def android_redirect(code: str | None = None, error: str | None = None):
+    """Вернуть браузер в приложение по схеме ``uchus://auth``."""
+    params: dict[str, str] = {}
+    if code:
+        params["code"] = code
+    if error:
+        params["error"] = error
+    query = urllib.parse.urlencode(params)
+    return redirect(f"{ANDROID_CALLBACK}?{query}" if query else ANDROID_CALLBACK)
+
 
 
 def profile_from_userinfo(info: dict[str, Any]) -> dict[str, Any]:

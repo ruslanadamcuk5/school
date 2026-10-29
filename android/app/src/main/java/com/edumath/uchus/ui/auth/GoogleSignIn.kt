@@ -65,7 +65,11 @@ object GoogleSignIn {
                     request = request,
                 )
             } catch (e: GetCredentialCancellationException) {
-                throw GoogleSignInException("Вход через Google отменён")
+                val detail = e.message?.trim().orEmpty()
+                throw GoogleSignInException(
+                    if (detail.isEmpty()) "Вход через Google отменён"
+                    else "Вход через Google отменён ($detail)"
+                )
             } catch (e: NoCredentialException) {
                 // Нет подходящего аккаунта — пробуем следующую стратегию.
                 lastNoCredential = e

@@ -62,11 +62,32 @@ fun LoginScreen(vm: AuthViewModel) {
     var pinFor by remember { mutableStateOf<LearnerDto?>(null) }
     var pinValue by remember { mutableStateOf("") }
     var googleBusy by remember { mutableStateOf(false) }
+    var googleProblem by remember { mutableStateOf<String?>(null) }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val browserCallback by GoogleBrowserAuth.callbacks.collectAsState()
 
     LaunchedEffect(Unit) { vm.refreshLearners() }
+
+    LaunchedEffect(browserCallback) {
+        val callback = browserCallback ?: return@LaunchedEffect
+        GoogleBrowserAuth.consume()
+        val error = callback.error
+        if (!error.isNullOrBlank()) {
+            vm.showError(GoogleBrowserAuth.errorText(error))
+            return@LaunchedEffect
+        }
+        val code = callback.code.orEmpty()
+        val verifier = GoogleBrowserAuth.takeVerifier(context)
+        if (code.isBlank() || verifier.isNullOrBlank()) {
+            vm.showError(
+                "Сессия входа через браузер истекла. Нажмите «Войти через Google» ещё раз."
+            )
+            return@LaunchedEffect
+        }
+        vm.googleExchange(code, verifier)
+    }
 
     Column(
         modifier = Modifier
@@ -147,12 +168,11 @@ fun LoginScreen(vm: AuthViewModel) {
                         val result = GoogleSignIn.signIn(context)
                         vm.googleLogin(result.idToken, result.nonce)
                     } catch (e: GoogleSignInException) {
-                        vm.showError(e.message)
+                        googleProblem = e.message
                     } catch (e: Exception) {
-                        vm.showError(
+                        googleProblem =
                             "Не удалось войти через Google: " +
                                 (e.message ?: "неизвестная ошибка")
-                        )
                     } finally {
                         googleBusy = false
                     }
@@ -172,6 +192,16 @@ fun LoginScreen(vm: AuthViewModel) {
             } else {
                 Text("Войти через Google")
             }
+        }
+        TextButton(
+            onClick = {
+                if (!GoogleBrowserAuth.start(context, state.server)) {
+                    vm.showError("Не удалось открыть браузер на телефоне")
+                }
+            },
+            enabled = !state.busy && !googleBusy,
+        ) {
+            Text("Не получается? Войти через Google в браузере")
         }
         Text(
             "Аккаунт Google создаётся и на сайте: роль и имя выберете при первом входе.",
@@ -304,6 +334,32 @@ fun LoginScreen(vm: AuthViewModel) {
             },
             dismissButton = {
                 TextButton(onClick = { pinFor = null }) { Text("Отмена") }
+            },
+        )
+    }
+    val problem = googleProblem
+    if (problem != null) {
+        AlertDialog(
+            onDismissRequest = { googleProblem = null },
+            title = { Text("Вход через Google") },
+            text = {
+                Text(
+                    "$problem\n\nМожно войти через браузер телефона: откроется " +
+                        "страница Google, после входа приложение вернётся само."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        googleProblem = null
+                        if (!GoogleBrowserAuth.start(context, state.server)) {
+                            vm.showError("Не удалось открыть браузер на телефоне")
+                        }
+                    },
+                ) { Text("Войти через браузер") }
+            },
+            dismissButton = {
+                TextButton(onClick = { googleProblem = null }) { Text("Отмена") }
             },
         )
     }

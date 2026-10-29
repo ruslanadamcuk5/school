@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hmac
 import logging
+import re
 from urllib.parse import urlsplit
 
 from flask import (
@@ -220,11 +221,21 @@ def google_login():
     mode = "link" if request.args.get("link") else "login"
     if mode == "link" and not auth.current_user():
         return redirect(url_for("auth.login", next=request.path))
+    # Приложение открывает эту страницу в браузере (Custom Tabs) и ждёт
+    # возврата по схеме uchus://auth. challenge — S256-хеш verifier (PKCE).
+    client = "android" if request.args.get("client") == "android" else "web"
+    challenge = str(request.args.get("challenge") or "").strip()
+    if client == "android" and not re.fullmatch(r"[A-Za-z0-9_-]{43}", challenge):
+        abort(400, "Некорректный challenge для входа из приложения")
+    if client == "web":
+        session.pop("google_android_challenge", None)
     state = google_auth.new_state()
     session["google_oauth"] = {
         "state": state,
         "mode": mode,
         "next": _safe_next(request.args.get("next")),
+        "client": client,
+        "challenge": challenge,
     }
     return redirect(google_auth.authorize_url(state))
 
@@ -240,11 +251,16 @@ def google_callback():
     if not state or not hmac.compare_digest(state, given):
         flash("Сессия входа через Google истекла. Попробуйте снова.", "error")
         return redirect(url_for("auth.login"))
+    android = pending.get("client") == "android"
     if request.args.get("error"):
+        if android:
+            return google_auth.android_redirect(error="cancelled")
         flash("Вход через Google отменён.", "info")
         return redirect(url_for("auth.login"))
     code = request.args.get("code", "")
     if not code:
+        if android:
+            return google_auth.android_redirect(error="no_code")
         flash("Google не вернул код авторизации.", "error")
         return redirect(url_for("auth.login"))
     try:
@@ -253,6 +269,8 @@ def google_callback():
         profile = google_auth.profile_from_userinfo(info)
     except google_auth.GoogleAuthError as exc:
         log.warning("Google login failed: %s", exc)
+        if android:
+            return google_auth.android_redirect(error="google_error")
         flash("Не удалось войти через Google. Попробуйте ещё раз.", "error")
         return redirect(url_for("auth.login"))
 
@@ -274,13 +292,26 @@ def google_callback():
             )
     if user is not None:
         if not user["is_active"]:
+            if android:
+                return google_auth.android_redirect(error="inactive")
             flash("Аккаунт отключён. Обратитесь к администратору.", "error")
             return redirect(url_for("auth.login"))
+        if android:
+            return google_auth.android_redirect(
+                code=google_auth.make_login_code(
+                    user["id"], pending.get("challenge", "")
+                )
+            )
         return _enter_account(user, pending.get("next"))
 
     # Новый пользователь: роль и имя выберет сам на следующем шаге.
     session["google_pending"] = profile
-    session["google_next"] = pending.get("next")
+    session["google_next"] = None if android else pending.get("next")
+    if android:
+        session["google_android_challenge"] = pending.get("challenge", "")
+    else:
+        # Не оставлять «хвост» от прерванного входа из приложения.
+        session.pop("google_android_challenge", None)
     return redirect(url_for("auth.google_finish"))
 
 
@@ -331,6 +362,11 @@ def google_finish():
         linked = auth.get_user_by_google_sub(pending["sub"])
         if linked:
             session.pop("google_pending", None)
+            challenge = session.pop("google_android_challenge", None)
+            if challenge:
+                return google_auth.android_redirect(
+                    code=google_auth.make_login_code(linked["id"], challenge)
+                )
             return _enter_account(linked)
 
         user_id = auth.create_user(
@@ -342,6 +378,11 @@ def google_finish():
         )
         _apply_signup(user_id, role, request.form)
         session.pop("google_pending", None)
+        challenge = session.pop("google_android_challenge", None)
+        if challenge:
+            return google_auth.android_redirect(
+                code=google_auth.make_login_code(user_id, challenge)
+            )
         target = _safe_next(session.pop("google_next", None))
         flash(f"Аккаунт создан. Добро пожаловать, {first_name}!", "success")
         return _enter_account(auth.get_user(user_id), target)

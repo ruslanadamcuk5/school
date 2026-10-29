@@ -32,6 +32,9 @@ interface ApiService {
     @POST("auth/google/finish")
     suspend fun googleFinishSignup(@Body body: GoogleFinishRequest): SessionDto
 
+    @POST("auth/google/exchange")
+    suspend fun googleExchange(@Body body: GoogleExchangeRequest): SessionDto
+
     @POST("auth/logout")
     suspend fun logout(): SimpleOkDto
 

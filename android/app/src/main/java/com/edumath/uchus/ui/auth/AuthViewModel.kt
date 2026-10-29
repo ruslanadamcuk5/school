@@ -6,6 +6,7 @@ import com.edumath.uchus.core.AppContainer
 import com.edumath.uchus.data.api.ApiException
 import com.edumath.uchus.data.api.ApiJson
 import com.edumath.uchus.data.api.CreateLearnerRequest
+import com.edumath.uchus.data.api.GoogleExchangeRequest
 import com.edumath.uchus.data.api.GoogleFinishRequest
 import com.edumath.uchus.data.api.GoogleLoginRequest
 import com.edumath.uchus.data.api.LearnerDto
@@ -158,6 +159,13 @@ class AuthViewModel(private val container: AppContainer) : ViewModel() {
 
     fun cancelGoogleSignup() = _state.update { it.copy(googlePrompt = null) }
 
+    /** Войти по одноразовому коду, который браузер вернул в приложение. */
+    fun googleExchange(code: String, verifier: String) {
+        launchAuth {
+            container.api.googleExchange(GoogleExchangeRequest(code, verifier))
+        }
+    }
+
     fun loginLearner(learner: LearnerDto, pin: String? = null) {
         if (learner.hasPin && pin.isNullOrBlank()) {
             _state.update { it.copy(error = "Введите PIN-код профиля") }
@@ -234,6 +242,8 @@ class AuthViewModel(private val container: AppContainer) : ViewModel() {
             "google_disabled" -> "Вход через Google не настроен на сервере"
             "google_token_invalid" -> "Google не подтвердил вход. Попробуйте ещё раз."
             "bad_nonce", "signup_expired" -> message
+            "code_expired", "bad_verifier" ->
+                "Сессия входа через браузер истекла. Нажмите «Войти через Google» ещё раз."
             "login_taken" -> "Такой логин уже занят — выберите другой"
             "bad_role", "bad_name", "bad_login" -> message
             "too_many_attempts" -> message

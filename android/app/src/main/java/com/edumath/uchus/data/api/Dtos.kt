@@ -144,6 +144,12 @@ data class GoogleFinishRequest(
     @SerializedName("child_code") val childCode: String? = null,
 )
 
+/** Обмен одноразового кода из браузера на токен (PKCE). */
+data class GoogleExchangeRequest(
+    @SerializedName("code") val code: String,
+    @SerializedName("verifier") val verifier: String,
+)
+
 data class LearnerLoginRequest(
     @SerializedName("pin") val pin: String? = null,
 )
