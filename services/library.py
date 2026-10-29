@@ -24,6 +24,17 @@ def _contains(haystack: str | None, needle: str) -> bool:
 
 
 # --------------------------------------------------------------- книги
+def find_book_for_textbook(owner_id: int, textbook_id: int) -> dict[str, Any] | None:
+    """Книга библиотеки этого учителя для пособия (если уже добавлена)."""
+    row = query_one(
+        """SELECT id FROM library_books
+            WHERE owner_id = ? AND textbook_id = ?
+            ORDER BY id LIMIT 1""",
+        (int(owner_id), int(textbook_id)),
+    )
+    return get_book(int(row["id"])) if row else None
+
+
 def create_book(
     owner_id: int,
     textbook_id: int,
@@ -34,7 +45,23 @@ def create_book(
     description: str = "",
     class_ids: Iterable[int] = (),
 ) -> int:
-    """Зарегистрировать загруженную книгу и выдать доступ классам."""
+    """Зарегистрировать загруженную книгу и выдать доступ классам.
+
+    Повторное добавление того же пособия не создаёт дубль: книга учителя
+    находится по ``textbook_id``, к ней лишь добавляются новые классы.
+    """
+    class_ids = list(class_ids)
+    existing = query_one(
+        """SELECT id FROM library_books
+            WHERE owner_id = ? AND textbook_id = ?
+            ORDER BY id LIMIT 1""",
+        (int(owner_id), int(textbook_id)),
+    )
+    if existing:
+        book_id = int(existing["id"])
+        if class_ids:
+            add_book_classes(book_id, class_ids)
+        return book_id
     book_id = execute(
         """INSERT INTO library_books
            (owner_id, textbook_id, subject_id, grade, title, author, description)
@@ -198,8 +225,10 @@ def ensure_book_for_textbook(
     if not textbook:
         return None
     row = query_one(
-        "SELECT id FROM library_books WHERE textbook_id = ? ORDER BY id LIMIT 1",
-        (textbook_id,),
+        """SELECT id FROM library_books
+            WHERE owner_id = ? AND textbook_id = ?
+            ORDER BY id LIMIT 1""",
+        (int(owner_id), int(textbook_id)),
     )
     if row:
         book_id = int(row["id"])
@@ -386,6 +415,70 @@ def _recommendation_exists(
     return bool(row)
 
 
+def _library_recipients(class_id: int = 0, student_id: int = 0) -> set[int]:
+    """Кому показать рекомендацию: ученики класса/ученик и их родители."""
+    from services import auth
+
+    students: set[int] = set()
+    if student_id:
+        students.add(int(student_id))
+    if class_id:
+        for row in query_all(
+            "SELECT student_id FROM class_students WHERE class_id = ?",
+            (int(class_id),),
+        ):
+            students.add(int(row["student_id"]))
+    recipients = set(students)
+    for child_id in students:
+        try:
+            for parent in auth.parents_of(child_id):
+                recipients.add(int(parent["id"]))
+        except Exception:  # pragma: no cover - связи родителей не критичны
+            continue
+    return recipients
+
+
+def _notify_recommendation(
+    teacher_id: int,
+    book: dict[str, Any],
+    topic_slug: str | None,
+    note: str,
+    class_id: int = 0,
+    student_id: int = 0,
+) -> int:
+    """Сообщить ученику (и родителям) о новой рекомендации литературы."""
+    from services import notifications as notifications_service
+
+    recipients = _library_recipients(class_id=class_id, student_id=student_id)
+    recipients.discard(int(teacher_id))
+    if not recipients:
+        return 0
+    topic_title = ""
+    if topic_slug:
+        row = query_one("SELECT title FROM topics WHERE slug = ?", (topic_slug,))
+        topic_title = row["title"] if row else ""
+    body = f"«{book['title']}»"
+    if topic_title:
+        body += f" — тема «{topic_title}»"
+    if note:
+        body += f". {note}"
+    body += ". Откройте библиотеку, чтобы читать."
+    sent = 0
+    for user_id in recipients:
+        notifications_service.push(
+            user_id,
+            notifications_service.KIND_LIBRARY_NEW,
+            "📚 Рекомендована литература",
+            body,
+            class_id=int(class_id or 0),
+            sender_id=int(teacher_id or 0),
+            link="/library/",
+            dedup_key=f"library_new:{class_id or 0}:{student_id or 0}:{user_id}:{book['id']}:{topic_slug or ''}",
+        )
+        sent += 1
+    return sent
+
+
 def recommend(
     teacher_id: int,
     book_id: int,
@@ -419,6 +512,9 @@ def recommend(
                VALUES (?, ?, ?, 'class', ?, ?)""",
             (teacher_id, book_id, topic_slug or None, class_id, note or None),
         )
+        _notify_recommendation(
+            teacher_id, book, topic_slug, note, class_id=class_id
+        )
         created += 1
     for student_id in dict.fromkeys(int(s) for s in student_ids if s):
         if _recommendation_exists(book_id, topic_slug, "student", student_id=student_id):
@@ -429,6 +525,9 @@ def recommend(
                (teacher_id, book_id, topic_slug, target_kind, student_id, note)
                VALUES (?, ?, ?, 'student', ?, ?)""",
             (teacher_id, book_id, topic_slug or None, student_id, note or None),
+        )
+        _notify_recommendation(
+            teacher_id, book, topic_slug, note, student_id=student_id
         )
         created += 1
     return {"ok": created > 0 or skipped > 0, "created": created, "skipped": skipped}
@@ -548,6 +647,63 @@ def revoke_recommendation(rec_id: int, teacher_id: int) -> bool:
         return False
     execute("DELETE FROM library_recommendations WHERE id = ?", (rec_id,))
     return True
+
+
+def unread_for_student(student_id: int) -> list[dict[str, Any]]:
+    """Непрочитанные рекомендации ученика — для подсказки на главной."""
+    return [rec for rec in recommendations_for_student(student_id) if not rec["done"]]
+
+
+def sync_library_unread(hours: int = 24) -> int:
+    """Напомнить про рекомендованную литературу, которую ещё не открыли."""
+    from services import notifications as notifications_service
+
+    rows = query_all(
+        """SELECT r.*, lb.title AS book_title, tp.title AS topic_title
+             FROM library_recommendations r
+             JOIN library_books lb ON lb.id = r.book_id
+        LEFT JOIN topics tp ON tp.slug = r.topic_slug
+            WHERE r.created_at <= datetime('now', ?)""",
+        (f"-{int(hours)} hours",),
+    )
+    sent = 0
+    for rec in rows:
+        students: set[int] = set()
+        if rec["student_id"]:
+            students.add(int(rec["student_id"]))
+        if rec["class_id"]:
+            for row in query_all(
+                "SELECT student_id FROM class_students WHERE class_id = ?",
+                (int(rec["class_id"]),),
+            ):
+                students.add(int(row["student_id"]))
+        for student_id in students:
+            done = query_one(
+                "SELECT 1 FROM library_recommendation_done WHERE rec_id = ? AND student_id = ?",
+                (rec["id"], student_id),
+            )
+            if done:
+                continue
+            key = f"library_unread:{rec['id']}:{student_id}"
+            if query_one("SELECT 1 FROM app_notifications WHERE dedup_key = ?", (key,)):
+                continue
+            body = f"«{rec['book_title']}»"
+            if rec["topic_title"]:
+                body += f" — тема «{rec['topic_title']}»"
+            body += ". Прочитайте, когда будет удобно, и отметьте в библиотеке."
+            targets = _library_recipients(student_id=student_id)
+            for user_id in targets:
+                notifications_service.push(
+                    user_id,
+                    notifications_service.KIND_LIBRARY_READ,
+                    "📖 Напоминание: рекомендованная литература",
+                    body,
+                    sender_id=int(rec["teacher_id"] or 0),
+                    link="/library/",
+                    dedup_key=f"{key}:{user_id}",
+                )
+                sent += 1
+    return sent
 
 
 # --------------------------------------------------------------- сводка

@@ -255,6 +255,20 @@ interface ApiService {
         @Query("search") search: String?,
     ): TextbooksDto
 
+    // ---------------------------------------------------------- e-padruchnik
+    @GET("padruchnik/search")
+    suspend fun padruchnikSearch(
+        @Query("q") q: String?,
+        @Query("grade") grade: Int?,
+        @Query("page") page: Int? = 0,
+    ): PadruchnikSearchDto
+
+    @GET("padruchnik/subjects")
+    suspend fun padruchnikSubjects(): PadruchnikSubjectsDto
+
+    @POST("padruchnik/import")
+    suspend fun padruchnikImport(@Body body: PadruchnikImportRequest): PadruchnikImportDto
+
     @Multipart
     @POST("teacher/textbooks")
     suspend fun uploadTextbook(

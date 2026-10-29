@@ -16,7 +16,7 @@ from flask import (
 
 from database import execute, query_all
 from services import assignments as assignments_service
-from services import auth, orgs, progress, textbooks
+from services import auth, library as library_service, orgs, padruchnik, progress, textbooks
 from services import topics as topics_service
 
 bp = Blueprint("teacher", __name__, url_prefix="/teacher")
@@ -410,12 +410,21 @@ def work_detail(assignment_id: int):
         abort(403)
     topics = assignments_service.assignment_topics(assignment)
     results = assignments_service.results_with_students(assignment_id)
+    parent_views = {
+        int(row["student_id"]): row["viewed_at"]
+        for row in query_all(
+            "SELECT student_id, MAX(viewed_at) AS viewed_at FROM assignment_views "
+            "WHERE assignment_id = ? AND role = 'parent' GROUP BY student_id",
+            (assignment_id,),
+        )
+    }
     return render_template(
         "teacher/work.html",
         user=user,
         assignment=assignment,
         topics=topics,
         results=results,
+        parent_views=parent_views,
         kinds=assignments_service.KINDS,
         task_types=assignments_service.TASK_TYPES,
     )
@@ -505,6 +514,13 @@ def textbooks_page():
     grade = request.args.get("grade", type=int)
     subject_id = request.args.get("subject_id", type=int)
     rows = textbooks.list_textbooks(subject_id=subject_id, grade=grade)
+    my_books = {
+        int(row["textbook_id"]): int(row["id"])
+        for row in query_all(
+            "SELECT id, textbook_id FROM library_books WHERE owner_id = ?",
+            (int(user["id"]),),
+        )
+    }
     return render_template(
         "teacher/textbooks.html",
         user=user,
@@ -513,4 +529,157 @@ def textbooks_page():
         grades=list(range(1, 12)),
         selected_grade=grade,
         selected_subject=subject_id,
+        classes=_own_classes(),
+        my_books=my_books,
     )
+
+
+@bp.route("/textbooks/<int:textbook_id>/library", methods=["POST"])
+@auth.teacher_required
+def textbook_to_library(textbook_id: int):
+    """Добавить выбранное пособие в свою библиотеку и открыть его классам."""
+    user = auth.current_user()
+    textbook = textbooks.get_textbook(textbook_id)
+    if not textbook:
+        abort(404)
+    allowed = {int(klass["id"]) for klass in _own_classes()}
+    chosen = [
+        int(value) for value in request.form.getlist("class_id")
+        if value.isdigit() and int(value) in allowed
+    ]
+    if not chosen:
+        flash(
+            "Выберите хотя бы один класс: книга открывается классам, "
+            "иначе её никто не увидит.",
+            "error",
+        )
+        return redirect(url_for("teacher.textbooks_page"))
+    book = library_service.ensure_book_for_textbook(
+        int(user["id"]), textbook_id, chosen
+    )
+    if not book:
+        flash("Не удалось добавить пособие", "error")
+    else:
+        names = ", ".join(
+            orgs.class_title(klass) for klass in _own_classes()
+            if int(klass["id"]) in chosen
+        )
+        flash(f"«{textbook['title']}» добавлено в библиотеку: {names}", "success")
+    return redirect(url_for("teacher.textbooks_page"))
+
+
+@bp.route("/padruchnik", methods=["GET", "POST"])
+@auth.teacher_required
+def padruchnik_page():
+    """Найти пособие на e-padruchnik.adu.by и сразу открыть его классам."""
+    user = auth.current_user()
+    classes = _own_classes()
+    if request.method == "POST":
+        if (request.form.get("action") or "") == "import":
+            book_id = request.form.get("book_id", type=int)
+            subject_id = request.form.get("subject_id", type=int)
+            grade = request.form.get("grade", type=int) or 0
+            allowed = {int(klass["id"]) for klass in classes}
+            chosen = [
+                int(value) for value in request.form.getlist("class_id")
+                if value.isdigit() and int(value) in allowed
+            ]
+            if not book_id or not subject_id:
+                flash("Выберите пособие и предмет", "error")
+                return redirect(url_for("teacher.padruchnik_page"))
+            if not chosen:
+                flash(
+                    "Выберите классы: добавленное пособие должно быть кому-то доступно.",
+                    "error",
+                )
+                return redirect(url_for("teacher.padruchnik_page"))
+            result = padruchnik.import_book(
+                book_id,
+                subject_id,
+                grade,
+                uploaded_by=int(user["id"]),
+                class_ids=chosen,
+                auto_link=True,
+            )
+            if not result.get("ok"):
+                flash(f"Не удалось добавить пособие: {result.get('error')}", "error")
+                return redirect(url_for("teacher.padruchnik_page"))
+            flash(
+                f"«{result['title']}» добавлено в пособия и библиотеку: "
+                f"{result['pages']} стр., тем — {result['linked']}.",
+                "success",
+            )
+            if result.get("book_id"):
+                return redirect(url_for("library.book", book_id=result["book_id"]))
+            return redirect(url_for("teacher.textbooks_page"))
+        return redirect(url_for("teacher.padruchnik_page"))
+
+    query = (request.args.get("q") or "").strip()
+    grade = request.args.get("grade", type=int)
+    subject_id = request.args.get("subject_id", type=int)
+    page_no = request.args.get("page", type=int) or 0
+    result = None
+    if query or grade:
+        result = padruchnik.search(query=query, grade=grade, page=page_no)
+    return render_template(
+        "teacher/padruchnik.html",
+        user=user,
+        result=result,
+        query=query,
+        selected_grade=grade,
+        selected_subject=subject_id,
+        page_no=page_no,
+        classes=classes,
+        subjects=orgs.list_subjects(active_only=True),
+        grades=list(range(1, 12)),
+    )
+
+
+# ------------------------------------------------------------------ сообщения
+@bp.route("/messages", methods=["GET", "POST"])
+def messages():
+    """Отправить сообщение ученикам выбранных классов (и их родителям)."""
+    from services import notifications as notifications_service
+
+    user = auth.current_user()
+    classes = _own_classes()
+    allowed = {int(klass["id"]) for klass in classes}
+
+    if request.method == "POST":
+        chosen = []
+        for raw in request.form.getlist("class_id"):
+            try:
+                class_id = int(raw)
+            except (TypeError, ValueError):
+                continue
+            if class_id in allowed:
+                chosen.append(class_id)
+        text = (request.form.get("text") or "").strip()
+        if not chosen:
+            flash("Выберите хотя бы один класс", "error")
+            return redirect(url_for("teacher.messages"))
+        if not text:
+            flash("Введите текст сообщения", "error")
+            return redirect(url_for("teacher.messages"))
+
+        students: dict[int, dict] = {}
+        for class_id in chosen:
+            for student in orgs.students_of_class(class_id):
+                students[int(student["id"])] = student
+        recipients = set(students)
+        if request.form.get("parents"):
+            for student_id in list(students):
+                for parent in auth.parents_of(student_id):
+                    recipients.add(int(parent["id"]))
+
+        sent = notifications_service.send_message(
+            user,
+            recipients,
+            text,
+            title="Сообщение от учителя",
+            index_link="/student/works",
+        )
+        flash(f"Отправлено: {sent}", "success")
+        return redirect(url_for("teacher.messages"))
+
+    return render_template("teacher/messages.html", user=user, classes=classes)

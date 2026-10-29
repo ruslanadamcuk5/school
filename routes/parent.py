@@ -19,7 +19,7 @@ from flask import (
 )
 
 from content.achievements import ACHIEVEMENTS
-from database import get_meta, query_all, query_one, set_meta
+from database import execute, get_meta, query_all, query_one, set_meta
 from services import assignments as assignments_service
 from services import learners as learners_service
 from services import orgs
@@ -419,6 +419,66 @@ def assignments_page():
                 "details": details,
                 "photos": assignments_service.result_photos(result),
             })
+
+    # Работы, которые задал учитель: родитель должен видеть их так же подробно.
+    incoming: list[dict] = []
+    if children:
+        child_ids = [int(child["user"]["id"]) for child in children]
+        marks = ",".join("?" for _ in child_ids)
+        rows = query_all(
+            f"""SELECT DISTINCT a.*, u.first_name AS author_first, u.last_name AS author_last
+                  FROM assignments a
+                  LEFT JOIN users u ON u.id = a.teacher_id
+                 WHERE a.status IN ('опубликована', 'закрыта')
+                   AND (a.student_id IN ({marks})
+                        OR a.class_id IN (SELECT class_id FROM class_students
+                                           WHERE student_id IN ({marks})))
+                 ORDER BY a.created_at DESC, a.id DESC
+                 LIMIT 60""",
+            (*child_ids, *child_ids),
+        )
+        for assignment in rows:
+            targets = [
+                child for child in children
+                if int(assignment["student_id"] or 0) == int(child["user"]["id"])
+                or (
+                    assignment["class_id"]
+                    and query_one(
+                        "SELECT 1 FROM class_students WHERE class_id = ? AND student_id = ?",
+                        (assignment["class_id"], int(child["user"]["id"])),
+                    )
+                )
+            ]
+            for child in targets:
+                result = query_one(
+                    "SELECT * FROM assignment_results WHERE assignment_id = ? AND student_id = ?",
+                    (assignment["id"], int(child["user"]["id"])),
+                )
+                details = []
+                if result is not None:
+                    try:
+                        details = json.loads(result["answers"] or "[]")
+                    except (ValueError, TypeError):
+                        details = []
+                if result is not None:
+                    execute(
+                        """INSERT INTO assignment_views
+                               (assignment_id, student_id, viewer_id, role)
+                           VALUES (?, ?, ?, 'parent')
+                           ON CONFLICT(assignment_id, student_id, viewer_id)
+                           DO UPDATE SET viewed_at = datetime('now')""",
+                        (int(assignment["id"]), int(child["user"]["id"]), int(user["id"])),
+                    )
+                incoming.append({
+                    "assignment": assignment,
+                    "child": child,
+                    "result": result,
+                    "details": details,
+                    "photos": assignments_service.result_photos(result),
+                    "author": " ".join(
+                        part for part in (assignment["author_first"], assignment["author_last"]) if part
+                    ).strip(),
+                })
     return render_template(
         "parent/assignments.html",
         user=user,
@@ -428,6 +488,7 @@ def assignments_page():
         kinds=assignments_service.KINDS,
         task_types=assignments_service.TASK_TYPES,
         sent=sent,
+        incoming=incoming,
     )
 
 
@@ -555,3 +616,102 @@ def settings():
         return redirect(url_for("parent.settings"))
 
     return render_template("parent/settings.html")
+
+
+# ------------------------------------------------------------------ сообщения
+def _pending_by_child(children: list) -> dict[int, list]:
+    """Невыполненные задания по каждому ребёнку (для текста напоминания)."""
+    result: dict[int, list] = {}
+    for child in children:
+        result[int(child["id"])] = query_all(
+            """SELECT a.title, a.due_date FROM assignments a
+                WHERE a.student_id = ? AND a.status = 'опубликована'
+                  AND NOT EXISTS (
+                      SELECT 1 FROM assignment_results r
+                       WHERE r.assignment_id = a.id AND r.student_id = a.student_id)
+                ORDER BY a.due_date, a.id""",
+            (int(child["id"]),),
+        )
+    return result
+
+
+@bp.route("/parent/messages", methods=["GET", "POST"])
+def messages():
+    guard = _require_unlock()
+    if guard:
+        return guard
+    from services import auth as auth_service
+    from services import notifications as notifications_service
+
+    user = auth_service.current_user()
+    school_mode = bool(user and user["role"] == auth_service.ROLE_PARENT)
+    children = auth_service.children_of(int(user["id"])) if school_mode else []
+    family = [row for row in _visible_learners(user)] if not school_mode else []
+    pending = _pending_by_child(children) if school_mode else {}
+
+    if request.method == "POST":
+        action = request.form.get("action") or "message"
+        kind = (
+            notifications_service.KIND_REMINDER
+            if action == "reminder"
+            else notifications_service.KIND_MESSAGE
+        )
+        text = (request.form.get("text") or "").strip()
+        chosen = request.form.getlist("child_id")
+        title = (
+            "Напоминание от родителя"
+            if kind == notifications_service.KIND_REMINDER
+            else "Сообщение от родителя"
+        )
+
+        if school_mode:
+            allowed = {str(child["id"]): child for child in children}
+            targets = [int(value) for value in chosen if value in allowed]
+        else:
+            allowed = {str(row["id"]): row for row in family}
+            targets = [int(value) for value in chosen if value in allowed]
+
+        if not targets:
+            flash("Выберите хотя бы одного ребёнка", "error")
+            return redirect(url_for("parent.messages"))
+        if not text:
+            if kind == notifications_service.KIND_REMINDER and school_mode:
+                lines = []
+                for target in targets:
+                    for row in pending.get(target, [])[:5]:
+                        due = f" до {row['due_date']}" if row["due_date"] else ""
+                        lines.append(f"«{row['title']}»{due}")
+                if lines:
+                    text = "Не забудь выполнить: " + "; ".join(dict.fromkeys(lines)) + "."
+            if not text:
+                text = "Проверь, пожалуйста, задания в личном кабинете."
+
+        if school_mode:
+            sent = notifications_service.send_message(
+                user,
+                targets,
+                text,
+                kind=kind,
+                title=title,
+                index_link="/student/works",
+            )
+        else:
+            sent = notifications_service.send_message(
+                None,
+                [],
+                text,
+                kind=kind,
+                title=title,
+                index_link="/map",
+                learner_ids=targets,
+            )
+        flash(f"Отправлено: {sent}", "success")
+        return redirect(url_for("parent.messages"))
+
+    return render_template(
+        "parent/messages.html",
+        children=children,
+        family=family,
+        pending=pending,
+        school_mode=school_mode,
+    )

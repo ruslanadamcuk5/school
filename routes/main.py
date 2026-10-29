@@ -1,7 +1,9 @@
 """Основные страницы: профиль, карта тем, объяснения, учебник."""
 from __future__ import annotations
 
+import json
 import re
+import secrets
 
 from flask import (
     Blueprint,
@@ -10,6 +12,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_file,
     session,
     url_for,
 )
@@ -168,8 +171,24 @@ def map_page():
     daily = rewards_service.daily_status(learner["id"])
     next_grade = learner["grade"] + 1 if learner["grade"] < 11 else None
     can_upgrade = next_grade and stats["level"] >= 3
+
+    # Подсказка о рекомендованной литературе: только если профиль ребёнка
+    # связан с аккаунтом ученика (иначе рекомендаций у него быть не может).
+    library_hint: list[dict] = []
+    account = query_one(
+        "SELECT user_id FROM learner_accounts WHERE learner_id = ?",
+        (int(learner["id"]),),
+    )
+    if account is not None:
+        try:
+            from services import library as library_service
+
+            library_hint = library_service.unread_for_student(int(account["user_id"]))[:3]
+        except Exception:  # pragma: no cover - подсказка не должна ломать карту
+            library_hint = []
     return render_template(
         "map.html",
+        library_hint=library_hint,
         learner=learner,
         stats=stats,
         cards=cards,
@@ -395,6 +414,25 @@ def complete_reading(slug: str):
     return redirect(url_for("main.topic_page", slug=slug))
 
 
+@bp.route("/topic/quiz/photo/<int:review_id>/<path:filename>")
+def quiz_photo(review_id: int, filename: str):
+    """Фото ответов самодельного теста: только владельцу профиля."""
+    from services import quiz_review
+
+    learner = learners_service.current_learner()
+    review = quiz_review.get_review(review_id)
+    if review is None:
+        abort(404)
+    if learner is None or int(review["learner_id"]) != int(learner["id"]):
+        abort(403)
+    for relative in json.loads(review["photos"] or "[]"):
+        if relative.split("/")[-1] == filename:
+            path = quiz_review.absolute_path(relative)
+            if path:
+                return send_file(path, max_age=0)
+    abort(404)
+
+
 @bp.route("/topic/<slug>/quiz", methods=["GET", "POST"])
 def topic_quiz(slug: str):
     learner = learners_service.current_learner()
@@ -422,6 +460,7 @@ def topic_quiz(slug: str):
             return redirect(url_for("main.topic_page", slug=slug))
         session["reading_quiz"] = {
             "slug": slug,
+            "token": secrets.token_urlsafe(16),
             "items": [
                 {"question": item["question"], "answer": item["answer"]}
                 for item in questions
@@ -438,6 +477,65 @@ def topic_quiz(slug: str):
     if stored.get("slug") != slug or not stored.get("items"):
         flash("Проверочная работа устарела. Начните заново.", "info")
         return redirect(url_for("main.topic_quiz", slug=slug))
+
+    uploads = [
+        item for item in request.files.getlist("photos")
+        if getattr(item, "filename", "")
+    ]
+    if uploads:
+        from services import quiz_review
+
+        token = stored.get("token") or secrets.token_urlsafe(12)
+        try:
+            photos = quiz_review.save_photos(uploads, int(learner["id"]), token)
+        except ValueError as error:
+            flash(str(error), "error")
+            return redirect(url_for("main.topic_quiz", slug=slug))
+        review = quiz_review.review_with_photos(
+            stored["items"],
+            photos,
+            topic["title"],
+            user_id=int(learner["user_id"]) if learner["user_id"] else None,
+        )
+        review_id = quiz_review.save_review(
+            int(learner["id"]), slug, token, photos, review
+        )
+        results = review.get("details") or []
+        correct_count = int(review.get("score") or 0)
+        for entry in results:
+            progress_service.record_attempt(
+                learner["id"], slug, None, "reading.quiz", bool(entry["correct"]),
+                entry.get("given") or "", entry.get("answer") or "", 0, 0,
+                mode="reading_quiz_photo",
+            )
+        stars = (
+            progress_service.apply_round_result(
+                learner["id"], slug, correct_count, len(results)
+            )
+            if review.get("ai_status") == "checked" and results
+            else 0
+        )
+        if review.get("ai_status") == "checked":
+            flash(
+                f"ИИ проверил фото: верно {correct_count} из {len(results)}.",
+                "success" if correct_count == len(results) else "info",
+            )
+        elif review.get("ai_status") == "disabled":
+            flash("Фото сохранены, но ИИ не подключён — проверка недоступна.", "info")
+        else:
+            flash("Не удалось проверить фото. Попробуйте позже.", "error")
+        return render_template(
+            "topic_quiz_result.html",
+            learner=learner,
+            topic=topic,
+            results=results,
+            correct_count=correct_count,
+            stars=stars,
+            review=review,
+            photos=photos,
+            review_id=review_id,
+        )
+
     legacy = request.form.getlist("answer")
     results = []
     correct_count = 0

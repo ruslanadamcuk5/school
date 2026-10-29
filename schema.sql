@@ -364,22 +364,32 @@ CREATE INDEX IF NOT EXISTS idx_assignments_class ON assignments(class_id, status
 CREATE INDEX IF NOT EXISTS idx_assignments_teacher ON assignments(teacher_id);
 
 -- Уведомления (доставляются в веб-кабинет и в Android-приложение).
+--
+-- dedup_key защищает от повторов одного и того же события, но не мешает
+-- отправлять несколько произвольных сообщений: у сообщений ключ уникальный.
 CREATE TABLE IF NOT EXISTS app_notifications (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id         INTEGER NOT NULL,
+    -- NULL — уведомление семейному профилю без аккаунта (learner_id).
+    user_id         INTEGER,
     kind            TEXT    NOT NULL,
     title           TEXT    NOT NULL,
     body            TEXT    NOT NULL,
     assignment_id   INTEGER NOT NULL DEFAULT 0,
     student_id      INTEGER NOT NULL DEFAULT 0,
+    -- профиль ребёнка без аккаунта (семейный режим)
+    learner_id      INTEGER NOT NULL DEFAULT 0,
+    class_id        INTEGER NOT NULL DEFAULT 0,
+    sender_id       INTEGER NOT NULL DEFAULT 0,
+    link            TEXT    NOT NULL DEFAULT '',
+    dedup_key       TEXT    NOT NULL DEFAULT '',
     is_read         INTEGER NOT NULL DEFAULT 0,
+    read_at         TEXT,
     created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
-    UNIQUE (user_id, kind, assignment_id, student_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_notifications_user
-    ON app_notifications(user_id, is_read, created_at);
+-- Индексы создаются в database._migrate_notifications(): на старой базе
+-- колонки dedup_key ещё нет, и CREATE INDEX здесь ломал весь executescript.
 
 -- Выполненные работы
 CREATE TABLE IF NOT EXISTS assignment_results (
@@ -589,3 +599,38 @@ CREATE INDEX IF NOT EXISTS idx_api_tokens_user ON api_tokens(user_id);
 CREATE INDEX IF NOT EXISTS idx_api_tokens_learner ON api_tokens(learner_id);
 
 
+
+-- Кто из родителей/учителей открывал разбор работы (отметки о прочтении).
+CREATE TABLE IF NOT EXISTS assignment_views (
+    assignment_id INTEGER NOT NULL,
+    student_id    INTEGER NOT NULL,
+    viewer_id     INTEGER NOT NULL,
+    role          TEXT    NOT NULL DEFAULT '',
+    viewed_at     TEXT    NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (assignment_id, student_id, viewer_id),
+    FOREIGN KEY (assignment_id) REFERENCES assignments(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_assignment_views_student
+    ON assignment_views(student_id, assignment_id);
+
+-- Проверка самодельных тестов по фото (ребёнок сам открыл тему и отвечает).
+CREATE TABLE IF NOT EXISTS self_quiz_reviews (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    learner_id   INTEGER NOT NULL,
+    topic_slug   TEXT    NOT NULL,
+    quiz_token   TEXT    NOT NULL DEFAULT '',
+    photos       TEXT    NOT NULL DEFAULT '[]',
+    details      TEXT    NOT NULL DEFAULT '[]',
+    score        INTEGER NOT NULL DEFAULT 0,
+    max_score    INTEGER NOT NULL DEFAULT 0,
+    ai_status    TEXT    NOT NULL DEFAULT 'not_requested',
+    ai_feedback  TEXT,
+    ai_model     TEXT,
+    ai_score     INTEGER,
+    created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_self_quiz_reviews_learner
+    ON self_quiz_reviews(learner_id, created_at);

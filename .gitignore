@@ -39,3 +39,7 @@ android/captures/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# React-сборка
+frontend/node_modules/
+frontend/.cache/

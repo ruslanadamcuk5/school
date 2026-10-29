@@ -15,6 +15,7 @@ from flask import (
     Blueprint,
     abort,
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -500,3 +501,43 @@ def open_textbook(textbook_id: int):
     if not os.path.exists(path):
         abort(404)
     return send_file(path, mimetype="application/pdf", as_attachment=False)
+
+
+# --------------------------------------------------------------- React-фид
+@bp.route("/feed")
+@auth.login_required
+def feed():
+    """Рекомендации ученику в JSON — для React-блока библиотеки."""
+    user = _current_user()
+    if user["role"] != auth.ROLE_STUDENT:
+        return jsonify({"ok": False, "error": "student_only"}), 403
+    items = []
+    for row in library_service.recommendations_for_student(int(user["id"])):
+        items.append(
+            {
+                "id": int(row["id"]),
+                "book_id": int(row["book_id"]),
+                "title": row["title"],
+                "topic_title": row["topic_title"] or "",
+                "topic_slug": row["topic_slug"] or "",
+                "note": row["note"] or "",
+                "teacher": " ".join(
+                    part for part in (row["teacher_first"], row["teacher_last"]) if part
+                ).strip(),
+                "done": bool(row["done"]),
+                "page": row["page"] or 0,
+                "page_end": row["page_end"] or 0,
+                "grade": row["grade"] or 0,
+            }
+        )
+    return jsonify({"ok": True, "items": items})
+
+
+@bp.route("/feed/<int:rec_id>/done", methods=["POST"])
+@auth.login_required
+def feed_done(rec_id: int):
+    user = _current_user()
+    if user["role"] != auth.ROLE_STUDENT:
+        return jsonify({"ok": False, "error": "student_only"}), 403
+    ok = library_service.mark_recommendation_done(rec_id, int(user["id"]))
+    return jsonify({"ok": bool(ok)}), (200 if ok else 404)

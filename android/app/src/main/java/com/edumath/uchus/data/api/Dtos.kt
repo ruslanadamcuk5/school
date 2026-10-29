@@ -1235,3 +1235,48 @@ data class AiAnswerDto(
     @SerializedName("answer") val answer: String? = null,
     @SerializedName("html") val html: String? = null,
 )
+
+// ------------------------------------------------------------------ e-padruchnik
+
+data class PadruchnikItemDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("author") val author: String? = null,
+    @SerializedName("grade") val grade: Int = 0,
+    @SerializedName("year") val year: String? = null,
+    @SerializedName("level") val level: String? = null,
+    @SerializedName("language") val language: String? = null,
+)
+
+data class PadruchnikSearchDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("items") val items: List<PadruchnikItemDto> = emptyList(),
+    @SerializedName("page") val page: Int = 0,
+    @SerializedName("has_next") val hasNext: Boolean = false,
+    @SerializedName("error") val error: String? = null,
+)
+
+data class PadruchnikSubjectsDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("subjects") val subjects: List<SubjectDto> = emptyList(),
+)
+
+data class PadruchnikImportRequest(
+    @SerializedName("book_id") val bookId: Int,
+    @SerializedName("subject_id") val subjectId: Int,
+    @SerializedName("grade") val grade: Int,
+    @SerializedName("class_ids") val classIds: List<Int> = emptyList(),
+)
+
+data class PadruchnikImportDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("error") val error: String? = null,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("textbook_id") val textbookId: Int = 0,
+    @SerializedName("book_id") val bookId: Int = 0,
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("pages") val pages: Int = 0,
+    @SerializedName("linked") val linked: Int = 0,
+    @SerializedName("created") val created: Int = 0,
+)
+

@@ -68,7 +68,7 @@
   {% if results %}
     <div class="data-table-wrap">
       <table class="table">
-        <thead><tr><th>Ученик</th><th>Балл</th><th>%</th><th>Оценка</th><th>Время</th><th>Когда</th></tr></thead>
+        <thead><tr><th>Ученик</th><th>Балл</th><th>%</th><th>Оценка</th><th>Время</th><th>Когда</th><th>Прочитано</th></tr></thead>
         <tbody>
           {% for row in results %}
             <tr>
@@ -84,10 +84,15 @@
               </td>
               <td class="muted">{% if row.result %}{{ (row.result.duration_sec / 60) | round(1) }} мин{% else %}—{% endif %}</td>
               <td class="muted">{% if row.result %}{{ row.result.completed_at }}{% else %}—{% endif %}</td>
+              <td class="muted">
+                {% if parent_views.get(row.student.id) %}
+                  👀 {{ parent_views.get(row.student.id) }}
+                {% else %}—{% endif %}
+              </td>
             </tr>
             {% if row.details %}
               <tr>
-                <td colspan="6" style="background:#fafbfc;">
+                <td colspan="7" style="background:#fafbfc;">
                   <details>
                     <summary style="cursor:pointer; font-weight:700;">
                       Разбор ответов: {{ row.details|selectattr('correct')|list|length }} верно,

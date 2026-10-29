@@ -116,10 +116,111 @@ MIGRATIONS: list[tuple[str, str, str]] = [
 ]
 
 
+_NOTIFICATIONS_TABLE = """
+CREATE TABLE {name} (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    -- NULL — уведомление семейному профилю без аккаунта (learner_id).
+    user_id         INTEGER,
+    kind            TEXT    NOT NULL,
+    title           TEXT    NOT NULL,
+    body            TEXT    NOT NULL,
+    assignment_id   INTEGER NOT NULL DEFAULT 0,
+    student_id      INTEGER NOT NULL DEFAULT 0,
+    learner_id      INTEGER NOT NULL DEFAULT 0,
+    class_id        INTEGER NOT NULL DEFAULT 0,
+    sender_id       INTEGER NOT NULL DEFAULT 0,
+    link            TEXT    NOT NULL DEFAULT '',
+    dedup_key       TEXT    NOT NULL DEFAULT '',
+    is_read         INTEGER NOT NULL DEFAULT 0,
+    read_at         TEXT,
+    created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+)
+"""
+
+
+def _migrate_notifications(conn: sqlite3.Connection) -> None:
+    """Пересобрать app_notifications под новые поля (dedup_key, read_at, ...).
+
+    Старая таблица имела UNIQUE(user_id, kind, assignment_id, student_id),
+    из-за чего второе произвольное сообщение тому же человеку отбрасывалось.
+    SQLite не умеет удалять ограничение — пересоздаём таблицу с сохранением
+    данных. Старые уведомления получают dedup_key, чтобы не задвоиться.
+    """
+    rows = conn.execute("PRAGMA table_info(app_notifications)").fetchall()
+    if not rows:
+        return
+    names = {row[1]: row for row in rows}
+    user_not_null = bool(names["user_id"][3]) if "user_id" in names else False
+    if "dedup_key" in names and "learner_id" not in names:
+        conn.execute(
+            "ALTER TABLE app_notifications "
+            "ADD COLUMN learner_id INTEGER NOT NULL DEFAULT 0"
+        )
+        names.add("learner_id")
+    if "dedup_key" not in names:
+        conn.execute("BEGIN IMMEDIATE")
+        try:
+            conn.execute(_NOTIFICATIONS_TABLE.format(name="app_notifications_new"))
+            conn.execute(
+                """INSERT INTO app_notifications_new
+                       (id, user_id, kind, title, body, assignment_id, student_id,
+                        learner_id, class_id, sender_id, link, dedup_key, is_read,
+                        read_at, created_at)
+                   SELECT id, user_id, kind, title, body, assignment_id, student_id,
+                          0, 0, 0, '',
+                          'legacy:' || user_id || ':' || kind || ':'
+                            || assignment_id || ':' || student_id || ':'
+                            || coalesce(created_at, ''),
+                          is_read, NULL, created_at
+                     FROM app_notifications"""
+            )
+            conn.execute("DROP TABLE app_notifications")
+            conn.execute("ALTER TABLE app_notifications_new RENAME TO app_notifications")
+            conn.execute("COMMIT")
+        except Exception:
+            conn.execute("ROLLBACK")
+            raise
+        names = {row[1]: row for row in conn.execute("PRAGMA table_info(app_notifications)")}
+        user_not_null = bool(names["user_id"][3]) if "user_id" in names else False
+    if user_not_null:
+        # Раньше user_id был NOT NULL, и уведомление семейному профилю
+        # (user_id=0) нарушало внешний ключ. Пересобираем без NOT NULL.
+        conn.execute("BEGIN IMMEDIATE")
+        try:
+            conn.execute(_NOTIFICATIONS_TABLE.format(name="app_notifications_new"))
+            conn.execute(
+                """INSERT INTO app_notifications_new
+                       (id, user_id, kind, title, body, assignment_id, student_id,
+                        learner_id, class_id, sender_id, link, dedup_key, is_read,
+                        read_at, created_at)
+                   SELECT id, CASE WHEN user_id = 0 THEN NULL ELSE user_id END,
+                          kind, title, body, assignment_id, student_id,
+                          learner_id, class_id, sender_id, link, dedup_key, is_read,
+                          read_at, created_at
+                     FROM app_notifications"""
+            )
+            conn.execute("DROP TABLE app_notifications")
+            conn.execute("ALTER TABLE app_notifications_new RENAME TO app_notifications")
+            conn.execute("COMMIT")
+        except Exception:
+            conn.execute("ROLLBACK")
+            raise
+    conn.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications_dedup "
+        "ON app_notifications(dedup_key) WHERE dedup_key <> ''"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_notifications_user "
+        "ON app_notifications(user_id, is_read, created_at)"
+    )
+
+
 def migrate(path: str | None = None) -> None:
     """Добавить недостающие колонки и заполнить новые поля (безопасно для старых БД)."""
     conn = connect(path)
     try:
+        _migrate_notifications(conn)
         for table, column, definition in MIGRATIONS:
             rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
             if not rows:

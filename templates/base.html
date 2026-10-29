@@ -41,9 +41,8 @@
         {% if library_url %}
           <a class="btn btn--ghost btn--small" href="{{ library_url }}">📚 Моя библиотека</a>
         {% endif %}
-        <a class="btn btn--ghost btn--small" href="{{ url_for('notifications.page') }}">
-          Уведомления{% if notifications_unread %} <span class="chip chip--amber">{{ notifications_unread }}</span>{% endif %}
-        </a>
+        <div data-react-bell data-feed="{{ url_for('notifications.feed') }}"></div>
+        <noscript><a class="btn btn--ghost btn--small" href="{{ url_for('notifications.page') }}">🔔 Уведомления</a></noscript>
         <a class="btn btn--ghost btn--small" href="{{ url_for('auth.account') }}">
           <span aria-hidden="true">{{ current_user.avatar }}</span>
           {{ current_user.first_name or current_user.login }}
@@ -58,6 +57,8 @@
           <span class="stat-pill stat-pill--streak" title="Дней подряд">🔥 {{ learner_stats.streak_days }}</span>
         {% endif %}
       {% endif %}
+      <div data-react-bell data-feed="{{ url_for('notifications.feed') }}"></div>
+      <noscript><a class="btn btn--ghost btn--small" href="{{ url_for('notifications.page') }}">🔔 Уведомления</a></noscript>
       <a class="btn btn--ghost btn--small" href="{{ url_for('main.profile') }}">
         <span aria-hidden="true">{{ current_learner.avatar }}</span> {{ current_learner.name }}
       </a>
@@ -96,6 +97,7 @@
   </div>
 </footer>
 
+<script src="{{ url_for('static', filename='build/app.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/widgets.js') }}"></script>
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 {% if ai_available and endpoint_exists('ai.assistant') %}

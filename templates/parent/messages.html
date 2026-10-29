@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Сообщения детям — родительская зона{% endblock %}
+{% block content %}
+<div class="page-head mt-3">
+  <div>
+    <h1>💬 Сообщение ребёнку</h1>
+    <p>Выберите детей и отправьте сообщение или напоминание — оно придёт уведомлением.</p>
+  </div>
+  <a class="btn btn--ghost btn--small" href="{{ url_for('parent.dashboard') }}">← К статистике</a>
+</div>
+
+{% if not children and not family %}
+  <section class="card center">
+    <p class="muted">Пока нет профилей, которым можно написать.</p>
+  </section>
+{% else %}
+<form method="post" action="{{ url_for('parent.messages') }}" class="card">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <h2 class="section-title">Кому</h2>
+  <div class="checkbox-list">
+    {% for child in children %}
+      <label class="check-item">
+        <input type="checkbox" name="child_id" value="{{ child.id }}">
+        <span>
+          <b>{{ child.first_name }} {{ child.last_name }}</b>
+          {% set items = pending.get(child.id, []) %}
+          {% if items %}
+            <span class="chip chip--amber">{{ items|length }} не выполнено</span>
+          {% endif %}
+        </span>
+      </label>
+      {% if items %}
+        <ul class="muted small" style="margin:0 0 8px 28px;">
+          {% for row in items[:5] %}
+            <li>«{{ row.title }}»{% if row.due_date %} — до {{ row.due_date }}{% endif %}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endfor %}
+    {% for learner in family %}
+      <label class="check-item">
+        <input type="checkbox" name="child_id" value="{{ learner.id }}">
+        <span>{{ learner.avatar }} <b>{{ learner.name }}</b></span>
+      </label>
+    {% endfor %}
+  </div>
+
+  <label class="field mt-3">
+    <span>Текст сообщения</span>
+    <textarea name="text" rows="4" maxlength="2000"
+              placeholder="Например: Сделай, пожалуйста, математику до ужина."></textarea>
+  </label>
+
+  <div class="row mt-3" style="gap:8px; flex-wrap:wrap;">
+    <button class="btn" type="submit" name="action" value="message">Отправить сообщение</button>
+    <button class="btn btn--ghost" type="submit" name="action" value="reminder">Напомнить о выполнении</button>
+  </div>
+  <p class="muted small mt-2">
+    «Напомнить» подставит список невыполненных заданий, если текст пустой.
+    Ребёнок увидит сообщение в уведомлениях приложения и на сайте.
+  </p>
+</form>
+{% endif %}
+{% endblock %}

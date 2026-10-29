@@ -1,6 +1,11 @@
 package com.edumath.uchus.ui.nav
 
 import android.net.Uri
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -33,6 +38,7 @@ import com.edumath.uchus.ui.auth.LoginScreen
 import com.edumath.uchus.ui.common.LoadingBox
 import com.edumath.uchus.ui.home.HomeScreen
 import com.edumath.uchus.ui.notifications.NotificationsScreen
+import com.edumath.uchus.ui.padruchnik.PadruchnikScreen
 import com.edumath.uchus.ui.theme.DesignMode
 import com.edumath.uchus.ui.theme.UchusTheme
 import com.edumath.uchus.ui.parent.ChildDetailScreen
@@ -95,6 +101,7 @@ private val homeRoutes = setOf(
     "about",
     "teacher_dashboard",
     "teacher_students",
+    "padruchnik",
     "teacher_schedule",
     "parent",
     "admin/0",
@@ -133,7 +140,23 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
     val openBook: (Int, Int) -> Unit = { id, page -> nav.navigate("book/$id/$page") }
 
     UchusTheme(designMode = designMode) {
-    NavHost(navController = nav, startDestination = "home") {
+    NavHost(
+        navController = nav,
+        startDestination = "home",
+        // Плавные переходы: у младших школьников заметнее, у взрослых — тише.
+        enterTransition = {
+            fadeIn(tween(if (designMode == DesignMode.PLAYFUL) 220 else 160)) +
+                slideInHorizontally(
+                    tween(if (designMode == DesignMode.PLAYFUL) 260 else 180)
+                ) { it / if (designMode == DesignMode.PLAYFUL) 8 else 20 }
+        },
+        exitTransition = { fadeOut(tween(120)) },
+        popEnterTransition = { fadeIn(tween(160)) },
+        popExitTransition = {
+            fadeOut(tween(140)) +
+                slideOutHorizontally(tween(160)) { it / 16 }
+        },
+    ) {
         composable("home") {
             HomeScreen(
                 container = container,
@@ -252,6 +275,14 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
 
         composable("teacher_library") {
             TeacherLibraryScreen(container, back, openBook)
+        }
+
+        composable("padruchnik") {
+            PadruchnikScreen(
+                container = container,
+                isTeacher = session?.user?.role == "teacher",
+                onBack = back,
+            )
         }
 
         composable(

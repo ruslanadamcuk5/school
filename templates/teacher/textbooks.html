@@ -7,13 +7,17 @@
   <a href="{{ url_for('teacher.courses') }}">📚 Курсы</a>
   <a href="{{ url_for('teacher.works') }}">📝 Работы</a>
   <a href="{{ url_for('teacher.textbooks_page') }}" class="is-active">📖 Пособия</a>
+  <a href="{{ url_for('teacher.padruchnik_page') }}" class="{% if request.endpoint == 'teacher.padruchnik_page' %}is-active{% endif %}">🌐 e-padruchnik</a>
+  <a href="{{ url_for('teacher.messages') }}">💬 Сообщения</a>
+  <a href="{{ url_for('auth.account') }}">⚙️ Профиль</a>
 {% endblock %}
 
 {% block cabinet_content %}
 <div class="page-head">
   <div>
     <h1>📖 Учебные пособия</h1>
-    <p>Пособия загружает администратор. Учитель видит материалы своего класса и предметов.</p>
+    <p>Пособия загружает администратор. Добавьте нужное в библиотеку и откройте его своим классам —
+      тогда ученики и родители увидят книгу.</p>
   </div>
 </div>
 
@@ -45,7 +49,7 @@
   {% if textbooks %}
     <div class="data-table-wrap">
       <table class="table">
-        <thead><tr><th>Пособие</th><th>Предмет</th><th>Класс</th><th>Страниц</th><th>Тем</th><th></th></tr></thead>
+        <thead><tr><th>Пособие</th><th>Предмет</th><th>Класс</th><th>Страниц</th><th>Тем</th><th>Библиотека</th></tr></thead>
         <tbody>
           {% for book in textbooks %}
             <tr>
@@ -56,8 +60,45 @@
               <td>{{ book.pages }}</td>
               <td>{{ book.topics_count }}</td>
               <td>
-                <a class="btn btn--ghost btn--small"
-                   href="{{ url_for('admin.textbook_open', textbook_id=book.id) }}" target="_blank">Открыть ↗</a>
+                {% if my_books.get(book.id) %}
+                  <span class="chip chip--green">✓ в библиотеке</span>
+                  <div class="mt-2">
+                    <a class="btn btn--ghost btn--small"
+                       href="{{ url_for('library.book', book_id=my_books.get(book.id)) }}">Открыть книгу</a>
+                  </div>
+                  <details class="mt-2">
+                    <summary class="small" style="cursor:pointer;">Открыть ещё классам</summary>
+                    <form method="post" action="{{ url_for('teacher.textbook_to_library', textbook_id=book.id) }}" class="mt-2">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      {% for klass in classes %}
+                        <label class="check-item small">
+                          <input type="checkbox" name="class_id" value="{{ klass.id }}">
+                          <span>{{ klass.grade }}{{ klass.letter }}</span>
+                        </label>
+                      {% endfor %}
+                      <button class="btn btn--small mt-2" type="submit">Добавить классы</button>
+                    </form>
+                  </details>
+                {% else %}
+                  {% if classes %}
+                    <form method="post" action="{{ url_for('teacher.textbook_to_library', textbook_id=book.id) }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <div class="muted small mb-2">Кому открыть:</div>
+                      {% for klass in classes %}
+                        <label class="check-item small">
+                          <input type="checkbox" name="class_id" value="{{ klass.id }}" checked>
+                          <span>{{ klass.grade }}{{ klass.letter }}</span>
+                        </label>
+                      {% endfor %}
+                      <button class="btn btn--small mt-2" type="submit">📚 В библиотеку</button>
+                    </form>
+                  {% else %}
+                    <span class="muted small">Нет своих классов</span>
+                  {% endif %}
+                {% endif %}
+                <div class="mt-2">
+                  <a class="muted small" href="{{ url_for('admin.textbook_open', textbook_id=book.id) }}" target="_blank">Открыть PDF ↗</a>
+                </div>
               </td>
             </tr>
           {% endfor %}

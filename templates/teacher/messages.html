@@ -1,0 +1,53 @@
+{% extends "cabinet.html" %}
+{% block cabinet_title %}Сообщения классам{% endblock %}
+
+{% block cabinet_nav %}
+  <a href="{{ url_for('teacher.dashboard') }}">📊 Главная</a>
+  <a href="{{ url_for('teacher.students') }}">👦 Ученики</a>
+  <a href="{{ url_for('teacher.courses') }}">📚 Курсы</a>
+  <a href="{{ url_for('teacher.works') }}">📝 Работы</a>
+  <a href="{{ url_for('teacher.textbooks_page') }}">📖 Пособия</a>
+  <a href="{{ url_for('teacher.padruchnik_page') }}" class="{% if request.endpoint == 'teacher.padruchnik_page' %}is-active{% endif %}">🌐 e-padruchnik</a>
+  <a href="{{ url_for('teacher.messages') }}" class="is-active">💬 Сообщения</a>
+  <a href="{{ url_for('auth.account') }}">⚙️ Профиль</a>
+{% endblock %}
+
+{% block cabinet_content %}
+<div class="page-head">
+  <div>
+    <h1>💬 Сообщение классу</h1>
+    <p>Отправьте сообщение ученикам выбранных классов — оно придёт уведомлением.</p>
+  </div>
+</div>
+
+{% if not classes %}
+  <div class="card"><p class="muted">Пока нет классов, которым можно написать.</p></div>
+{% else %}
+<form method="post" action="{{ url_for('teacher.messages') }}" class="card">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <h2 class="section-title">Классы</h2>
+  <div class="checkbox-list">
+    {% for klass in classes %}
+      <label class="check-item">
+        <input type="checkbox" name="class_id" value="{{ klass.id }}">
+        <span><b>{{ klass.name }}</b> <span class="muted small">{{ klass.grade }} класс</span></span>
+      </label>
+    {% endfor %}
+  </div>
+
+  <label class="check-item mt-2">
+    <input type="checkbox" name="parents" value="1">
+    <span>Отправить также родителям учеников</span>
+  </label>
+
+  <label class="field mt-3">
+    <span>Текст сообщения</span>
+    <textarea name="text" rows="4" maxlength="2000"
+              placeholder="Например: Завтра контрольная, повторите тему «Дроби»."></textarea>
+  </label>
+
+  <button class="btn mt-3" type="submit">Отправить</button>
+</form>
+{% endif %}
+{% endblock %}

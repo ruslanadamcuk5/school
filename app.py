@@ -271,13 +271,17 @@ def _register_context(app: Flask) -> None:
             titles.setdefault(topic["slug"], topic["title"])
         theme = _theme_mode(user, learner)
         notifications_unread = 0
-        if user is not None:
-            try:
-                from services import notifications as notifications_service
+        try:
+            from services import notifications as notifications_service
 
+            if user is not None:
                 notifications_unread = notifications_service.unread_count(int(user["id"]))
-            except Exception:  # pragma: no cover - уведомления не должны ломать страницы
-                notifications_unread = 0
+            elif learner is not None:
+                notifications_unread = notifications_service.unread_count_for_learner(
+                    int(learner["id"])
+                )
+        except Exception:  # pragma: no cover - уведомления не должны ломать страницы
+            notifications_unread = 0
         ai_enabled, ai_available, ai_status = False, False, None
         try:
             from services import ai as ai_service
@@ -330,6 +334,23 @@ def _register_security(app: Flask) -> None:
     def _ensure_csrf_token():
         if not session.get("_csrf_token"):
             session["_csrf_token"] = secrets.token_urlsafe(24)
+
+    @app.before_request
+    def _sync_due_notifications():
+        """Ленивая проверка сроков: уведомления и без планировщика.
+
+        sync_due() сам ограничивает частоту (раз в 5 минут на процесс),
+        поэтому на каждом запросе это только чтение из памяти.
+        """
+        if not session.get("user_id"):
+            return None
+        try:
+            from services import notifications as notifications_service
+
+            notifications_service.sync_due()
+        except Exception:  # pragma: no cover - уведомления не должны ломать страницы
+            pass
+        return None
 
     @app.before_request
     def _csrf_protect():

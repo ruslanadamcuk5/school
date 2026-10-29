@@ -47,6 +47,25 @@
   </div>
 </section>
 
+{% if library_hint %}
+<section class="card mt-2 library-hint" style="background: linear-gradient(135deg,#eef2ff,#fff); border-left: 6px solid #6366f1;">
+  <div class="row row--between">
+    <div>
+      <h2 style="margin:0; font-size:1.2rem;">📖 Тебе рекомендовали почитать</h2>
+      <ul class="muted small" style="margin:6px 0 0; padding-left:18px;">
+        {% for rec in library_hint %}
+          <li>
+            <b>{{ rec.title }}</b>{% if rec.topic_title %} — {{ rec.topic_title }}{% endif %}
+            {% if rec.teacher_last %} · {{ rec.teacher_first }} {{ rec.teacher_last }}{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+    <a class="btn btn--small" href="{{ url_for('library.library') }}">Открыть библиотеку</a>
+  </div>
+</section>
+{% endif %}
+
 <h2 class="section-title mt-3">📚 Мои предметы</h2>
 <div class="row mt-2" style="gap:8px; flex-wrap:wrap;">
   {% for item in subjects %}

@@ -17,7 +17,7 @@ from flask import (
 from database import execute, query_all, query_one
 from services import ai as ai_service
 from services import assignments as assignments_service
-from services import auth, learners as learners_service, orgs, pdf_topics, textbooks
+from services import auth, learners as learners_service, orgs, padruchnik, pdf_topics, textbooks
 from services import topics as topics_service
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -487,6 +487,57 @@ def user_detail(user_id: int):
               ORDER BY a.id DESC LIMIT 30""",
             (user_id,),
         ),
+    )
+
+
+# ---------------------------------------------------------------- e-padruchnik
+@bp.route("/padruchnik", methods=["GET", "POST"])
+@auth.admin_required
+def padruchnik_page():
+    """Поиск пособия на e-padruchnik.adu.by и импорт в «Пособия (PDF)»."""
+    if request.method == "POST":
+        if (request.form.get("action") or "") == "import":
+            book_id = request.form.get("book_id", type=int)
+            subject_id = request.form.get("subject_id", type=int)
+            grade = request.form.get("grade", type=int) or 0
+            if not book_id or not subject_id:
+                flash("Выберите пособие и предмет", "error")
+                return redirect(url_for("admin.padruchnik_page"))
+            result = padruchnik.import_book(
+                book_id,
+                subject_id,
+                grade,
+                uploaded_by=auth.current_user()["id"],
+                auto_link=bool(request.form.get("auto_link")),
+            )
+            if not result.get("ok"):
+                flash(f"Не удалось добавить пособие: {result.get('error')}", "error")
+                return redirect(url_for("admin.padruchnik_page"))
+            _log("import", "textbook", result["textbook_id"], f"e-padruchnik book {book_id}")
+            flash(
+                f"«{result['title']}» добавлено в пособия: {result['pages']} стр., "
+                f"тем из оглавления — {result['linked']}.",
+                "success",
+            )
+            return redirect(url_for("admin.textbook_detail", textbook_id=result["textbook_id"]))
+        return redirect(url_for("admin.padruchnik_page"))
+
+    query = (request.args.get("q") or "").strip()
+    grade = request.args.get("grade", type=int)
+    subject_id = request.args.get("subject_id", type=int)
+    page_no = request.args.get("page", type=int) or 0
+    result = None
+    if query or grade:
+        result = padruchnik.search(query=query, grade=grade, page=page_no)
+    return render_template(
+        "admin/padruchnik.html",
+        result=result,
+        query=query,
+        selected_grade=grade,
+        selected_subject=subject_id,
+        page_no=page_no,
+        subjects=orgs.list_subjects(),
+        grades=list(range(1, 12)),
     )
 
 

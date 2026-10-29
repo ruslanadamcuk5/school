@@ -254,4 +254,96 @@ function syncTaskType() {
 }
 syncTaskType();
 </script>
+
+{% if incoming %}
+<section class="card mt-3">
+  <h2 class="section-title">📥 Работы от учителя <small>все ответы и проверка</small></h2>
+  <div class="data-table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Работа</th><th>Ребёнок</th><th>Сдано</th><th>Результат</th><th>ИИ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in incoming %}
+          <tr>
+            <td>
+              <b>{{ item.assignment.title }}</b>
+              <div class="muted small">
+                {{ item.author or 'Учитель' }}
+                {% if item.assignment.due_date %} · до {{ item.assignment.due_date }}{% endif %}
+              </div>
+            </td>
+            <td>{{ item.child.first_name }} {{ item.child.last_name }}</td>
+            <td>{% if item.result %}✅ {{ item.result.completed_at }}{% else %}<span class="muted">не сдано</span>{% endif %}</td>
+            <td>
+              {% if item.result %}
+                {{ item.result.score }} / {{ item.result.max_score }}
+                {% if item.result.max_score %}
+                  · {{ (item.result.score / item.result.max_score * 100) | round(0, 'floor') | int }}%
+                {% endif %}
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if item.result and item.result.ai_status == 'checked' %}
+                <span class="chip chip--green">проверено</span>
+              {% elif item.result and item.result.ai_status == 'failed' %}
+                <span class="chip chip--amber">ошибка ИИ</span>
+              {% elif item.result and item.result.ai_status == 'pending' %}
+                <span class="chip chip--blue">проверяется</span>
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+          {% if item.details %}
+            <tr>
+              <td colspan="5" style="background:#fafbfc;">
+                <details>
+                  <summary style="cursor:pointer; font-weight:700;">
+                    Разбор: {{ item.details|selectattr('correct')|list|length }} верно,
+                    {{ item.details|rejectattr('correct')|list|length }} с ошибкой
+                  </summary>
+                  <div class="mt-2">
+                    {% if item.result.ai_feedback %}
+                      <div class="card mb-2" style="background:#f0f7ff;">
+                        <b>🤖 Проверка ИИ</b>
+                        <div class="mt-1" style="white-space:pre-wrap;">{{ item.result.ai_feedback }}</div>
+                      </div>
+                    {% endif %}
+                    {% if item.photos %}
+                      <div class="mb-2">
+                        <b>Фото ответа:</b>
+                        {% for photo in item.photos %}
+                          {% set parts = photo.split('/') %}
+                          <a class="btn btn--ghost btn--small" target="_blank"
+                             href="{{ url_for('student.work_photo', assignment_id=item.assignment.id, student_id=item.child.id, filename=parts[-1]) }}">Фото {{ loop.index }}</a>
+                        {% endfor %}
+                      </div>
+                    {% endif %}
+                    {% for detail in item.details %}
+                      <div class="review-item">
+                        <span class="review-item__icon">{% if detail.correct %}✅{% else %}❌{% endif %}</span>
+                        <div class="review-item__body">
+                          <div>{{ loop.index }}. {{ detail.question }}</div>
+                          <div class="review-item__answer">
+                            {% if detail.correct %}Ответ: {{ detail.given }}
+                            {% else %}Ответ ребёнка: {{ detail.given or '—' }} · Правильный: {{ detail.answer }}{% endif %}
+                          </div>
+                          {% if detail.solution %}<div class="review-item__answer">{{ detail.solution }}</div>{% endif %}
+                          {% if detail.ai_comment %}<div class="review-item__answer">🤖 {{ detail.ai_comment }}</div>{% endif %}
+                        </div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </details>
+              </td>
+            </tr>
+          {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
 {% endblock %}

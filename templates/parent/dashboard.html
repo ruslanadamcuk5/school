@@ -8,6 +8,7 @@
     {% if school_mode %}
       <a class="btn btn--ghost btn--small" href="{{ url_for('parent.assignments_page') }}">📝 Задания детям</a>
     {% endif %}
+    <a class="btn btn--ghost btn--small" href="{{ url_for('parent.messages') }}">💬 Сообщения</a>
     <a class="btn btn--ghost btn--small" href="{{ url_for('parent.settings') }}">⚙️ Настройки</a>
     <form method="post" action="{{ url_for('parent.lock') }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

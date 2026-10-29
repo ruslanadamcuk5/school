@@ -10,6 +10,8 @@
   <a href="{{ url_for('teacher.works') }}" class="{% if request.endpoint in ('teacher.works', 'teacher.work_detail', 'teacher.work_new') %}is-active{% endif %}">
     📝 Работы <span class="count">{{ works|length }}</span></a>
   <a href="{{ url_for('teacher.textbooks_page') }}" class="{% if request.endpoint == 'teacher.textbooks_page' %}is-active{% endif %}">📖 Пособия</a>
+  <a href="{{ url_for('teacher.padruchnik_page') }}" class="{% if request.endpoint == 'teacher.padruchnik_page' %}is-active{% endif %}">🌐 e-padruchnik</a>
+  <a href="{{ url_for('teacher.messages') }}" class="{% if request.endpoint == 'teacher.messages' %}is-active{% endif %}">💬 Сообщения</a>
   <a href="{{ url_for('auth.account') }}">⚙️ Профиль</a>
 {% endblock %}
 

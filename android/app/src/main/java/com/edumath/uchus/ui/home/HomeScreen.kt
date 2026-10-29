@@ -2,6 +2,8 @@ package com.edumath.uchus.ui.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -108,22 +111,26 @@ fun HomeScreen(
                         IconButton(onClick = onOpenNotifications) {
                             Box {
                                 Icon(Icons.Default.Notifications, contentDescription = "Уведомления")
-                                if (unread > 0) {
-                                    Box(
-                                        modifier = Modifier
-                                            .align(Alignment.TopEnd)
-                                            .size(16.dp)
-                                            .clip(CircleShape)
-                                            .background(MaterialTheme.colorScheme.error),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Text(
-                                            if (unread > 9) "9+" else "$unread",
-                                            color = MaterialTheme.colorScheme.onError,
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.Bold,
-                                        )
-                                    }
+                                val badgeAlpha by animateFloatAsState(
+                                    targetValue = if (unread > 0) 1f else 0f,
+                                    animationSpec = tween(220),
+                                    label = "unread-badge",
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .size(16.dp)
+                                        .alpha(badgeAlpha)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.error),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        if (unread > 9) "9+" else "$unread",
+                                        color = MaterialTheme.colorScheme.onError,
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                    )
                                 }
                             }
                         }
@@ -309,6 +316,7 @@ private fun homeItems(
         HomeItem("admin/2", "🏫", "Организации", "Города, школы, классы"),
         HomeItem("admin/3", "🗺", "Темы", "Каталог тем по классам"),
         HomeItem("admin/4", "📖", "Пособия", "PDF-учебники"),
+        HomeItem("padruchnik", "🌐", "e-padruchnik", "Поиск и импорт пособий с портала"),
         HomeItem("admin/5", "🤖", "Искусственный интеллект", "Провайдер, модель, ключ"),
         HomeItem("admin/6", "🧾", "Журнал", "Действия администраторов"),
         HomeItem("about", "ℹ️", "О приложении", "Версия и связь с сервером"),
@@ -318,6 +326,7 @@ private fun homeItems(
         add(HomeItem("teacher_students", "👦", "Ученики", "Классы и успеваемость"))
         add(HomeItem("assignments", "📝", "Работы", "Создать и проверить"))
         add(HomeItem("library", "📚", "Библиотека", "Книги, доступ, рекомендации"))
+        add(HomeItem("padruchnik", "🌐", "Поиск пособий", "e-padruchnik: скачать и открыть классам"))
         add(HomeItem("teacher_schedule", "🗓", "Расписание", "Уроки по классам"))
         if (aiEnabled) add(HomeItem("ai", "🤖", "ИИ-помощник", "Объяснение темы и вопросы"))
         add(HomeItem("profile", "🏅", "Профиль", "Аккаунт и настройки"))

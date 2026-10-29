@@ -15,10 +15,18 @@
 <section class="card mt-3">
   <div class="row row--between">
     <div>
-      <h2 style="margin:0;">Верно {{ correct_count }} из {{ results|length }}</h2>
-      <p class="muted" style="margin:4px 0 0;">
-        {% if correct_count == results|length %}Отличная работа!{% elif correct_count * 2 >= results|length %}Хороший результат, можно улучшить.{% else %}Стоит перечитать тему и попробовать снова.{% endif %}
-      </p>
+      {% if review and review.ai_status == 'disabled' %}
+        <h2 style="margin:0;">Фото сохранены</h2>
+        <p class="muted" style="margin:4px 0 0;">ИИ не подключён, поэтому проверить фото не удалось.</p>
+      {% elif review and review.ai_status == 'failed' %}
+        <h2 style="margin:0;">Не удалось проверить</h2>
+        <p class="muted" style="margin:4px 0 0;">Фото сохранены, но ИИ не ответил. Попробуйте позже.</p>
+      {% else %}
+        <h2 style="margin:0;">Верно {{ correct_count }} из {{ results|length }}</h2>
+        <p class="muted" style="margin:4px 0 0;">
+          {% if correct_count == results|length %}Отличная работа!{% elif correct_count * 2 >= results|length %}Хороший результат, можно улучшить.{% else %}Стоит перечитать тему и попробовать снова.{% endif %}
+        </p>
+      {% endif %}
     </div>
     <div class="row" style="gap:8px;">
       <span class="chip chip--purple">⭐ {{ stars }}</span>
@@ -26,6 +34,27 @@
     </div>
   </div>
 </section>
+
+{% if review and review.ai_feedback %}
+  <section class="card mt-3" style="background:#f0f7ff;">
+    <h2 class="section-title">🤖 Проверка ИИ
+      {% if review.ai_model %}<small>{{ review.ai_model }}</small>{% endif %}
+    </h2>
+    <p style="white-space:pre-wrap; margin:0;">{{ review.ai_feedback }}</p>
+  </section>
+{% endif %}
+
+{% if photos %}
+  <section class="card mt-3">
+    <h2 class="section-title">📷 Твои фото</h2>
+    <div class="row" style="gap:8px; flex-wrap:wrap;">
+      {% for photo in photos %}
+        <a class="btn btn--ghost btn--small" target="_blank"
+           href="{{ url_for('main.quiz_photo', review_id=review_id, filename=photo.split('/')[-1]) }}">Фото {{ loop.index }}</a>
+      {% endfor %}
+    </div>
+  </section>
+{% endif %}
 
 <div class="card mt-3">
   <div class="data-table-wrap">
@@ -36,7 +65,7 @@
           <tr>
             <td>{{ row.question }}</td>
             <td>{{ row.given or '—' }}</td>
-            <td><b>{{ row.expected }}</b></td>
+            <td><b>{{ row.expected or row.answer }}</b></td>
             <td>
               {% if row.correct %}
                 <span class="chip chip--green">верно</span>
@@ -45,6 +74,11 @@
               {% endif %}
             </td>
           </tr>
+          {% if row.ai_comment %}
+            <tr>
+              <td colspan="4" class="muted small" style="background:#fafbfc;">🤖 {{ row.ai_comment }}</td>
+            </tr>
+          {% endif %}
         {% endfor %}
       </tbody>
     </table>

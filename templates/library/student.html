@@ -37,6 +37,11 @@
       <span class="chip chip--gray">Прочитано: {{ stats.done }}</span>
     </div>
 
+    {% if not readonly %}
+      <div data-react-library-feed class="mt-3"></div>
+    {% endif %}
+
+    {% if recommendations and not readonly %}<noscript>{% endif %}
     {% if recommendations %}
       <h2 class="section-title mt-3">📖 Рекомендации учителя</h2>
       <div class="book-grid">
@@ -75,6 +80,7 @@
         {% endfor %}
       </div>
     {% endif %}
+    {% if recommendations and not readonly %}</noscript>{% endif %}
 
     <h2 class="section-title mt-3">📚 Книги класса</h2>
     {% if books %}

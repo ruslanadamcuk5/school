@@ -1,0 +1,134 @@
+{% extends "cabinet.html" %}
+{% block cabinet_title %}Поиск пособий{% endblock %}
+
+{% block cabinet_nav %}
+  <a href="{{ url_for('teacher.dashboard') }}">📊 Главная</a>
+  <a href="{{ url_for('teacher.students') }}">👦 Ученики</a>
+  <a href="{{ url_for('teacher.courses') }}">📚 Курсы</a>
+  <a href="{{ url_for('teacher.works') }}">📝 Работы</a>
+  <a href="{{ url_for('teacher.textbooks_page') }}">📖 Пособия</a>
+  <a href="{{ url_for('teacher.padruchnik_page') }}" class="is-active">🌐 e-padruchnik</a>
+  <a href="{{ url_for('teacher.messages') }}">💬 Сообщения</a>
+  <a href="{{ url_for('auth.account') }}">⚙️ Профиль</a>
+{% endblock %}
+
+{% block cabinet_content %}
+<div class="page-head">
+  <div>
+    <h1>🌐 Поиск пособий</h1>
+    <p>Найдите учебник на e-padruchnik.adu.by — платформа скачает PDF, разберёт темы
+      и откроет книгу выбранным классам.</p>
+  </div>
+</div>
+
+<form method="get" class="card mb-3">
+  <div class="grid-3">
+    <div class="field">
+      <label for="q">Название или автор</label>
+      <input id="q" name="q" value="{{ query }}" placeholder="Например: Математика">
+    </div>
+    <div class="field">
+      <label for="grade">Класс</label>
+      <select id="grade" name="grade">
+        <option value="">— любой —</option>
+        {% for g in grades %}
+          <option value="{{ g }}" {% if selected_grade == g %}selected{% endif %}>{{ g }} класс</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="subject_id">Предмет</label>
+      <select id="subject_id" name="subject_id">
+        {% for subject in subjects %}
+          <option value="{{ subject.id }}" {% if selected_subject == subject.id %}selected{% endif %}>
+            {{ subject.icon }} {{ subject.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <button class="btn mt-3" type="submit">🔍 Найти</button>
+</form>
+
+{% if result %}
+  {% if result.error %}
+    <div class="card mb-3" style="border-left:6px solid #dc2626;">
+      <b>Портал недоступен.</b>
+      <p class="muted">{{ result.error }}</p>
+    </div>
+  {% elif not result["items"] %}
+    <div class="card"><p class="muted">Ничего не найдено. Попробуйте другой класс или название.</p></div>
+  {% else %}
+    <div class="card">
+      <div class="row row--between mb-2">
+        <b>Найдено на портале</b>
+        {% if result.cached %}<span class="chip chip--gray">из кэша</span>{% endif %}
+      </div>
+      <div class="data-table-wrap">
+        <table class="table">
+          <thead><tr><th>Пособие</th><th>Класс</th><th>Год</th><th>Язык</th><th>Добавить</th></tr></thead>
+          <tbody>
+            {% for item in result["items"] %}
+              <tr>
+                <td>
+                  <b>{{ item.title }}</b>
+                  {% if item.author %}<div class="muted small">{{ item.author }}</div>{% endif %}
+                </td>
+                <td>{{ item.grade }}</td>
+                <td>{{ item.year }}</td>
+                <td class="small">{{ item.language }}</td>
+                <td>
+                  {% if classes %}
+                    <form method="post" action="{{ url_for('teacher.padruchnik_page') }}" class="small">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <input type="hidden" name="action" value="import">
+                      <input type="hidden" name="book_id" value="{{ item.id }}">
+                      <label class="field" style="margin-bottom:6px;">
+                        <span>Предмет</span>
+                        <select name="subject_id" required>
+                          {% for subject in subjects %}
+                            <option value="{{ subject.id }}" {% if selected_subject == subject.id %}selected{% endif %}>
+                              {{ subject.icon }} {{ subject.name }}</option>
+                          {% endfor %}
+                        </select>
+                      </label>
+                      <label class="field" style="margin-bottom:6px;">
+                        <span>Класс пособия</span>
+                        <input type="number" name="grade" min="1" max="11" value="{{ item.grade or selected_grade or 3 }}" style="width:80px;">
+                      </label>
+                      <div class="muted small mb-2">Открыть классам:</div>
+                      {% for klass in classes %}
+                        <label class="check-item">
+                          <input type="checkbox" name="class_id" value="{{ klass.id }}">
+                          <span>{{ klass.grade }}{{ klass.letter }}</span>
+                        </label>
+                      {% endfor %}
+                      <button class="btn btn--small mt-2" type="submit">📥 Добавить в пособия</button>
+                    </form>
+                  {% else %}
+                    <span class="muted small">Нет своих классов</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="row mt-3" style="gap:8px;">
+        {% if page_no > 0 %}
+          <a class="btn btn--ghost btn--small"
+             href="{{ url_for('teacher.padruchnik_page', q=query, grade=selected_grade, subject_id=selected_subject, page=page_no-1) }}">← Назад</a>
+        {% endif %}
+        {% if result.has_next %}
+          <a class="btn btn--ghost btn--small"
+             href="{{ url_for('teacher.padruchnik_page', q=query, grade=selected_grade, subject_id=selected_subject, page=page_no+1) }}">Ещё →</a>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+{% else %}
+  <div class="card">
+    <p class="muted">Введите название и класс. Импорт занимает до минуты: скачивание PDF
+      и разбор оглавления. Пособие сразу появится в вашей библиотеке.</p>
+  </div>
+{% endif %}
+{% endblock %}
