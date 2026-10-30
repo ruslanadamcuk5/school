@@ -353,6 +353,7 @@ private fun homeItems(
     }
     "parent" -> buildList {
         add(HomeItem("parent", "👨‍👩‍👧", "Дети", "Успеваемость и прогресс"))
+        add(HomeItem("parent_map", "🗺", "Карта детей", "Где сейчас и трек за день"))
         add(HomeItem("assignments", "📝", "Задания", "Назначить и проверить"))
         add(HomeItem("library", "📚", "Библиотека", "Книги ребёнка"))
         if (aiEnabled) add(HomeItem("ai", "🤖", "ИИ-помощник", "Объяснение темы и вопросы"))
@@ -376,6 +377,7 @@ private fun homeItems(
                 if (isFamily) "Учебники своего класса" else "Книги класса и рекомендации",
             )
         )
+        add(HomeItem("location", "📍", "Геолокация", "Передача позиции родителям"))
         add(
             HomeItem(
                 "profile",

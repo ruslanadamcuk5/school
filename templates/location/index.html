@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Геолокация — {{ learner.name }}{% endblock %}
+{% block head %}
+  <style>
+    .geo-share-hero { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+    .geo-share-icon { font-size:2.6rem; line-height:1; }
+    .geo-state { display:inline-flex; align-items:center; gap:7px; padding:5px 11px; border-radius:999px; font-size:.85rem; font-weight:700; background:#eef2ff; color:#4338ca; }
+    .geo-state--on { background:#dcfce7; color:#166534; }
+    .geo-state--off { background:#f1f5f9; color:#475569; }
+    .geo-state__dot { width:8px; height:8px; border-radius:50%; background:currentColor; }
+    .geo-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+    .geo-note { border-left:3px solid var(--brand); padding:10px 14px; background:#f8faff; border-radius:0 10px 10px 0; }
+    .geo-points { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin-top:14px; }
+    .geo-points .stat-box { text-align:left; }
+  </style>
+{% endblock %}
+{% block content %}
+
+<div class="row row--between mt-3">
+  <h1 style="margin:0;">📍 Геолокация</h1>
+  <a class="btn btn--ghost btn--small" href="{{ url_for('main.profile') }}">← В профиль</a>
+</div>
+
+<section class="card mt-3">
+  <div class="geo-share-hero">
+    <div class="geo-share-icon">🛰️</div>
+    <div style="flex:1; min-width:220px;">
+      <h2 style="margin:0;">Передача местоположения родителям</h2>
+      <p class="muted small" style="margin:6px 0 0;">
+        Если включить, родители увидят твою последнюю точку на карте и смогут посмотреть,
+        как ты двигался(лась) за день. История хранится {{ retention_days }} дней.
+      </p>
+    </div>
+    <span class="geo-state geo-state--{{ 'on' if settings.enabled else 'off' }}" id="loc-state">
+      <span class="geo-state__dot"></span>
+      <span id="loc-state-text">{{ 'Включена' if settings.enabled else 'Выключена' }}</span>
+    </span>
+  </div>
+
+  <div class="geo-note mt-3">
+    <b>Это только по твоему согласию.</b>
+    Без нажатия «Делиться» точки не отправляются. Ты можешь в любой момент
+    остановить передачу или удалить всю историю.
+  </div>
+
+  <div class="geo-actions">
+    <button class="btn" id="loc-start" type="button">📍 Делиться геопозицией</button>
+    <button class="btn btn--ghost" id="loc-stop" type="button">⏹ Остановить</button>
+    <button class="btn btn--warn" id="loc-clear" type="button">🗑 Удалить историю</button>
+  </div>
+
+  <div id="loc-flash" class="muted small mt-2" style="min-height:20px;"></div>
+
+  <div class="geo-points">
+    <div class="stat-box">
+      <div class="stat-box__value" id="loc-sent">0</div>
+      <div class="stat-box__label">точек отправлено сейчас</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box__value" id="loc-last">—</div>
+      <div class="stat-box__label">последняя точка на сервере</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-box__value" id="loc-accuracy">—</div>
+      <div class="stat-box__label">точность GPS</div>
+    </div>
+  </div>
+
+  <p class="muted small mt-3">
+    Совет: для лучшей точности включи GPS и оставь эту страницу открытой.
+    На телефоне можно пользоваться приложением — оно передаёт точки в фоне.
+  </p>
+</section>
+
+<script>
+  window.CHILD_LOCATION = {
+    statusUrl: {{ url_for('location.status')|tojson }},
+    setStatusUrl: {{ url_for('location.set_status')|tojson }},
+    pointsUrl: {{ url_for('location.points')|tojson }},
+    historyUrl: {{ url_for('location.clear_history')|tojson }}
+  };
+</script>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/child_location.js') }}"></script>
+{% endblock %}

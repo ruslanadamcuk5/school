@@ -5,6 +5,7 @@
 <div class="row row--between mt-3">
   <h1 style="margin:0;">👨‍👩‍👧 Родительская зона</h1>
   <div class="row" style="gap:8px;">
+    <a class="btn btn--ghost btn--small" href="{{ url_for('parent.map_page') }}">🗺 Карта детей</a>
     {% if school_mode %}
       <a class="btn btn--ghost btn--small" href="{{ url_for('parent.assignments_page') }}">📝 Задания детям</a>
     {% endif %}
@@ -57,9 +58,12 @@
         <p class="muted small" style="margin:0;">{{ card.learner.grade }} класс · уровень {{ card.stats.level }}</p>
       </div>
     </div>
-    <a class="btn btn--ghost btn--small" href="{{ url_for('parent.learner_settings', learner_id=card.learner.id) }}">
-      Настроить
-    </a>
+    <div class="row" style="gap:8px;">
+      <a class="btn btn--ghost btn--small" href="{{ url_for('parent.map_page', learner_id=card.learner.id) }}">📍 На карте</a>
+      <a class="btn btn--ghost btn--small" href="{{ url_for('parent.learner_settings', learner_id=card.learner.id) }}">
+        Настроить
+      </a>
+    </div>
   </div>
 
   <div class="stat-grid mt-3">

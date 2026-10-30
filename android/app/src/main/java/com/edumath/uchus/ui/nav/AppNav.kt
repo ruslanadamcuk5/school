@@ -43,6 +43,7 @@ import com.edumath.uchus.ui.theme.DesignMode
 import com.edumath.uchus.ui.theme.UchusTheme
 import com.edumath.uchus.ui.parent.ChildDetailScreen
 import com.edumath.uchus.ui.parent.ParentCreateAssignmentScreen
+import com.edumath.uchus.ui.parent.ParentMapScreen
 import com.edumath.uchus.ui.parent.ParentScreen
 import com.edumath.uchus.ui.student.AssignmentDetailScreen
 import com.edumath.uchus.ui.student.AssignmentsScreen
@@ -64,6 +65,7 @@ import com.edumath.uchus.ui.teacher.TeacherResultsScreen
 import com.edumath.uchus.ui.teacher.TeacherScheduleScreen
 import com.edumath.uchus.ui.teacher.TeacherStudentScreen
 import com.edumath.uchus.ui.teacher.TeacherStudentsScreen
+import com.edumath.uchus.ui.location.ChildLocationScreen
 import com.edumath.uchus.ui.update.AppUpdateGate
 import kotlinx.coroutines.launch
 
@@ -106,6 +108,8 @@ private val homeRoutes = setOf(
     "padruchnik",
     "teacher_schedule",
     "parent",
+    "parent_map",
+    "location",
     "admin/0",
     "admin/1",
     "admin/2",
@@ -430,7 +434,31 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
                 onAssignments = { nav.navigate("assignments") },
                 onLibrary = { nav.navigate("library") },
                 onCreate = { nav.navigate("parent_create_assignment") },
+                onMap = { nav.navigate("parent_map") },
             )
+        }
+
+        composable("parent_map") {
+            ParentMapScreen(
+                container = container,
+                learnerId = 0,
+                onBack = back,
+            )
+        }
+
+        composable(
+            route = "parent_map/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.IntType }),
+        ) { entry ->
+            ParentMapScreen(
+                container = container,
+                learnerId = entry.arguments?.getInt("id") ?: 0,
+                onBack = back,
+            )
+        }
+
+        composable("location") {
+            ChildLocationScreen(container = container, onBack = back)
         }
 
         composable(
@@ -441,6 +469,7 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
                 container = container,
                 learnerId = entry.arguments?.getInt("id") ?: 0,
                 onBack = back,
+                onMap = { nav.navigate("parent_map/${entry.arguments?.getInt("id") ?: 0}") },
             )
         }
 

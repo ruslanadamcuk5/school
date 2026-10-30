@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="leaflet/leaflet.css">
+  <style>
+    html, body { margin:0; padding:0; height:100%; background:#eef4ff; }
+    #map { position:absolute; inset:0; }
+    .geo-time-label { background:#fff !important; border:1px solid #c7d2fe !important;
+      border-radius:6px !important; color:#3730a3 !important; font-weight:700 !important;
+      font-size:10px !important; padding:1px 4px !important; box-shadow:none !important; }
+    .geo-time-label::before { display:none !important; }
+    .leaflet-control-attribution { font-size:9px; }
+  </style>
+</head>
+<body>
+<div id="map"></div>
+<script src="leaflet/leaflet.js"></script>
+<script>
+(function () {
+  "use strict";
+  var map = L.map("map", { zoomControl: true }).setView([53.9023, 27.5619], 11);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+  var overviewLayer = L.layerGroup().addTo(map);
+  var trackLayer = L.layerGroup().addTo(map);
+
+  function timeOf(value) {
+    if (!value) return "";
+    var d = new Date(value);
+    if (isNaN(d.getTime())) return String(value);
+    return d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function dateTimeOf(value) {
+    if (!value) return "";
+    var d = new Date(value);
+    if (isNaN(d.getTime())) return String(value);
+    return d.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  }
+
+  window.showOverview = function (data) {
+    overviewLayer.clearLayers();
+    if (!data || !data.children) return;
+    data.children.forEach(function (child) {
+      var last = child.last_point;
+      if (!last) return;
+      var info = child.learner || {};
+      var color = child.stale ? "#94a3b8" : "#16a34a";
+      var marker = L.circleMarker([last.lat, last.lon], {
+        radius: 10, color: "#ffffff", weight: 3, fillColor: color, fillOpacity: 1
+      }).addTo(overviewLayer);
+      marker.bindTooltip((info.avatar || "") + " " + (info.name || ""), {
+        permanent: true, direction: "top", offset: [0, -10], className: "geo-time-label"
+      });
+      marker.bindPopup(
+        "<b>" + (info.name || "Ребёнок") + "</b><br>" +
+        dateTimeOf(last.recorded_at) + "<br>" +
+        (last.accuracy != null ? "±" + Math.round(last.accuracy) + " м" : "")
+      );
+    });
+  };
+
+  window.showTrack = function (data) {
+    trackLayer.clearLayers();
+    if (!data || !data.points || !data.points.length) return;
+    var points = data.points;
+    var latlngs = points.map(function (p) { return [p.lat, p.lon]; });
+    L.polyline(latlngs, {
+      color: "#6366f1", weight: 5, opacity: 0.82, lineJoin: "round", lineCap: "round"
+    }).addTo(trackLayer);
+    var labelStep = Math.max(1, Math.ceil(points.length / 12));
+    points.forEach(function (p, index) {
+      var edge = index === 0 || index === points.length - 1;
+      var marker = L.circleMarker([p.lat, p.lon], {
+        radius: edge ? 8 : 5, color: "#ffffff", weight: 2,
+        fillColor: edge ? "#4338ca" : "#6366f1", fillOpacity: 1
+      }).addTo(trackLayer);
+      var parts = [p.time || timeOf(p.recorded_at)];
+      if (p.accuracy != null) parts.push("±" + Math.round(p.accuracy) + " м");
+      if (p.speed) parts.push((p.speed * 3.6).toFixed(1) + " км/ч");
+      marker.bindPopup(parts.join(" · "));
+      if (index % labelStep === 0 || edge) {
+        marker.bindTooltip(p.time || timeOf(p.recorded_at), {
+          permanent: true, direction: "top", offset: [0, -8], className: "geo-time-label"
+        });
+      }
+    });
+    map.fitBounds(L.latLngBounds(latlngs), { padding: [26, 26], maxZoom: 17 });
+  };
+})();
+</script>
+</body>
+</html>

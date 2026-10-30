@@ -1715,3 +1715,115 @@ data class AdminShopGiftRequest(
     @SerializedName("coins") val coins: Int = 0,
     @SerializedName("xp") val xp: Int = 0,
 )
+
+// ------------------------------------------------------------------ геолокация
+data class LocationSharingDto(
+    @SerializedName("enabled") val enabled: Boolean = false,
+    @SerializedName("retention_days") val retentionDays: Int = 14,
+    @SerializedName("updated_at") val updatedAt: String? = null,
+    @SerializedName("last_point_at") val lastPointAt: String? = null,
+)
+
+data class LocationPointDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("lat") val lat: Double = 0.0,
+    @SerializedName("lon") val lon: Double = 0.0,
+    @SerializedName("accuracy") val accuracy: Double? = null,
+    @SerializedName("altitude") val altitude: Double? = null,
+    @SerializedName("speed") val speed: Double? = null,
+    @SerializedName("battery") val battery: Int? = null,
+    @SerializedName("source") val source: String? = null,
+    @SerializedName("recorded_at") val recordedAt: String? = null,
+    @SerializedName("time") val time: String? = null,
+)
+
+data class LocationStatusDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("enabled") val enabled: Boolean = false,
+    @SerializedName("settings") val settings: LocationSharingDto? = null,
+    @SerializedName("last_point") val lastPoint: LocationPointDto? = null,
+    @SerializedName("retention_days") val retentionDays: Int = 14,
+    @SerializedName("message") val message: String? = null,
+)
+
+data class LocationSharingRequest(
+    @SerializedName("enabled") val enabled: Boolean,
+)
+
+data class LocationPointPayload(
+    @SerializedName("lat") val lat: Double,
+    @SerializedName("lon") val lon: Double,
+    @SerializedName("accuracy") val accuracy: Double? = null,
+    @SerializedName("altitude") val altitude: Double? = null,
+    @SerializedName("speed") val speed: Double? = null,
+    @SerializedName("source") val source: String = "android",
+    @SerializedName("recorded_at") val recordedAt: String,
+)
+
+data class LocationPointsRequest(
+    @SerializedName("points") val points: List<LocationPointPayload>,
+    @SerializedName("battery") val battery: Int? = null,
+)
+
+data class LocationPointsResponse(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("saved") val saved: Int = 0,
+    @SerializedName("received") val received: Int = 0,
+    @SerializedName("last_point_at") val lastPointAt: String? = null,
+    @SerializedName("settings") val settings: LocationSharingDto? = null,
+)
+
+data class LocationHistoryResponse(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("removed") val removed: Int = 0,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("settings") val settings: LocationSharingDto? = null,
+)
+
+data class LocationSummaryDto(
+    @SerializedName("points") val points: Int = 0,
+    @SerializedName("distance_m") val distanceM: Double = 0.0,
+    @SerializedName("duration_min") val durationMin: Int = 0,
+    @SerializedName("first_at") val firstAt: String? = null,
+    @SerializedName("last_at") val lastAt: String? = null,
+    @SerializedName("max_speed") val maxSpeed: Double = 0.0,
+    @SerializedName("accuracy") val accuracy: Double? = null,
+)
+
+data class LocationLearnerDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("avatar") val avatar: String? = null,
+    @SerializedName("grade") val grade: Int = 0,
+)
+
+data class LocationTrackDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("learner") val learner: LocationLearnerDto? = null,
+    @SerializedName("day") val day: String? = null,
+    @SerializedName("sharing") val sharing: LocationSharingDto? = null,
+    @SerializedName("points") val points: List<LocationPointDto> = emptyList(),
+    @SerializedName("summary") val summary: LocationSummaryDto = LocationSummaryDto(),
+    @SerializedName("latest") val latest: LocationPointDto? = null,
+    @SerializedName("retention_days") val retentionDays: Int = 14,
+)
+
+data class ParentLocationChildDto(
+    @SerializedName("learner") val learner: LocationLearnerDto? = null,
+    @SerializedName("sharing") val sharing: LocationSharingDto? = null,
+    @SerializedName("last_point") val lastPoint: LocationPointDto? = null,
+    @SerializedName("points_today") val pointsToday: Int = 0,
+    @SerializedName("stale") val stale: Boolean = true,
+)
+
+data class ParentLocationsDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("children") val children: List<ParentLocationChildDto> = emptyList(),
+    @SerializedName("date") val date: String? = null,
+    @SerializedName("retention_days") val retentionDays: Int = 14,
+)
+
+data class LocationMessageDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("message") val message: String? = null,
+)

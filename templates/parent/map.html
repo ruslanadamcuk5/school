@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Карта детей — родительская зона{% endblock %}
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
+  <style>
+    .geo-toolbar { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; }
+    .geo-toolbar .field { margin:0; min-width:190px; }
+    .geo-layout { display:grid; grid-template-columns:minmax(0, 2fr) minmax(280px, 1fr); gap:16px; margin-top:16px; }
+    @media (max-width: 860px) { .geo-layout { grid-template-columns:1fr; } }
+    #geo-map { height:540px; border-radius:16px; overflow:hidden; background:#e8eef8; }
+    @media (max-width: 640px) { #geo-map { height:420px; } }
+    .geo-legend { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+    .geo-dot { display:inline-block; width:10px; height:10px; border-radius:50%; background:#6366f1; margin-right:5px; }
+    .geo-dot--live { background:#16a34a; }
+    .geo-dot--stale { background:#94a3b8; }
+    .geo-kidences { display:flex; flex-direction:column; gap:8px; }
+    .geo-child { display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:12px; background:#fff; cursor:pointer; text-align:left; color:inherit; font:inherit; width:100%; }
+    .geo-child.is-selected { border-color:var(--brand); box-shadow:0 0 0 2px rgba(59,130,246,.15); }
+    .geo-child__body { flex:1; min-width:0; }
+    .geo-child__title { font-weight:700; }
+    .geo-child__meta { color:var(--muted); font-size:.85rem; }
+    .geo-timeline { max-height:250px; overflow:auto; margin:0; padding:0; list-style:none; }
+    .geo-timeline li { display:flex; gap:10px; padding:7px 0; border-bottom:1px dashed var(--line); font-size:.9rem; }
+    .geo-timeline time { color:var(--brand-dark); font-variant-numeric:tabular-nums; font-weight:700; min-width:48px; }
+    .geo-time-label { background:#fff !important; border:1px solid #c7d2fe !important; border-radius:6px !important; color:#3730a3 !important; font-weight:700 !important; font-size:10px !important; padding:1px 4px !important; box-shadow:none !important; }
+    .geo-time-label::before { display:none !important; }
+    .geo-empty { padding:26px; text-align:center; color:var(--muted); }
+  </style>
+{% endblock %}
+{% block content %}
+
+<div class="row row--between mt-3">
+  <div>
+    <h1 style="margin:0;">📍 Дети на карте</h1>
+    <p class="muted small" style="margin:4px 0 0;">Последние точки и трек за день. История хранится {{ retention_days }} дней.</p>
+  </div>
+  <div class="row" style="gap:8px;">
+    <a class="btn btn--ghost btn--small" href="{{ url_for('parent.dashboard') }}">← К статистике</a>
+  </div>
+</div>
+
+{% if not learners %}
+<section class="card mt-3 center">
+  <p class="muted">В этой семье пока нет профилей детей.</p>
+</section>
+{% else %}
+<section class="card mt-3">
+  <div class="geo-toolbar">
+    <div class="field">
+      <label for="geo-learner">Ребёнок</label>
+      <select id="geo-learner">
+        {% for learner in learners %}
+          <option value="{{ learner.id }}" {% if selected and learner.id == selected.id %}selected{% endif %}>
+            {{ learner.avatar }} {{ learner.name }} · {{ learner.grade }} класс
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="geo-date">День</label>
+      <input id="geo-date" type="date">
+    </div>
+    <button class="btn btn--small" id="geo-refresh" type="button">Показать</button>
+    <button class="btn btn--ghost btn--small" id="geo-request" type="button">🔔 Попросить включить геолокацию</button>
+  </div>
+  <div id="geo-flash" class="muted small mt-2" style="min-height:18px;"></div>
+  <div class="geo-legend">
+    <span class="small muted"><span class="geo-dot"></span>трек за день</span>
+    <span class="small muted"><span class="geo-dot geo-dot--live"></span>точка недавно</span>
+    <span class="small muted"><span class="geo-dot geo-dot--stale"></span>давно не было данных</span>
+  </div>
+</section>
+
+<div class="geo-layout">
+  <section class="card" style="padding:10px;">
+    <div id="geo-map"></div>
+  </section>
+  <div style="display:flex; flex-direction:column; gap:16px;">
+    <section class="card">
+      <h2 style="margin-top:0;">Сейчас</h2>
+      <div class="geo-kidences" id="geo-overview">
+        <p class="muted small">Загрузка…</p>
+      </div>
+    </section>
+    <section class="card">
+      <h2 style="margin-top:0;">Трек за день</h2>
+      <div id="geo-summary" class="muted small">Выберите ребёнка и день.</div>
+      <ul class="geo-timeline" id="geo-timeline"></ul>
+    </section>
+  </div>
+</div>
+
+<script>
+  window.PARENT_MAP = {
+    dataUrl: {{ url_for('parent.map_data')|tojson }},
+    overviewUrl: {{ url_for('parent.map_overview')|tojson }},
+    requestBase: {{ (url_for('parent.map_request_location', learner_id=0))[:-1]|tojson }}
+  };
+</script>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
+<script src="{{ url_for('static', filename='js/parent_map.js') }}"></script>
+{% endblock %}

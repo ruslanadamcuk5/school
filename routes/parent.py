@@ -10,6 +10,7 @@ from flask import (
     Blueprint,
     Response,
     abort,
+    jsonify,
     flash,
     redirect,
     render_template,
@@ -714,4 +715,122 @@ def messages():
         family=family,
         pending=pending,
         school_mode=school_mode,
+    )
+
+
+# ------------------------------------------------------------------ геолокация
+def _map_tz() -> int:
+    from services import locations as locations_service
+
+    try:
+        return locations_service.clamp_tz(int(request.args.get("tz") or 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _map_learner(learner_id: int | None):
+    from services import auth as auth_service
+
+    user = auth_service.current_user()
+    learners = _visible_learners(user)
+    if not learners:
+        return None, learners
+    if learner_id is None:
+        return learners[0], learners
+    for row in learners:
+        if int(row["id"]) == int(learner_id):
+            return row, learners
+    return None, learners
+
+
+@bp.route("/parent/map")
+def map_page():
+    guard = _require_unlock()
+    if guard:
+        return guard
+    learner_id = request.args.get("learner_id", type=int)
+    selected, learners = _map_learner(learner_id)
+    return render_template(
+        "parent/map.html",
+        learners=learners,
+        selected=selected,
+        retention_days=14,
+    )
+
+
+@bp.route("/parent/map/data")
+def map_data():
+    guard = _require_unlock()
+    if guard:
+        return guard
+    from services import locations as locations_service
+
+    learner_id = request.args.get("learner_id", type=int)
+    profile, _ = _map_learner(learner_id)
+    if profile is None:
+        return jsonify({"ok": False, "error": "not_found", "message": "Профиль не найден"}), 404
+    tz_minutes = _map_tz()
+    try:
+        day = locations_service.parse_day(request.args.get("date"), tz_minutes)
+    except locations_service.LocationError as exc:
+        return jsonify({"ok": False, "error": exc.code, "message": exc.message}), exc.status
+    data = locations_service.trail(int(profile["id"]), day, tz_minutes)
+    return jsonify(
+        {
+            "ok": True,
+            "learner": {
+                "id": int(profile["id"]),
+                "name": profile["name"],
+                "avatar": profile["avatar"],
+                "grade": int(profile["grade"] or 1),
+            },
+            **data,
+            "today": locations_service.today_for_tz(tz_minutes).isoformat(),
+            "retention_days": locations_service.RETENTION_DAYS,
+        }
+    )
+
+
+@bp.route("/parent/map/overview")
+def map_overview():
+    guard = _require_unlock()
+    if guard:
+        return guard
+    from services import auth as auth_service
+    from services import locations as locations_service
+
+    user = auth_service.current_user()
+    learners = _visible_learners(user)
+    tz_minutes = _map_tz()
+    return jsonify(
+        {
+            "ok": True,
+            "children": locations_service.overview(learners, tz_minutes),
+            "date": locations_service.today_for_tz(tz_minutes).isoformat(),
+            "retention_days": locations_service.RETENTION_DAYS,
+        }
+    )
+
+
+@bp.route("/parent/map/request/<int:learner_id>", methods=["POST"])
+def map_request_location(learner_id: int):
+    guard = _require_unlock()
+    if guard:
+        return guard
+    from services import locations as locations_service
+
+    profile, _ = _map_learner(learner_id)
+    if profile is None:
+        return jsonify({"ok": False, "error": "not_found", "message": "Профиль не найден"}), 404
+    from services import auth as auth_service
+
+    user = auth_service.current_user()
+    locations_service.request_sharing(
+        int(profile["id"]), int(user["id"]) if user else 0
+    )
+    return jsonify(
+        {
+            "ok": True,
+            "message": f"Просьба отправлена: {profile['name']} увидит уведомление",
+        }
     )

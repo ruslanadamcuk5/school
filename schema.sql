@@ -755,3 +755,32 @@ CREATE TABLE IF NOT EXISTS shop_gifts (
 
 CREATE INDEX IF NOT EXISTS idx_shop_gifts_learner
     ON shop_gifts(learner_id, status, created_at);
+
+-- Геолокация: ребёнок сам включает передачу, родитель видит точку и трек.
+-- По умолчанию выключено. История хранится ограниченное время (RETENTION_DAYS).
+CREATE TABLE IF NOT EXISTS location_sharing (
+    learner_id   INTEGER PRIMARY KEY,
+    enabled      INTEGER NOT NULL DEFAULT 0,
+    updated_by   INTEGER,
+    updated_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+    last_point_at TEXT,
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS learner_locations (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    learner_id  INTEGER NOT NULL,
+    lat         REAL    NOT NULL,
+    lon         REAL    NOT NULL,
+    accuracy    REAL,
+    altitude    REAL,
+    speed       REAL,
+    battery     INTEGER,
+    source      TEXT    NOT NULL DEFAULT 'gps',
+    recorded_at TEXT    NOT NULL,
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_locations_point
+    ON learner_locations(learner_id, recorded_at);

@@ -370,6 +370,31 @@ interface ApiService {
 
     @POST("parent/link")
     suspend fun linkChild(@Body body: Map<String, String>): LinkChildResponseDto
+    @GET("parent/locations")
+    suspend fun parentLocations(@Query("tz") tz: Int): ParentLocationsDto
+
+    @GET("parent/children/{id}/location")
+    suspend fun parentChildLocation(
+        @Path("id") id: Int,
+        @Query("date") date: String,
+        @Query("tz") tz: Int,
+    ): LocationTrackDto
+
+    @POST("parent/children/{id}/location/request")
+    suspend fun requestChildLocation(@Path("id") id: Int): LocationMessageDto
+
+    // ---------------------------------------------------------- геолокация ребёнка
+    @GET("location/status")
+    suspend fun locationStatus(@Query("tz") tz: Int): LocationStatusDto
+
+    @PUT("location/status")
+    suspend fun setLocationSharing(@Body body: LocationSharingRequest): LocationStatusDto
+
+    @POST("location/points")
+    suspend fun sendLocationPoints(@Body body: LocationPointsRequest): LocationPointsResponse
+
+    @DELETE("location/history")
+    suspend fun clearLocationHistory(): LocationHistoryResponse
 
     // ---------------------------------------------------------- админ
     @GET("admin/stats")

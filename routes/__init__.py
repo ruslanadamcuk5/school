@@ -7,6 +7,7 @@ from .api_v1 import bp as api_v1_bp
 from .app_release import bp as app_release_bp
 from .auth import bp as auth_bp
 from .library import bp as library_bp
+from .location import bp as location_bp
 from .main import bp as main_bp
 from .notifications import bp as notifications_bp
 from .parent import bp as parent_bp
@@ -21,6 +22,7 @@ BLUEPRINTS = (
     app_release_bp,
     auth_bp,
     library_bp,
+    location_bp,
     ai_bp,
     api_v1_bp,
     play_bp,

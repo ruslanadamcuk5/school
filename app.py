@@ -387,7 +387,7 @@ def _register_security(app: Flask) -> None:
         resp.headers.setdefault("Referrer-Policy", "same-origin")
         resp.headers.setdefault(
             "Content-Security-Policy",
-            "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
+            "default-src 'self'; img-src 'self' data: https://tile.openstreetmap.org; style-src 'self' 'unsafe-inline'; "
             "script-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self'; "
             "base-uri 'self'; form-action 'self'; frame-ancestors 'self'",
         )

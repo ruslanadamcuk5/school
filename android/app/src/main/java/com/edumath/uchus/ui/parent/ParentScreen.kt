@@ -66,6 +66,7 @@ fun ParentScreen(
     onAssignments: () -> Unit,
     onLibrary: () -> Unit,
     onCreate: () -> Unit,
+    onMap: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     var tick by remember { mutableStateOf(0) }
@@ -104,6 +105,12 @@ fun ParentScreen(
                 item {
                     OutlinedButton(onClick = onCreate, modifier = Modifier.fillMaxWidth()) {
                         Text("Создать домашнее задание")
+                    }
+                }
+
+                item {
+                    OutlinedButton(onClick = onMap, modifier = Modifier.fillMaxWidth()) {
+                        Text("🗺 Карта детей")
                     }
                 }
 
@@ -207,6 +214,7 @@ fun ChildDetailScreen(
     container: AppContainer,
     learnerId: Int,
     onBack: () -> Unit,
+    onMap: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     var tick by remember { mutableStateOf(0) }
@@ -271,6 +279,12 @@ fun ChildDetailScreen(
                             KeyValue("Верных", "${data.stats?.totalCorrect ?: 0}")
                             if (playful) KeyValue("Звёзды", "${data.stats?.stars ?: 0}")
                         }
+                    }
+                }
+
+                item {
+                    OutlinedButton(onClick = onMap, modifier = Modifier.fillMaxWidth()) {
+                        Text("🗺 Показать на карте")
                     }
                 }
 
