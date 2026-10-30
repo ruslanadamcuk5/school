@@ -74,6 +74,25 @@ def shop_avatar():
         fail(exc.status, exc.code, exc.message)
 
 
+@bp.post("/shop/gifts/claim")
+@require_learner
+def shop_gift_claim():
+    profile = learner()
+    body = json_body()
+    gift_id = body.get("gift_id") or body.get("id")
+    try:
+        if gift_id:
+            result = shop_service.claim_gift(int(profile["id"]), int(gift_id))
+        else:
+            result = shop_service.claim_all_gifts(int(profile["id"]))
+        state = shop_service.shop_state(int(profile["id"]))
+        return jsonify({"ok": True, **result, "shop": shop_service.api_payload(state)})
+    except (TypeError, ValueError):
+        fail(400, "bad_request", "Неверный номер подарка")
+    except shop_service.ShopError as exc:
+        fail(exc.status, exc.code, exc.message)
+
+
 @bp.post("/shop/chest")
 @require_learner
 def shop_chest():

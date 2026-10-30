@@ -42,6 +42,8 @@ import androidx.compose.ui.unit.sp
 import com.edumath.uchus.core.AppContainer
 import com.edumath.uchus.data.api.ShopDto
 import com.edumath.uchus.data.api.ShopEquipRequest
+import com.edumath.uchus.data.api.ShopGiftClaimRequest
+import com.edumath.uchus.data.api.ShopGiftDto
 import com.edumath.uchus.data.api.ShopItemDto
 import com.edumath.uchus.data.api.ShopKeyRequest
 import com.edumath.uchus.data.api.ShopResponseDto
@@ -126,6 +128,37 @@ fun ShopScreen(
                     }
                     if (error != null) {
                         item { ErrorBox(error!!) { tick++ } }
+                    }
+
+                    data.announcement?.takeIf { it.isNotBlank() }?.let {
+                        item {
+                            Surface(
+                                color = MaterialTheme.colorScheme.tertiaryContainer,
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(
+                                    "📣 $it",
+                                    modifier = Modifier.padding(14.dp),
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
+                        }
+                    }
+
+                    data.event?.let { event ->
+                        item { EventCard(event.title, event.description, event.icon, event.effectText, event.daysLeft) }
+                    }
+
+                    if (data.gifts.isNotEmpty()) {
+                        item {
+                            SectionTitle("🎁 Тебе подарок!", "${data.gifts.size}")
+                        }
+                        items(data.gifts) { gift ->
+                            GiftCard(gift, busy) {
+                                perform { container.api.shopGiftClaim(ShopGiftClaimRequest(gift.id)) }
+                            }
+                        }
                     }
 
                     if (!data.effects.isNullOrEmpty()) {
@@ -326,6 +359,97 @@ private fun RowScope.BigPill(icon: String, value: String, label: String) {
 }
 
 @Composable
+private fun EventCard(
+    title: String?,
+    description: String?,
+    icon: String?,
+    effect: String?,
+    daysLeft: Int,
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.primaryContainer,
+        shape = RoundedCornerShape(18.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(icon ?: "🎉", fontSize = 32.sp)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(title ?: "Живое событие", fontWeight = FontWeight.Bold)
+                description?.takeIf { it.isNotBlank() }?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall)
+                }
+                if (daysLeft > 0) {
+                    Text(
+                        "Ещё $daysLeft дн.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            effect?.let {
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = RoundedCornerShape(999.dp),
+                ) {
+                    Text(
+                        it,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GiftCard(gift: ShopGiftDto, busy: Boolean, onOpen: () -> Unit) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(gift.icon ?: "🎁", fontSize = 40.sp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "🎁 ${gift.name ?: "Подарок"}",
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        gift.rarityName ?: "Особый подарок",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            gift.reason?.takeIf { it.isNotBlank() }?.let {
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text(
+                        "«$it»",
+                        modifier = Modifier.padding(10.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+            gift.message?.takeIf { it.isNotBlank() }?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (gift.coins > 0) PricePill("💰", gift.coins)
+                if (gift.xp > 0) PricePill("⭐", gift.xp)
+            }
+            Button(onClick = onOpen, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+                Text("Открыть подарок")
+            }
+        }
+    }
+}
+
+@Composable
 private fun ChestCard(
     available: Boolean,
     minCoins: Int,
@@ -399,6 +523,14 @@ private fun ShopItemCard(
                             it,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    item.rarityName?.let {
+                        Text(
+                            "${item.rarityIcon ?: ""} $it".trim(),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.tertiary,
                         )
                     }
                 }

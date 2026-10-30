@@ -25,6 +25,7 @@ def index():
         shop=state,
         chest_opened=request.args.get("chest") == "1",
         bought=request.args.get("bought", ""),
+        gift_opened=request.args.get("gift", ""),
     )
 
 
@@ -75,6 +76,20 @@ def avatar():
     except shop_service.ShopError as exc:
         flash(exc.message, "error")
     return redirect(url_for("shop.index"))
+
+
+@bp.post("/gift/<int:gift_id>/claim")
+def claim_gift(gift_id: int):
+    learner = _learner()
+    if learner is None:
+        return redirect(url_for("main.welcome"))
+    try:
+        result = shop_service.claim_gift(learner["id"], gift_id)
+        flash(result["message"], "success")
+        return redirect(url_for("shop.index", gift=gift_id) + "#gifts")
+    except shop_service.ShopError as exc:
+        flash(exc.message, "error")
+    return redirect(url_for("shop.index") + "#gifts")
 
 
 @bp.post("/chest")

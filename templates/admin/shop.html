@@ -1,0 +1,462 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_title %}Магазин и подарки{% endblock %}
+
+{% block admin_content %}
+<div class="page-head">
+  <div>
+    <h1>🛍 Магазин, подарки и события</h1>
+    <p>Управляй витриной, запускай живые события и награждай детей за старание.</p>
+  </div>
+  <div class="row">
+    <a class="btn btn--ghost" href="{{ url_for('shop.index') }}" target="_blank" rel="noopener">👁 Открыть витрину</a>
+  </div>
+</div>
+
+<div class="metric-row mb-3">
+  <div class="stat-box"><div class="stat-box__value">{{ summary.pending }}</div><div class="stat-box__label">ждут получения</div></div>
+  <div class="stat-box"><div class="stat-box__value">{{ summary.claimed }}</div><div class="stat-box__label">подарков открыто</div></div>
+  <div class="stat-box"><div class="stat-box__value">{{ summary.today }}</div><div class="stat-box__label">подарено сегодня</div></div>
+  <div class="stat-box"><div class="stat-box__value">{{ summary.purchases_today }}</div><div class="stat-box__label">покупок сегодня</div></div>
+  <div class="stat-box"><div class="stat-box__value">{{ summary.coins_spent }}</div><div class="stat-box__label">монет потрачено</div></div>
+</div>
+
+<nav class="shop-admin-tabs">
+  <a href="#heroes">🔥 Кто старается</a>
+  <a href="#gift">🎁 Подарить</a>
+  <a href="#catalog">🧱 Каталог</a>
+  <a href="#vitrine">🏷 Витрина</a>
+  <a href="#events">🎉 События</a>
+  <a href="#gifts">📜 История подарков</a>
+</nav>
+
+<section id="heroes" class="card mt-3">
+  <div class="shop-section-head">
+    <div>
+      <h2 style="margin:0;">🔥 Кто из детей больше старается</h2>
+      <p class="muted small" style="margin:2px 0 0;">
+        Рейтинг за 7 дней: дни занятий, количество ответов, точность и серия.
+        Подсказки обновляются автоматически.
+      </p>
+    </div>
+  </div>
+  <div class="data-table-wrap mt-2">
+    <table class="table shop-leaders">
+      <thead>
+        <tr>
+          <th>#</th><th>Ребёнок</th><th>Старание</th><th>7 дней</th>
+          <th>Точность</th><th>Серия</th><th>Подсказка</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in board %}
+          <tr class="{% if selected and selected.id == row.id %}is-selected{% endif %} {% if row.deserving %}is-deserving{% endif %}">
+            <td><b>{{ row.rank }}</b></td>
+            <td>
+              <div class="shop-leader-name">
+                <span class="shop-leader-avatar">{{ row.avatar }}</span>
+                <div>
+                  <b>{{ row.name }}</b>
+                  <div class="muted small">
+                    {{ row.grade }} класс · ур. {{ row.level }}
+                    {% if row.account_login %} · {{ row.account_login }}{% endif %}
+                  </div>
+                </div>
+              </div>
+              {% if row.deserving %}<span class="chip chip--green">✨ заслуживает подарок</span>{% endif %}
+            </td>
+            <td style="min-width:110px;">
+              <div class="shop-score"><span style="width: {{ row.score }}%"></span></div>
+              <span class="muted small">{{ row.score|round|int }} / 100</span>
+            </td>
+            <td>
+              <b>{{ row.days_active }}/7 дней</b>
+              <div class="muted small">{{ row.attempts }} заданий · рост {{ row.growth }}%</div>
+            </td>
+            <td><b>{{ row.accuracy }}%</b></td>
+            <td><b>🔥 {{ row.streak_days }}</b></td>
+            <td>
+              {% if row.reasons %}
+                {% for reason in row.reasons[:2] %}
+                  <div class="small">{{ reason.icon }} {{ reason.text }}</div>
+                {% endfor %}
+              {% else %}
+                <span class="muted small">Пока мало активности</span>
+              {% endif %}
+              {% if row.pending_gifts %}
+                <div class="small">🎁 уже ждёт: {{ row.pending_gifts }}</div>
+              {% endif %}
+            </td>
+            <td>
+              <a class="btn btn--small" href="{{ url_for('admin.shop_admin', learner=row.id) }}#gift">Подарить</a>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="8" class="muted">Пока нет профилей детей.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="gift" class="card mt-3 shop-gift-panel">
+  {% if selected %}
+    <div class="shop-gift-panel__head">
+      <span class="shop-leader-avatar shop-leader-avatar--xl">{{ selected.avatar }}</span>
+      <div>
+        <h2 style="margin:0;">🎁 Подарок для {{ selected.name }}</h2>
+        <p class="muted small" style="margin:2px 0 0;">
+          {{ selected.grade }} класс · {{ selected.level }} уровень ·
+          {{ selected.attempts }} заданий за неделю · точность {{ selected.accuracy }}%
+          {% if selected.days_since_gift is not none %} · последний подарок {{ selected.days_since_gift }} дн. назад{% else %} · подарков ещё не было{% endif %}
+        </p>
+      </div>
+    </div>
+
+    {% if selected.reasons %}
+      <div class="shop-reason-cloud mt-2">
+        {% for reason in selected.reasons %}
+          <button type="button" class="chip chip--purple shop-reason-chip"
+                  data-reason="{{ reason.text }}">{{ reason.icon }} {{ reason.text }}</button>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if selected.ideas %}
+      <div class="mt-2">
+        <div class="small muted" style="font-weight:800;">Идеи подарков — чего у ребёнка ещё нет:</div>
+        <div class="shop-idea-row">
+          {% for idea in selected.ideas %}
+            <button type="button" class="shop-idea" data-item="{{ idea.key }}">
+              <span>{{ idea.icon }}</span>
+              <b>{{ idea.name }}</b>
+              <small>{{ idea.rarity_name }} · ур. {{ idea.level }}</small>
+            </button>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    <form method="post" class="mt-3" id="gift-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="gift">
+      <input type="hidden" name="learner_id" value="{{ selected.id }}">
+
+      <div class="grid-2">
+        <div class="field">
+          <label for="gift-item">Что подарить</label>
+          <select id="gift-item" name="item_key">
+            <option value="">— только монеты/опыт —</option>
+            {% for category in categories %}
+              <optgroup label="{{ category.icon }} {{ category.name }}">
+                {% for item in catalog if item.category == category.key %}
+                  <option value="{{ item.key }}">{{ item.icon }} {{ item.name }} · ур. {{ item.level }}</option>
+                {% endfor %}
+              </optgroup>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="gift-coins">Бонус монет</label>
+            <input id="gift-coins" name="coins" type="number" min="0" max="10000" value="0">
+          </div>
+          <div class="field">
+            <label for="gift-xp">Бонус опыта</label>
+            <input id="gift-xp" name="xp" type="number" min="0" max="10000" value="0">
+          </div>
+        </div>
+      </div>
+
+      <div class="field mt-2">
+        <label for="gift-reason">За что подарок <span class="muted">(увидит ребёнок)</span></label>
+        <textarea id="gift-reason" name="reason" rows="2" maxlength="500"
+                  placeholder="Например: за 6 дней занятий подряд и серию 5 дней — так держать!">{{ selected.reason_text }}</textarea>
+        <div class="row mt-1" style="gap:6px; flex-wrap:wrap;">
+          {% for reason in reasons %}
+            <button type="button" class="chip shop-reason-chip" data-reason="{{ reason.text }}">
+              {{ reason.icon }} {{ reason.text }}
+            </button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="field mt-2">
+        <label for="gift-message">Личное сообщение <span class="muted">(необязательно)</span></label>
+        <input id="gift-message" name="message" maxlength="500"
+               placeholder="Ты настоящий герой недели!">
+      </div>
+
+      <button class="btn btn--warn mt-2" type="submit">🎁 Отправить подарок</button>
+      <span class="muted small">Ребёнок увидит подарок в магазине и получит уведомление.</span>
+    </form>
+  {% else %}
+    <p class="muted">Добавь профиль ребёнка, чтобы дарить подарки.</p>
+  {% endif %}
+</section>
+
+<section id="catalog" class="mt-3">
+  <div class="shop-section-head">
+    <div>
+      <h2 style="margin:0;">🧱 Каталог магазина</h2>
+      <p class="muted small" style="margin:2px 0 0;">
+        Меняй цены, скидки и доступность. Пустое поле — значение из каталога кода.
+      </p>
+    </div>
+  </div>
+
+  {% for category in categories %}
+    <h3 class="mt-3">{{ category.icon }} {{ category.name }}</h3>
+    <div class="shop-admin-grid">
+      {% for item in catalog if item.category == category.key %}
+        {% set ov = overrides.get(item.key, {}) %}
+        <details class="shop-admin-item {% if not item.is_active %}is-off{% endif %}">
+          <summary>
+            <span class="shop-admin-item__icon">{{ item.icon }}</span>
+            <span class="shop-admin-item__name">
+              <b>{{ item.name }}</b>
+              <small>{{ item.rarity_name }} · ур. {{ item.level }} · 💰 {{ item.coins }}{% if item.xp %} + ⭐ {{ item.xp }}{% endif %}</small>
+            </span>
+            <span class="shop-admin-item__state">
+              {% if not item.is_active %}🚫 выключен{% else %}✅ в продаже{% endif %}
+            </span>
+          </summary>
+          <form method="post" class="shop-admin-item__form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="save_item">
+            <input type="hidden" name="item_key" value="{{ item.key }}">
+
+            <div class="grid-2">
+              <div class="field">
+                <label>Название</label>
+                <input name="name" maxlength="80" value="{{ ov.get('name') or '' }}" placeholder="{{ item.name }}">
+              </div>
+              <div class="field">
+                <label>Иконка</label>
+                <input name="icon" maxlength="8" value="{{ ov.get('icon') or '' }}" placeholder="{{ item.icon }}">
+              </div>
+            </div>
+            <div class="field">
+              <label>Короткая подпись</label>
+              <input name="tagline" maxlength="120" value="{{ ov.get('tagline') or '' }}" placeholder="{{ item.tagline }}">
+            </div>
+            <div class="field">
+              <label>Описание</label>
+              <textarea name="description" rows="2" maxlength="500" placeholder="{{ item.description }}">{{ ov.get('description') or '' }}</textarea>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label>Цена в монетах</label>
+                <input name="price_coins" type="number" min="0" max="100000" value="{{ ov.get('price_coins') if ov.get('price_coins') is not none else '' }}" placeholder="{{ item.coins }}">
+              </div>
+              <div class="field">
+                <label>Цена в опыте</label>
+                <input name="price_xp" type="number" min="0" max="100000" value="{{ ov.get('price_xp') if ov.get('price_xp') is not none else '' }}" placeholder="{{ item.xp }}">
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label>Скидка, %</label>
+                <input name="discount_percent" type="number" min="0" max="90" value="{{ ov.get('discount_percent') if ov.get('discount_percent') is not none else '' }}" placeholder="0">
+              </div>
+              <div class="field">
+                <label>Открывается с уровня</label>
+                <input name="level" type="number" min="1" max="50" value="{{ ov.get('level') or item.level }}">
+              </div>
+            </div>
+            <label class="check-item mt-1">
+              <input type="checkbox" name="is_active" value="1" {% if item.is_active %}checked{% endif %}>
+              Показывать в магазине
+            </label>
+            <div class="row mt-2">
+              <button class="btn btn--small" type="submit">Сохранить</button>
+              <button class="btn btn--ghost btn--small" type="submit" name="reset_item" value="1"
+                      formnovalidate onclick="return confirm('Вернуть настройки товара к каталогу?')">Сбросить</button>
+            </div>
+          </form>
+        </details>
+      {% endfor %}
+    </div>
+  {% endfor %}
+</section>
+
+<div class="grid-2 mt-3">
+  <section id="vitrine" class="card">
+    <h2>🏷 Витрина</h2>
+    <form method="post" class="mt-2">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="featured">
+      <div class="field">
+        <label for="featured_key">Товар дня (скидка {{ 25 }}%)</label>
+        <select id="featured_key" name="featured_key">
+          <option value="">Автоматически</option>
+          {% for item in catalog %}
+            <option value="{{ item.key }}" {% if item.key == featured_key %}selected{% endif %}>
+              {{ item.icon }} {{ item.name }}
+            </option>
+          {% endfor %}
+        </select>
+        <div class="field__hint">Выбор действует сегодня; завтра витрина снова обновится.</div>
+      </div>
+      <button class="btn btn--small" type="submit">Сохранить товар дня</button>
+    </form>
+
+    <form method="post" class="mt-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="announcement">
+      <div class="field">
+        <label for="announcement">Объявление для детей</label>
+        <textarea id="announcement" name="announcement" rows="2" maxlength="300"
+                  placeholder="Например: на выходных двойные монеты!">{{ announcement }}</textarea>
+      </div>
+      <button class="btn btn--small" type="submit">Сохранить объявление</button>
+    </form>
+  </section>
+
+  <section id="events" class="card">
+    <h2>🎉 Живое событие</h2>
+    <p class="muted small">Двойные монеты, двойной опыт или скидка на весь магазин. Дети видят баннер и бонус.</p>
+    <form method="post" class="mt-2">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="event">
+      <div class="grid-2">
+        <div class="field">
+          <label for="event-title">Название</label>
+          <input id="event-title" name="title" maxlength="120" placeholder="Монетная лихорадка" required>
+        </div>
+        <div class="field">
+          <label for="event-icon">Иконка</label>
+          <input id="event-icon" name="icon" maxlength="8" value="🎉">
+        </div>
+      </div>
+      <div class="field">
+        <label for="event-description">Описание</label>
+        <input id="event-description" name="description" maxlength="500" placeholder="Все выходные монеты удваиваются!">
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label for="event-kind">Бонус</label>
+          <select id="event-kind" name="kind">
+            <option value="double_coins">🪙 Двойные монеты</option>
+            <option value="double_xp">⭐ Двойной опыт</option>
+            <option value="discount">🏷 Скидка на всё</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="event-value">Сила (× или %)</label>
+          <input id="event-value" name="value" type="number" step="0.1" min="1.1" max="70" value="2">
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label for="event-start">Начало</label>
+          <input id="event-start" name="starts_on" type="date" value="{{ today }}">
+        </div>
+        <div class="field">
+          <label for="event-end">Окончание</label>
+          <input id="event-end" name="ends_on" type="date" value="{{ default_end }}">
+        </div>
+      </div>
+      <button class="btn btn--warn btn--small" type="submit">🚀 Запустить событие</button>
+    </form>
+
+    <div class="mt-3">
+      {% for event in events %}
+        <div class="shop-event-row {% if not event.is_active %}is-off{% endif %}">
+          <span class="shop-event-row__icon">{{ event.icon }}</span>
+          <div style="flex:1;">
+            <b>{{ event.title }}</b>
+            <div class="muted small">
+              {{ event.starts_on }} — {{ event.ends_on }} ·
+              {% if event.kind == 'double_coins' %}🪙 ×{{ event.value }}
+              {% elif event.kind == 'double_xp' %}⭐ ×{{ event.value }}
+              {% else %}🏷 −{{ event.value|round|int }}%{% endif %}
+            </div>
+          </div>
+          {% if event.is_active %}
+            <form method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="action" value="event_stop">
+              <input type="hidden" name="event_id" value="{{ event.id }}">
+              <button class="btn btn--ghost btn--small" type="submit">Остановить</button>
+            </form>
+          {% else %}
+            <span class="muted small">завершено</span>
+          {% endif %}
+        </div>
+      {% else %}
+        <p class="muted small">Событий пока не было.</p>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+<section id="gifts" class="card mt-3">
+  <h2>📜 История подарков</h2>
+  <div class="data-table-wrap mt-2">
+    <table class="table">
+      <thead>
+        <tr><th>Когда</th><th>Ребёнок</th><th>Подарок</th><th>За что</th><th>Статус</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for gift in gifts %}
+          <tr>
+            <td class="muted small">{{ gift.created_at }}</td>
+            <td>{{ gift.learner_avatar }} <b>{{ gift.learner_name }}</b> <span class="muted small">{{ gift.learner_grade }} кл.</span></td>
+            <td>
+              {{ gift.icon }} {{ gift.name }}
+              {% if gift.coins %}<span class="chip chip--yellow">💰 {{ gift.coins }}</span>{% endif %}
+              {% if gift.xp %}<span class="chip chip--purple">⭐ {{ gift.xp }}</span>{% endif %}
+            </td>
+            <td class="small">{{ gift.reason }}{% if gift.message %}<div class="muted">{{ gift.message }}</div>{% endif %}</td>
+            <td>
+              {% if gift.status == 'pending' %}<span class="chip chip--yellow">ждёт</span>
+              {% elif gift.status == 'claimed' %}<span class="chip chip--green">открыт</span>
+              {% else %}<span class="chip">отменён</span>{% endif %}
+            </td>
+            <td>
+              {% if gift.status == 'pending' %}
+                <form method="post">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="gift_cancel">
+                  <input type="hidden" name="gift_id" value="{{ gift.id }}">
+                  <button class="btn btn--ghost btn--small" type="submit">Отменить</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6" class="muted">Подарков пока нет.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var reason = document.getElementById("gift-reason");
+    document.querySelectorAll(".shop-reason-chip").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        if (!reason) return;
+        var text = chip.getAttribute("data-reason") || chip.textContent.trim();
+        reason.value = text;
+        reason.focus();
+      });
+    });
+    var itemSelect = document.getElementById("gift-item");
+    document.querySelectorAll(".shop-idea").forEach(function (button) {
+      button.addEventListener("click", function () {
+        if (!itemSelect) return;
+        itemSelect.value = button.getAttribute("data-item") || "";
+        itemSelect.scrollIntoView({block: "center", behavior: "smooth"});
+      });
+    });
+    document.querySelectorAll(".shop-leaders tr[data-href]").forEach(function (row) {
+      row.addEventListener("click", function () { window.location = row.getAttribute("data-href"); });
+    });
+  })();
+</script>
+{% endblock %}

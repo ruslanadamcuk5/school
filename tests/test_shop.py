@@ -77,7 +77,8 @@ class TestShopService(ShopTestCase):
         self.assertEqual(len(keys), len(set(keys)))
         self.assertGreaterEqual(len(keys), 20)
         categories = {item["category"] for item in shop_service.CATALOG}
-        self.assertEqual(categories, {"perks", "style", "pets"})
+        self.assertEqual(categories, {"perks", "style", "pets", "minecraft"})
+        self.assertGreaterEqual(len(shop_service.catalog_items()), 28)
         for item in shop_service.CATALOG:
             self.assertTrue(item["name"] and item["icon"])
             self.assertGreaterEqual(item["coins"], 0)
@@ -238,6 +239,146 @@ class TestShopService(ShopTestCase):
         self.assertEqual(pet["progress"], 20)
         self.assertEqual(pet["stage_name"], "Друг")
 
+    def test_minecraft_items_have_rarity_and_permanent_boosts(self):
+        learner_id = make_learner(coins=5000, xp=700)
+        mc_items = [item for item in shop_service.catalog_items()
+                    if item["category"] == "minecraft"]
+        self.assertGreaterEqual(len(mc_items), 8)
+        self.assertTrue(all(item["rarity"] in shop_service.RARITY for item in mc_items))
+
+        shop_service.purchase(learner_id, "mc_pickaxe")
+        shop_service.purchase(learner_id, "mc_enchant")
+        _, coins = progress_service.reward_amounts(learner_id)
+        # 2 монеты × 1.15 и 10 опыта × 1.15 с округлением.
+        self.assertEqual(coins, 2)
+        xp, _ = progress_service.reward_amounts(learner_id)
+        self.assertEqual(xp, 12)
+
+    def test_tnt_lootbox_gives_random_reward(self):
+        learner_id = make_learner(coins=1000, xp=1000)
+        result = shop_service.purchase(learner_id, "mc_tnt")
+        self.assertEqual(result["item"]["kind"], "lootbox")
+        self.assertIsNotNone(result["loot"])
+        self.assertGreaterEqual(result["loot"]["coins"] + result["loot"]["xp"], 0)
+        self.assertTrue("взрыв" in result["message"].lower() or "джекпот" in result["message"].lower())
+        self.assertIsNone(shop_service.owned_map(learner_id).get("mc_tnt"))
+
+    def test_admin_overrides_change_price_disable_and_reset(self):
+        learner_id = make_learner(coins=100, xp=0)
+        shop_service.save_override(
+            "frame_gold",
+            {"price_coins": "0", "discount_percent": "10", "level": "1",
+             "is_active": "1", "name": "Особая рамка"},
+        )
+        state = shop_service.shop_state(learner_id)
+        frame = state["by_key"]["frame_gold"]
+        self.assertEqual(frame["name"], "Особая рамка")
+        self.assertEqual(frame["price_coins"], 0)
+        self.assertEqual(frame["discount"], 10)
+
+        shop_service.save_override("frame_gold", {"is_active": ""})
+        state = shop_service.shop_state(learner_id)
+        self.assertNotIn("frame_gold", state["by_key"])
+        with self.assertRaises(shop_service.ShopError) as ctx:
+            shop_service.purchase(learner_id, "frame_gold")
+        self.assertEqual(ctx.exception.code, "item_disabled")
+
+        shop_service.reset_override("frame_gold")
+        self.assertIn("frame_gold", shop_service.shop_state(learner_id)["by_key"])
+
+    def test_featured_choice_and_discount_event(self):
+        learner_id = make_learner(coins=5000, xp=0)
+        shop_service.set_setting("featured_key", "theme_ocean")
+        shop_service.set_setting("featured_day", shop_service.day_key())
+        featured = shop_service.shop_state(learner_id)["featured"]
+        self.assertEqual(featured["key"], "theme_ocean")
+        self.assertEqual(featured["discount"], shop_service.DISCOUNT_PERCENT)
+
+        execute(
+            """INSERT INTO shop_events
+                   (title, description, icon, kind, value, starts_on, ends_on, is_active)
+               VALUES ('Скидочная неделя', '', '🏷', 'discount', 15,
+                       date('now'), date('now', '+2 day'), 1)"""
+        )
+        state = shop_service.shop_state(learner_id)
+        self.assertIsNotNone(state["event"])
+        ocean = state["by_key"]["theme_ocean"]
+        self.assertEqual(ocean["discount"], shop_service.DISCOUNT_PERCENT + 15)
+
+    def test_event_double_coins_affects_rewards(self):
+        learner_id = make_learner(coins=1000, xp=1000)
+        execute(
+            """INSERT INTO shop_events
+                   (title, description, icon, kind, value, starts_on, ends_on, is_active)
+               VALUES ('Монетная лихорадка', '', '🪙', 'double_coins', 2,
+                       date('now'), date('now', '+1 day'), 1)"""
+        )
+        _, coins = progress_service.reward_amounts(learner_id)
+        self.assertEqual(coins, 4)
+
+    def test_gift_is_created_notified_and_claimed(self):
+        learner_id = make_learner(coins=0, xp=0)
+        gift_id = shop_service.create_gift(
+            learner_id, "frame_gold", "За серию 5 дней и точность 90%",
+            "Ты молодец!", coins=25, xp=10, gifted_by=1,
+        )
+        pending = shop_service.pending_gifts(learner_id)
+        self.assertEqual(len(pending), 1)
+        self.assertEqual(pending[0]["name"], "Золотая рамка")
+        self.assertEqual(pending[0]["reason"], "За серию 5 дней и точность 90%")
+        notice = query_one(
+            "SELECT * FROM app_notifications WHERE learner_id = ? AND kind = 'shop_gift'",
+            (learner_id,),
+        )
+        self.assertIsNotNone(notice)
+        self.assertIn("Золотая рамка", notice["body"])
+
+        result = shop_service.claim_gift(learner_id, gift_id)
+        self.assertIn("Подарок открыт", result["message"])
+        row = learner_row(learner_id)
+        self.assertEqual(row["coins"], 25)
+        self.assertEqual(row["xp"], 10)
+        self.assertIn("frame_gold", shop_service.owned_map(learner_id))
+        self.assertEqual(shop_service.pending_gifts(learner_id), [])
+        with self.assertRaises(shop_service.ShopError) as ctx:
+            shop_service.claim_gift(learner_id, gift_id)
+        self.assertEqual(ctx.exception.code, "gift_claimed")
+
+    def test_gift_of_lootbox_opens_with_reward(self):
+        learner_id = make_learner(coins=0, xp=0)
+        gift_id = shop_service.create_gift(
+            learner_id, "mc_tnt", "За смелость на контрольной", coins=5,
+        )
+        result = shop_service.claim_gift(learner_id, gift_id)
+        self.assertIsNotNone(result["loot"])
+        row = learner_row(learner_id)
+        self.assertGreaterEqual(row["coins"], 5)
+        self.assertGreaterEqual(row["coins"] + row["xp"], 5)
+        self.assertIn("ТНТ", result["message"])
+
+    def test_insights_rank_effort_and_suggest_gift(self):
+        from services import shop_insights
+
+        good = make_learner(coins=100, xp=100)
+        lazy = make_learner(coins=100, xp=100)
+        for index in range(30):
+            progress_service.record_attempt(
+                good, "addition", None, None, True, "1", "1", 900, 0
+            )
+        execute(
+            """INSERT INTO attempts (learner_id, topic_slug, correct, created_at)
+               VALUES (?, 'addition', 1, datetime('now', '-3 day'))""",
+            (good,),
+        )
+        execute("UPDATE learners SET streak_days = 5 WHERE id = ?", (good,))
+        progress_service.record_attempt(lazy, "addition", None, None, False, "2", "1", 3000, 0)
+        board = shop_insights.leaderboard()
+        self.assertEqual(board[0]["id"], good)
+        self.assertGreaterEqual(board[0]["accuracy"], 90)
+        self.assertTrue(board[0]["reasons"])
+        self.assertTrue(board[0]["ideas"])
+        self.assertTrue(board[0]["deserving"])
+
 
 class TestShopWeb(ShopTestCase):
     def setUp(self):
@@ -293,6 +434,73 @@ class TestShopWeb(ShopTestCase):
         response = self.client.get("/shop/", follow_redirects=False)
         self.assertIn(response.status_code, (302, 303))
 
+    def test_child_sees_and_opens_gift(self):
+        self._make_learner()
+        learner = query_one("SELECT * FROM learners ORDER BY id DESC LIMIT 1")
+        gift_id = shop_service.create_gift(
+            learner["id"], "pack_minecraft", "За старание на этой неделе",
+            "Ты собрал целый набор мобов!", coins=15,
+        )
+        page = self.client.get("/shop/")
+        html = page.get_data(as_text=True)
+        self.assertIn("Тебе подарок", html)
+        self.assertIn("За старание на этой неделе", html)
+
+        token = self._csrf("/shop/")
+        response = self.client.post(
+            f"/shop/gift/{gift_id}/claim",
+            data={"csrf_token": token},
+            follow_redirects=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Подарок открыт", response.get_data(as_text=True))
+        row = learner_row(learner["id"])
+        self.assertEqual(row["coins"], 15)
+        self.assertIn("pack_minecraft", shop_service.owned_map(learner["id"]))
+
+    def test_admin_shop_page_and_gift_form(self):
+        from services import auth as auth_service
+
+        auth_service.create_user("shop_admin", "math2025", auth_service.ROLE_ADMIN,
+                                 first_name="Админ")
+        self._make_learner()
+        learner = query_one("SELECT * FROM learners ORDER BY id DESC LIMIT 1")
+
+        token = self._csrf("/login")
+        self.client.post(
+            "/login",
+            data={"csrf_token": token, "login": "shop_admin", "password": "math2025"},
+            follow_redirects=True,
+        )
+        page = self.client.get("/admin/shop")
+        self.assertEqual(page.status_code, 200)
+        html = page.get_data(as_text=True)
+        self.assertIn("Магазин, подарки и события", html)
+        self.assertIn("Minecraft", html)
+        self.assertIn("Кто из детей больше старается", html)
+
+        token = self._csrf("/admin/shop")
+        response = self.client.post(
+            "/admin/shop",
+            data={
+                "csrf_token": token,
+                "action": "gift",
+                "learner_id": str(learner["id"]),
+                "item_key": "theme_minecraft",
+                "reason": "За пять дней занятий подряд",
+                "message": "Строй свой кубический мир!",
+                "coins": "20",
+                "xp": "5",
+            },
+            follow_redirects=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Подарок", response.get_data(as_text=True))
+        pending = shop_service.pending_gifts(learner["id"])
+        self.assertEqual(len(pending), 1)
+        self.assertEqual(pending[0]["item_key"], "theme_minecraft")
+        self.assertEqual(pending[0]["coins"], 20)
+
 
 class TestShopApi(ShopTestCase):
     def setUp(self):
@@ -318,7 +526,7 @@ class TestShopApi(ShopTestCase):
         return payload["token"], learner_id
 
     def test_shop_api_purchase_chest_and_equip(self):
-        token, learner_id = self._family()
+        token, _ = self._family()
         headers = {"Authorization": f"Bearer {token}"}
 
         response = self.client.get("/api/v1/shop", headers=headers)
@@ -368,10 +576,30 @@ class TestShopApi(ShopTestCase):
         self.assertEqual(response.status_code, 409)
         self.assertEqual(response.get_json()["error"], "not_enough_coins")
 
+    def test_shop_api_lists_and_claims_gift(self):
+        token, learner_id = self._family()
+        gift_id = shop_service.create_gift(
+            learner_id, "frame_diamond", "За точность 95%", coins=10,
+        )
+        headers = {"Authorization": f"Bearer {token}"}
+        body = self.client.get("/api/v1/shop", headers=headers).get_json()
+        self.assertEqual(body["gift_count"], 1)
+        self.assertEqual(body["gifts"][0]["name"], "Алмазная рамка")
+
+        response = self.client.post(
+            "/api/v1/shop/gifts/claim",
+            headers=headers,
+            json={"gift_id": gift_id},
+        )
+        self.assertEqual(response.status_code, 200, response.get_data(as_text=True))
+        payload = response.get_json()
+        self.assertTrue(payload["ok"])
+        self.assertIn("Подарок открыт", payload["message"])
+        self.assertEqual(payload["shop"]["gift_count"], 0)
+
     def test_system_end_to_end_round_uses_boost_but_keeps_xp_spent(self):
         """Верный ответ в игре начисляет опыт с усилителем и не трогает xp_spent."""
-        token, learner_id = self._family()
-        headers = {"Authorization": f"Bearer {token}"}
+        _, learner_id = self._family()
         shop_service.purchase(learner_id, "boost_xp")
         before = learner_row(learner_id)
         xp, _ = progress_service.reward_amounts(learner_id)

@@ -41,6 +41,84 @@
   </div>
 </section>
 
+{% if shop.announcement %}
+<section class="shop-announcement">
+  <span>📣</span><b>{{ shop.announcement }}</b>
+</section>
+{% endif %}
+
+{% if shop.event %}
+<section class="shop-event-banner shop-event-banner--{{ shop.event.kind }}">
+  <span class="shop-event-banner__icon">{{ shop.event.icon }}</span>
+  <div style="flex:1;">
+    <b>{{ shop.event.title }}</b>
+    <div class="small">{{ shop.event.description or "Бонус действует прямо сейчас — успей!" }}</div>
+  </div>
+  <span class="shop-event-banner__boost">
+    {{ shop.event.effect_text }}
+    <small>ещё {{ shop.event.days_left }} дн.</small>
+  </span>
+</section>
+{% endif %}
+
+{% if shop.gifts %}
+<section class="shop-gifts" id="gifts">
+  <div class="shop-gifts__head">
+    <span class="shop-gifts__spark">✨</span>
+    <div>
+      <h2>🎁 Тебе подарок!</h2>
+      <p class="muted small" style="margin:2px 0 0;">Администратор заметил твои успехи. Открой подарок и узнай, за что!</p>
+    </div>
+  </div>
+  <div class="shop-gifts__grid">
+    {% for gift in shop.gifts %}
+      <article class="shop-gift-card shop-gift-card--{{ gift.rarity }}">
+        <div class="shop-gift-card__ribbon">ПОДАРОК</div>
+        <div class="shop-gift-card__icon">{{ gift.icon }}</div>
+        <div class="shop-gift-card__body">
+          <div class="shop-gift-card__rarity">{{ gift.rarity_name }}</div>
+          <h3>{{ gift.name }}</h3>
+          <p class="shop-gift-card__reason">«{{ gift.reason }}»</p>
+          {% if gift.message %}<p class="shop-gift-card__message">{{ gift.message }}</p>{% endif %}
+          {% if gift.coins or gift.xp %}
+            <div class="row" style="gap:6px;">
+              {% if gift.coins %}<span class="chip chip--yellow">💰 {{ gift.coins }}</span>{% endif %}
+              {% if gift.xp %}<span class="chip chip--purple">⭐ {{ gift.xp }}</span>{% endif %}
+            </div>
+          {% endif %}
+        </div>
+        <form method="post" action="{{ url_for('shop.claim_gift', gift_id=gift.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn--warn shop-gift-card__open" type="submit">
+            Открыть подарок
+          </button>
+        </form>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if gift_opened %}
+  {% for gift in shop.gift_history %}
+    {% if gift.id|string == gift_opened %}
+      <section class="shop-gift-opened shop-gift-opened--{{ gift.rarity }}" id="gift-opened">
+        <div class="shop-gift-opened__icon">{{ gift.icon }}</div>
+        <div style="flex:1;">
+          <div class="shop-gift-opened__label">Подарок открыт!</div>
+          <h2>{{ gift.name }}</h2>
+          <p class="muted small" style="margin:2px 0 0;">«{{ gift.reason }}»</p>
+          {% if gift.message %}<p class="small" style="margin:4px 0 0;">{{ gift.message }}</p>{% endif %}
+          <div class="row mt-1" style="gap:6px;">
+            {% if gift.coins %}<span class="chip chip--yellow">💰 +{{ gift.coins }}</span>{% endif %}
+            {% if gift.xp %}<span class="chip chip--purple">⭐ +{{ gift.xp }}</span>{% endif %}
+          </div>
+        </div>
+      </section>
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
 {% if shop.effects %}
 <section class="shop-effects">
   {% for effect in shop.effects %}
@@ -124,7 +202,7 @@
 
   <div class="shop-grid">
     {% for item in category["items"] %}
-      <article class="shop-item
+      <article class="shop-item shop-item--rarity-{{ item.rarity }}
         {% if item.discount %}shop-item--deal{% endif %}
         {% if item.equipped %}shop-item--equipped{% endif %}
         {% if item.locked %}shop-item--locked{% endif %}
@@ -133,7 +211,10 @@
         <div class="shop-item__top">
           <span class="shop-item__icon">{{ item.icon }}</span>
           <div class="shop-item__head">
-            <div class="shop-item__name">{{ item.name }}</div>
+            <div class="shop-item__name">
+              {{ item.name }}
+              <span class="shop-rarity shop-rarity--{{ item.rarity }}">{{ item.rarity_icon }} {{ item.rarity_name }}</span>
+            </div>
             <div class="shop-item__tagline">{{ item.tagline }}</div>
           </div>
           {% if item.discount %}<span class="shop-item__deal">−{{ item.discount }}%</span>{% endif %}
@@ -274,9 +355,15 @@
     if (window.App && App.confetti) {
       {% if bought %}App.confetti(90);{% endif %}
       {% if chest_opened %}App.confetti(70);{% endif %}
+      {% if gift_opened %}App.confetti(160);{% endif %}
     }
+    {% if gift_opened %}
+    var opened = document.querySelector(".shop-gift-opened");
+    if (opened) { opened.scrollIntoView({block: "center", behavior: "smooth"}); }
+    {% else %}
     var target = document.querySelector(".shop-item--bought");
     if (target) { target.scrollIntoView({block: "center", behavior: "smooth"}); }
+    {% endif %}
   })();
 </script>
 {% endblock %}

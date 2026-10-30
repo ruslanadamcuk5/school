@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from datetime import date, timedelta
 
 from flask import (
     Blueprint,
@@ -18,6 +19,8 @@ from database import execute, query_all, query_one
 from services import ai as ai_service
 from services import assignments as assignments_service
 from services import auth, learners as learners_service, orgs, padruchnik, pdf_topics, textbooks
+from services import shop as shop_service
+from services import shop_insights
 from services import topics as topics_service
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -487,6 +490,152 @@ def user_detail(user_id: int):
               ORDER BY a.id DESC LIMIT 30""",
             (user_id,),
         ),
+    )
+
+
+# ------------------------------------------------------------------ магазин
+@bp.route("/shop", methods=["GET", "POST"])
+@auth.admin_required
+def shop_admin():
+    """Управление магазином, подарками и живыми событиями."""
+    if request.method == "POST":
+        action = (request.form.get("action") or "").strip()
+        if action == "save_item":
+            key = (request.form.get("item_key") or "").strip()
+            if request.form.get("reset_item"):
+                shop_service.reset_override(key)
+                _log("reset", "shop_item", key)
+                flash("Настройки товара сброшены к каталогу", "info")
+                return redirect(url_for("admin.shop_admin", _anchor="catalog"))
+            try:
+                shop_service.save_override(key, request.form)
+                _log("update", "shop_item", key, request.form.get("name", ""))
+                flash("Товар обновлён", "success")
+            except shop_service.ShopError as exc:
+                flash(exc.message, "error")
+            return redirect(url_for("admin.shop_admin", _anchor="catalog"))
+        if action == "reset_item":
+            key = (request.form.get("item_key") or "").strip()
+            shop_service.reset_override(key)
+            _log("reset", "shop_item", key)
+            flash("Настройки товара сброшены к каталогу", "info")
+            return redirect(url_for("admin.shop_admin", _anchor="catalog"))
+        if action == "featured":
+            key = (request.form.get("featured_key") or "").strip()
+            if key and shop_service.get_item(key) is None:
+                flash("Такого товара нет", "error")
+            else:
+                shop_service.set_setting("featured_key", key)
+                shop_service.set_setting("featured_day", date.today().isoformat() if key else "")
+                _log("update", "shop_featured", key)
+                flash("Товар дня обновлён", "success")
+            return redirect(url_for("admin.shop_admin", _anchor="vitrine"))
+        if action == "announcement":
+            shop_service.set_setting(
+                "announcement", (request.form.get("announcement") or "").strip()[:300]
+            )
+            _log("update", "shop_settings", "announcement")
+            flash("Объявление для детей сохранено", "success")
+            return redirect(url_for("admin.shop_admin", _anchor="vitrine"))
+        if action == "event":
+            title = (request.form.get("title") or "").strip()
+            kind = (request.form.get("kind") or "double_coins").strip()
+            if kind not in {"double_coins", "double_xp", "discount"}:
+                kind = "double_coins"
+            starts_on = (request.form.get("starts_on") or date.today().isoformat())[:10]
+            ends_on = (request.form.get("ends_on") or starts_on)[:10]
+            if not title:
+                flash("Придумай название события", "error")
+            elif ends_on < starts_on:
+                flash("Дата окончания раньше начала", "error")
+            else:
+                try:
+                    value = float(str(request.form.get("value") or "2").replace(",", "."))
+                except ValueError:
+                    value = 2.0
+                if kind == "discount":
+                    value = max(5.0, min(70.0, value))
+                else:
+                    value = max(1.1, min(5.0, value))
+                event_id = execute(
+                    """INSERT INTO shop_events
+                           (title, description, icon, kind, value, starts_on, ends_on,
+                            is_active, created_by)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)""",
+                    (
+                        title[:120],
+                        (request.form.get("description") or "").strip()[:500],
+                        (request.form.get("icon") or "🎉").strip()[:8],
+                        kind, value, starts_on, ends_on,
+                        auth.current_user()["id"] if auth.current_user() else None,
+                    ),
+                )
+                _log("create", "shop_event", event_id, title)
+                flash("Живое событие запущено", "success")
+            return redirect(url_for("admin.shop_admin", _anchor="events"))
+        if action == "event_stop":
+            event_id = request.form.get("event_id", type=int)
+            execute("UPDATE shop_events SET is_active = 0 WHERE id = ?", (event_id,))
+            _log("update", "shop_event", event_id, "stopped")
+            flash("Событие остановлено", "info")
+            return redirect(url_for("admin.shop_admin", _anchor="events"))
+        if action == "gift":
+            learner_id = request.form.get("learner_id", type=int)
+            key = (request.form.get("item_key") or "").strip()
+            reason = (request.form.get("reason") or "").strip()
+            message = (request.form.get("message") or "").strip()
+            coins = request.form.get("coins", type=int) or 0
+            xp = request.form.get("xp", type=int) or 0
+            try:
+                gift_id = shop_service.create_gift(
+                    learner_id or 0, key, reason, message, coins, xp,
+                    gifted_by=auth.current_user()["id"] if auth.current_user() else 0,
+                )
+                _log("gift", "learner", learner_id, f"{key}:{reason[:80]}")
+                flash(f"Подарок #{gift_id} отправлен — ребёнок увидит его в магазине", "success")
+            except shop_service.ShopError as exc:
+                flash(exc.message, "error")
+            return redirect(url_for("admin.shop_admin", learner=learner_id, _anchor="gifts"))
+        if action == "gift_cancel":
+            gift_id = request.form.get("gift_id", type=int)
+            shop_service.cancel_gift(gift_id or 0)
+            _log("update", "shop_gift", gift_id, "cancelled")
+            flash("Подарок отменён", "info")
+            return redirect(url_for("admin.shop_admin", _anchor="gifts"))
+        flash("Неизвестное действие", "error")
+        return redirect(url_for("admin.shop_admin"))
+
+    board = shop_insights.leaderboard()
+    selected_id = request.args.get("learner", type=int)
+    selected = next((row for row in board if row["id"] == selected_id), None)
+    if selected is None and board:
+        selected = board[0]
+    catalog = shop_service.catalog_items(active_only=False)
+    events = query_all(
+        "SELECT * FROM shop_events ORDER BY is_active DESC, id DESC LIMIT 20"
+    )
+    return render_template(
+        "admin/shop.html",
+        board=board,
+        selected=selected,
+        summary=shop_insights.summary(),
+        catalog=catalog,
+        overrides=shop_service.overrides_map(),
+        categories=shop_service.CATEGORIES,
+        featured_key=shop_service.featured_key(),
+        events=[dict(row) for row in events],
+        gifts=shop_service.recent_gifts(40),
+        announcement=shop_service.get_setting("announcement", ""),
+        today=date.today().isoformat(),
+        default_end=(date.today() + timedelta(days=2)).isoformat(),
+        reasons=[
+            {"icon": "🔥", "text": "Занимался каждый день недели"},
+            {"icon": "⚡", "text": "Держит серию дней"},
+            {"icon": "🎯", "text": "Высокая точность ответов"},
+            {"icon": "📈", "text": "Активность выросла"},
+            {"icon": "🌱", "text": "Вернулся после паузы"},
+            {"icon": "💪", "text": "Много заданий за неделю"},
+        ],
     )
 
 

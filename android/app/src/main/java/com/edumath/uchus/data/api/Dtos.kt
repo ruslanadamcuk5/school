@@ -1404,6 +1404,10 @@ data class ShopItemDto(
     @SerializedName("repeatable") val repeatable: Boolean = false,
     @SerializedName("avatars") val avatars: List<String> = emptyList(),
     @SerializedName("stage") val stage: ShopStageDto? = null,
+    @SerializedName("rarity") val rarity: String? = null,
+    @SerializedName("rarity_name") val rarityName: String? = null,
+    @SerializedName("rarity_icon") val rarityIcon: String? = null,
+    @SerializedName("base_coins") val baseCoins: Int = 0,
 )
 
 data class ShopCategoryDto(
@@ -1444,6 +1448,36 @@ data class ShopCollectionDto(
     @SerializedName("percent") val percent: Int = 0,
 )
 
+data class ShopEventDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("description") val description: String? = null,
+    @SerializedName("icon") val icon: String? = null,
+    @SerializedName("kind") val kind: String? = null,
+    @SerializedName("value") val value: Double = 0.0,
+    @SerializedName("effect_text") val effectText: String? = null,
+    @SerializedName("emoji") val emoji: String? = null,
+    @SerializedName("starts_on") val startsOn: String? = null,
+    @SerializedName("ends_on") val endsOn: String? = null,
+    @SerializedName("days_left") val daysLeft: Int = 0,
+)
+
+data class ShopGiftDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("icon") val icon: String? = null,
+    @SerializedName("tagline") val tagline: String? = null,
+    @SerializedName("rarity") val rarity: String? = null,
+    @SerializedName("rarity_name") val rarityName: String? = null,
+    @SerializedName("reason") val reason: String? = null,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("coins") val coins: Int = 0,
+    @SerializedName("xp") val xp: Int = 0,
+    @SerializedName("status") val status: String? = null,
+    @SerializedName("created_at") val createdAt: String? = null,
+    @SerializedName("claimed_at") val claimedAt: String? = null,
+)
+
 data class ShopDto(
     @SerializedName("ok") val ok: Boolean = false,
     @SerializedName("balance") val balance: ShopBalanceDto? = null,
@@ -1459,6 +1493,11 @@ data class ShopDto(
     @SerializedName("chest") val chest: ShopChestDto? = null,
     @SerializedName("collection") val collection: ShopCollectionDto? = null,
     @SerializedName("pet") val pet: ShopPetDto? = null,
+    @SerializedName("event") val event: ShopEventDto? = null,
+    @SerializedName("announcement") val announcement: String? = null,
+    @SerializedName("gifts") val gifts: List<ShopGiftDto> = emptyList(),
+    @SerializedName("gift_count") val giftCount: Int = 0,
+    @SerializedName("gift_history") val giftHistory: List<ShopGiftDto> = emptyList(),
 )
 
 data class ShopResponseDto(
@@ -1481,4 +1520,8 @@ data class ShopEquipRequest(
 
 data class ShopAvatarRequest(
     @SerializedName("avatar") val avatar: String,
+)
+
+data class ShopGiftClaimRequest(
+    @SerializedName("gift_id") val giftId: Int? = null,
 )

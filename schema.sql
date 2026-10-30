@@ -694,3 +694,64 @@ CREATE TABLE IF NOT EXISTS daily_chests (
     updated_at TEXT    NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
 );
+
+-- Настройки витрины: товар дня, объявление для детей.
+CREATE TABLE IF NOT EXISTS shop_settings (
+    key        TEXT PRIMARY KEY,
+    value      TEXT NOT NULL DEFAULT '',
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Админские правки каталога. NULL в поле — «как в коде», поэтому каталог
+-- остаётся версионируемым, а админ может менять цены и доступность.
+CREATE TABLE IF NOT EXISTS shop_item_overrides (
+    item_key         TEXT PRIMARY KEY,
+    price_coins      INTEGER,
+    price_xp         INTEGER,
+    discount_percent INTEGER,
+    level            INTEGER,
+    name             TEXT,
+    icon             TEXT,
+    tagline          TEXT,
+    description      TEXT,
+    is_active        INTEGER NOT NULL DEFAULT 1,
+    updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Живые события магазина: двойные монеты/опыт или скидка на всё.
+CREATE TABLE IF NOT EXISTS shop_events (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    title       TEXT    NOT NULL,
+    description TEXT    NOT NULL DEFAULT '',
+    icon        TEXT    NOT NULL DEFAULT '🎉',
+    kind        TEXT    NOT NULL DEFAULT 'double_coins',
+    value       REAL    NOT NULL DEFAULT 2,
+    starts_on   TEXT    NOT NULL,
+    ends_on     TEXT    NOT NULL,
+    is_active   INTEGER NOT NULL DEFAULT 1,
+    created_by  INTEGER,
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_shop_events_window
+    ON shop_events(is_active, starts_on, ends_on);
+
+-- Подарки от администратора конкретному ребёнку. Ребёнок забирает подарок
+-- сам: так он видит причину («за что») и получает эффект в момент открытия.
+CREATE TABLE IF NOT EXISTS shop_gifts (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    learner_id INTEGER NOT NULL,
+    item_key   TEXT    NOT NULL DEFAULT '',
+    coins      INTEGER NOT NULL DEFAULT 0,
+    xp         INTEGER NOT NULL DEFAULT 0,
+    reason     TEXT    NOT NULL DEFAULT '',
+    message    TEXT    NOT NULL DEFAULT '',
+    status     TEXT    NOT NULL DEFAULT 'pending',
+    gifted_by  INTEGER,
+    created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+    claimed_at TEXT,
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_shop_gifts_learner
+    ON shop_gifts(learner_id, status, created_at);

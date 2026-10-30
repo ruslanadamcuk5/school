@@ -13,6 +13,7 @@
     </div>
     <a href="{{ url_for('admin.dashboard') }}" class="{% if request.endpoint == 'admin.dashboard' %}is-active{% endif %}">📊 Сводка</a>
     <a href="{{ url_for('admin.users') }}" class="{% if request.endpoint in ('admin.users', 'admin.user_detail') %}is-active{% endif %}">👥 Пользователи</a>
+    <a href="{{ url_for('admin.shop_admin') }}" class="{% if request.endpoint == 'admin.shop_admin' %}is-active{% endif %}">🛍 Магазин и подарки</a>
     <a href="{{ url_for('admin.cities') }}" class="{% if request.endpoint == 'admin.cities' %}is-active{% endif %}">🏙 Города</a>
     <a href="{{ url_for('admin.schools') }}" class="{% if request.endpoint == 'admin.schools' %}is-active{% endif %}">🏫 Школы</a>
     <a href="{{ url_for('admin.classes') }}" class="{% if request.endpoint == 'admin.classes' %}is-active{% endif %}">🎓 Классы</a>

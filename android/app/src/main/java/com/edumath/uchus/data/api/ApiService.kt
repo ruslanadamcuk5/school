@@ -134,6 +134,9 @@ interface ApiService {
     @POST("shop/avatar")
     suspend fun shopAvatar(@Body body: ShopAvatarRequest): ShopResponseDto
 
+    @POST("shop/gifts/claim")
+    suspend fun shopGiftClaim(@Body body: ShopGiftClaimRequest): ShopResponseDto
+
     @POST("shop/chest")
     suspend fun shopChest(): ShopResponseDto
 
