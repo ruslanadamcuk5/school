@@ -147,12 +147,24 @@ GOOGLE_REDIRECT_URI=https://virusadk.alwaysdata.net/auth/google/callback
 **«Войти через Google в браузере»**: открывается страница сайта, после входа
 браузер возвращается в приложение по ссылке `uchus://auth` (одноразовый код
 меняется на токен через `POST /api/v1/auth/google/exchange`). Новый
-пользователь в этом случае выбирает роль на странице сайта. Отдельный Android-клиент OAuth для
-Credential Manager создавать не требуется; если Google вернёт `DEVELOPER_ERROR`,
-создайте в консоли **Credentials → Create credentials → OAuth client ID →
-Android** с package `com.edumath.uchus` и SHA-1 debug-ключа из
-`android/keystore/uchus-debug.keystore`
-(`F5:06:F6:8C:08:C4:31:DC:3F:70:49:CF:5C:88:8A:26:78:FA:70:96`).
+пользователь в этом случае выбирает роль на странице сайта.
+
+Для нативного входа в том же проекте Google Cloud нужен **Android OAuth-клиент**
+(`Credentials → Create credentials → OAuth client ID → Android`):
+
+* package name: `com.edumath.uchus`;
+* SHA-1 debug-ключа из `android/keystore/uchus-debug.keystore`:
+  `F5:06:F6:8C:08:C4:31:DC:3F:70:49:CF:5C:88:8A:26:78:FA:70:96`.
+
+Без него Credential Manager не может подтвердить, что запрос делает именно
+это приложение, и Google отвечает `DEVELOPER_ERROR` или
+`[16] Account reauth failed` (в приложении это выглядит как «вход отменён»).
+Если APK будет подписан release-ключом или ключом Google Play, добавьте и его
+SHA-1 отдельным Android-клиентом. Web Client ID при этом не меняется: он
+по-прежнему передаётся в `serverClientId`.
+
+Также проверьте, что OAuth consent screen имеет тип **External** (для обычных
+Gmail), а в статусе Testing почта пользователя добавлена в **Test users**.
 
 Web Client ID зашит в сборку по умолчанию. Другой проект Google можно указать
 при сборке APK:
