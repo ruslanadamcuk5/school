@@ -182,6 +182,23 @@ def learner_payload(learner) -> dict[str, Any] | None:
     data = row_dict(learner)
     if data is not None and "pin_hash" in learner.keys():
         data["has_pin"] = bool(learner["pin_hash"])
+    if data is not None:
+        # В магазине уровень считается по всему заработанному опыту,
+        # а тратится только свободный остаток (xp).
+        try:
+            from services import shop as shop_service
+
+            data["xp_total"] = shop_service.total_xp(learner)
+            data["xp_balance"] = int(learner["xp"] or 0)
+            decor = shop_service.decorations(int(learner["id"]))
+            data["frame"] = decor.get("frame") or ""
+            data["frame_css"] = decor.get("frame_css") or ""
+            data["title"] = decor.get("title") or ""
+            data["shop_theme"] = decor.get("theme") or ""
+            data["pet"] = decor.get("pet")
+        except Exception:  # pragma: no cover - профиль не должен падать из-за магазина
+            data.setdefault("xp_total", int(data.get("xp") or 0))
+            data.setdefault("xp_balance", int(data.get("xp") or 0))
     return data
 
 

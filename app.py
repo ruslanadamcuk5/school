@@ -292,9 +292,19 @@ def _register_context(app: Flask) -> None:
             ai_available = ai_enabled and bool(user or learner)
         except Exception:  # pragma: no cover - ИИ не должен ломать страницы
             ai_enabled, ai_available, ai_status = False, False, None
+        decor = {"frame": "", "title": "", "theme": "", "pet": None}
+        if learner is not None:
+            try:
+                from services import shop as shop_service
+
+                decor = shop_service.decorations(int(learner["id"]))
+            except Exception:  # pragma: no cover - магазин не должен ломать страницы
+                decor = {"frame": "", "title": "", "theme": "", "pet": None}
         return {
             "current_learner": learner,
             "learner_stats": stats,
+            "learner_decor": decor,
+            "shop_theme": decor.get("theme") or "",
             "current_user": user,
             "user_role": user["role"] if user else None,
             "theme_mode": theme,

@@ -77,7 +77,7 @@ fun HomeScreen(
     val isFamily = session?.user == null
     val isStrict = theme != "playful"
     val isStudent = role == "student" && !isFamily
-    val items = homeItems(role, aiEnabled, isFamily).filter { it.route in availableRoutes }
+    val items = homeItems(role, aiEnabled, isFamily, isStrict).filter { it.route in availableRoutes }
 
     var assignments by remember(session) { mutableStateOf<List<AssignmentDto>>(emptyList()) }
     var unread by remember(session) { mutableIntStateOf(0) }
@@ -275,6 +275,23 @@ private fun Greeting(session: SessionDto?, isStrict: Boolean) {
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (!isStrict) {
+                learner?.title?.takeIf { it.isNotBlank() }?.let {
+                    Text(
+                        "🏅 $it",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                learner?.pet?.let { pet ->
+                    Text(
+                        "${pet.icon ?: "🐾"} ${pet.name ?: "Питомец"} · ${pet.stageName ?: "Малыш"}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
         }
     }
 }
@@ -309,6 +326,7 @@ private fun homeItems(
     role: String,
     aiEnabled: Boolean,
     isFamily: Boolean,
+    isStrict: Boolean = false,
 ): List<HomeItem> = when (role) {
     "admin" -> listOf(
         HomeItem("admin/0", "📊", "Сводка", "Пользователи, классы, книги"),
@@ -342,6 +360,9 @@ private fun homeItems(
     }
     else -> buildList {
         add(HomeItem("map", "🗺", "Карта тем", "Темы, тренировки и тесты"))
+        if (!isStrict) {
+            add(HomeItem("shop", "🛍", "Магазин", "Опыт и монеты → усилители и питомцы"))
+        }
         if (!isFamily) {
             add(HomeItem("assignments", "📝", "Работы", "Задания учителя и родителя"))
             add(HomeItem("schedule", "🗓", "Расписание", "Уроки на неделю"))

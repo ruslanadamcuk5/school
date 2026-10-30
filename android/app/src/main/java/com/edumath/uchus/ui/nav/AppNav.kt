@@ -54,6 +54,7 @@ import com.edumath.uchus.ui.student.QuizScreen
 import com.edumath.uchus.ui.student.ReadScreen
 import com.edumath.uchus.ui.student.ReaderScreen
 import com.edumath.uchus.ui.student.ScheduleScreen
+import com.edumath.uchus.ui.student.ShopScreen
 import com.edumath.uchus.ui.student.TopicScreen
 import com.edumath.uchus.ui.teacher.CreateAssignmentScreen
 import com.edumath.uchus.ui.teacher.TeacherClassScreen
@@ -93,6 +94,7 @@ fun AppNav(container: AppContainer) {
 
 private val homeRoutes = setOf(
     "map",
+    "shop",
     "assignments",
     "library",
     "profile",
@@ -184,6 +186,18 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
                 serverUrl = stored.baseUrl,
                 api = container.api,
                 onBack = back,
+            )
+        }
+
+        composable("shop") {
+            ShopScreen(
+                container = container,
+                onBack = back,
+                onRefreshSession = {
+                    runCatching { apiCall { container.api.me() } }.onSuccess { fresh ->
+                        container.session.updateSnapshot(ApiJson.gson.toJson(fresh))
+                    }
+                },
             )
         }
 
@@ -350,6 +364,7 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
                 onLogout = logout,
                 onAbout = { nav.navigate("about") },
                 onSchedule = { nav.navigate("schedule") },
+                onShop = { nav.navigate("shop") },
             )
         }
 

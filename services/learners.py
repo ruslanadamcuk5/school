@@ -9,9 +9,11 @@ from typing import Any
 
 from database import execute, query_all, query_one
 
+# Базовые аватары бесплатны. Экзотические (🦄, 🦖, 🐙, 🐳, 🐢…) открываются
+# наборами в магазине, поэтому здесь их нет.
 AVATARS = [
     "🦊", "🐻", "🐼", "🐨", "🦁", "🐯", "🐸", "🐧",
-    "🦄", "🐙", "🦖", "🐳", "🦉", "🐝", "🦋", "🐢",
+    "🦉", "🐝", "🦋",
 ]
 
 
@@ -167,8 +169,16 @@ def reset_progress(learner_id: int) -> None:
     for table in ("attempts", "topic_progress", "method_progress", "daily_answers", "play_sessions"):
         execute(f"DELETE FROM {table} WHERE learner_id = ?", (learner_id,))
     execute("DELETE FROM badges WHERE learner_id = ?", (learner_id,))
-    execute("UPDATE learners SET coins = 0, xp = 0, streak_days = 0, last_day = NULL WHERE id = ?",
-            (learner_id,))
+    # Магазин — часть прогресса: покупки, усилители и питомцы тоже сбрасываются,
+    # иначе потраченный опыт (xp_spent) держал бы старый уровень.
+    from services import shop as shop_service
+
+    shop_service.reset_learner(learner_id)
+    execute(
+        "UPDATE learners SET coins = 0, xp = 0, xp_spent = 0, streak_days = 0, "
+        "last_day = NULL WHERE id = ?",
+        (learner_id,),
+    )
 
 
 # ------------------------------------------------------------ сессия входа

@@ -5,12 +5,19 @@
 <section class="hero">
   <div>
     <div class="row" style="align-items:center; gap:16px;">
-      <span class="avatar avatar--lg">{{ learner.avatar }}</span>
+      <span class="avatar avatar--lg {% if learner_decor.frame_css %}avatar--frame-{{ learner_decor.frame_css }}{% endif %}">{{ learner.avatar }}</span>
       <div>
         <h1 style="margin:0;">Привет, {{ learner.name }}!</h1>
         <p class="muted" style="margin:0;">
           {{ learner.grade }} класс · уровень {{ stats.level }} ({{ stats.level_info.title }})
+          {% if learner_decor.title %}<span class="shop-title">{{ learner_decor.title }}</span>{% endif %}
         </p>
+        {% if learner_decor.pet %}
+          <div class="small muted" style="margin-top:4px;">
+            {{ learner_decor.pet.icon }} {{ learner_decor.pet.name }} · {{ learner_decor.pet.stage_name }}
+            {% if not learner_decor.pet.max %}({{ learner_decor.pet.progress }}/{{ learner_decor.pet.next_at }}){% endif %}
+          </div>
+        {% endif %}
       </div>
     </div>
     <div class="mt-2">
@@ -21,7 +28,7 @@
       <div class="level-bar mt-1"><div class="level-bar__fill" style="width: {{ stats.level_info.percent }}%"></div></div>
     </div>
     <div class="row mt-2">
-      <span class="stat-pill stat-pill--coins">💰 {{ stats.coins }}</span>
+      <a class="stat-pill stat-pill--coins" href="{{ url_for('shop.index') }}" title="Открыть магазин">💰 {{ stats.coins }}</a>
       <span class="stat-pill stat-pill--streak">🔥 {{ stats.streak_days }} дн.</span>
       <span class="stat-pill">✅ {{ stats.total_correct }} верных</span>
       <span class="stat-pill">🎯 {{ stats.accuracy }}%</span>
@@ -222,6 +229,12 @@
     <h3>🏆 Мои достижения</h3>
     <p class="muted small">Значки за сильные серии, скорость, мастерство и упорство.</p>
     <a class="btn btn--ghost" href="{{ url_for('main.profile') }}">Мои значки</a>
+  </div>
+  <div class="card card--flat" style="background: linear-gradient(135deg,#fdf2f8,#fff); border-left: 6px solid #ec4899;">
+    <h3>🛍 Магазин приключений</h3>
+    <p class="muted small">Трать монеты и свободный опыт на усилители, аватары,
+      рамки, темы и питомцев. Покупки не понижают уровень!</p>
+    <a class="btn" href="{{ url_for('shop.index') }}">Открыть магазин</a>
   </div>
 </div>
 

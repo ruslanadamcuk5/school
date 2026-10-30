@@ -84,6 +84,9 @@ MIGRATIONS: list[tuple[str, str, str]] = [
     ("learners", "device_id", "TEXT"),
     # семейные профили веб-интерфейса: изоляция по ключу семьи
     ("learners", "family_key", "TEXT"),
+    # опыт, потраченный в магазине: уровень считается по сумме xp + xp_spent,
+    # поэтому покупки не «понижают» ребёнка в уровне
+    ("learners", "xp_spent", "INTEGER NOT NULL DEFAULT 0"),
     ("users", "child_code", "TEXT"),
     ("users", "is_active", "INTEGER NOT NULL DEFAULT 1"),
     # вход через Google: sub из OpenID Connect

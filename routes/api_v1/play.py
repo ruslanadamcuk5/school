@@ -17,6 +17,7 @@ from database import query_one
 from services import progress as progress_service
 from services import rewards as rewards_service
 from services import rounds as rounds_service
+from services import shop as shop_service
 from services import topics as topics_service
 
 from . import bp
@@ -62,7 +63,8 @@ def _load(round_id: int) -> tuple[Any, dict]:
 
 def _task_payload(item: dict, state: dict) -> dict:
     task = item["task"]
-    cfg = get_config()
+    profile = learner()
+    hint_base, hint_credits = shop_service.hints_budget(profile["id"])
     total = state.get("total") or len(state.get("items", []))
     choices = task.get("choices") or []
     return {
@@ -80,7 +82,7 @@ def _task_payload(item: dict, state: dict) -> dict:
             "name": _method_name(state.get("topic", ""), state.get("method")),
         },
         "methods": _methods(state.get("topic", "")),
-        "hints_left": max(0, cfg.MAX_HINTS - item.get("hints", 0)),
+        "hints_left": max(0, hint_base + hint_credits - item.get("hints", 0)),
         "can_switch_method": len(state.get("methods") or []) > 1,
     }
 
@@ -197,10 +199,9 @@ def answer(round_id: int):
         state["combo"] = state.get("combo", 0) + 1
         state["max_combo"] = max(state.get("max_combo", 0), state["combo"])
         state["wrong_streak"] = 0
-        xp_gained = cfg.XP_PER_CORRECT
-        coins_gained = cfg.COINS_PER_CORRECT
-        if state.get("mode") == "boss":
-            xp_gained = cfg.XP_PER_BOSS
+        xp_gained, coins_gained = progress_service.reward_amounts(
+            profile["id"], state.get("mode", "practice")
+        )
         state["xp"] = state.get("xp", 0) + xp_gained
         state["coins"] = state.get("coins", 0) + coins_gained
         final = True
@@ -256,9 +257,12 @@ def answer(round_id: int):
     if not correct:
         hints = task.get("hints", [])
         index = item.get("hints", 0)
-        if index < min(len(hints), cfg.MAX_HINTS):
+        base, credits = shop_service.hints_budget(profile["id"])
+        if index < min(len(hints), base + credits):
             hint = hints[index]
             item["hints"] = index + 1
+            if index >= base:
+                shop_service.consume_hint_credit(profile["id"])
             state["hints_used"] = state.get("hints_used", 0) + 1
             rounds_service.save_round(round_id, state)
 
@@ -293,17 +297,20 @@ def hint(round_id: int):
         fail(404, "no_task", "Задание не найдено")
     hints = item["task"].get("hints", [])
     index = item.get("hints", 0)
-    if index >= min(len(hints), cfg.MAX_HINTS):
+    base, credits = shop_service.hints_budget(profile["id"])
+    if index >= min(len(hints), base + credits):
         fail(409, "no_hints", "Подсказки закончились")
     text = hints[index]
     item["hints"] = index + 1
+    if index >= base:
+        shop_service.consume_hint_credit(profile["id"])
     state["hints_used"] = state.get("hints_used", 0) + 1
     rounds_service.save_round(round_id, state)
     return jsonify(
         {
             "ok": True,
             "hint": text,
-            "left": max(0, cfg.MAX_HINTS - item["hints"]),
+            "left": max(0, base + credits - item["hints"]),
         }
     )
 

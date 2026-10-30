@@ -5,6 +5,7 @@ import sqlite3
 from datetime import date, datetime, timedelta
 from typing import Any
 
+from config import get_config
 from database import execute, query_all, query_one
 
 LEVEL_THRESHOLDS = [
@@ -48,6 +49,20 @@ def level_titles(level: int) -> str:
     return titles[min(level - 1, len(titles) - 1)]
 
 
+def total_xp(learner) -> int:
+    """Заработанный опыт: свободный остаток + потраченный в магазине.
+
+    Уровень считается по этой сумме, поэтому покупки в магазине не понижают
+    ребёнка в уровне — тратится только «свободный» опыт.
+    """
+    spent = 0
+    try:
+        spent = int(learner["xp_spent"] or 0)
+    except (KeyError, IndexError, TypeError, ValueError):
+        spent = 0
+    return int(learner["xp"] or 0) + spent
+
+
 def stars_for(correct: int, total: int) -> int:
     if total <= 0:
         return 0
@@ -80,7 +95,16 @@ def touch_day(learner_id: int) -> int:
         if last_date == today - timedelta(days=1):
             streak += 1
         else:
-            streak = 1
+            # Щит серии из магазина спасает огонёк ровно за один пропущенный
+            # день (позавчера занимался, вчера — нет). Если пропущено больше,
+            # серия начинается заново, иначе щит «съедал» бы любую паузу.
+            from services import shop as shop_service
+
+            gap_ok = last_date == today - timedelta(days=2)
+            if streak > 0 and gap_ok and shop_service.consume_shield(learner_id):
+                streak += 1
+            else:
+                streak = 1
     else:
         streak = 1
     execute(
@@ -115,7 +139,7 @@ def record_attempt(
     )
     _bump_topic_progress(learner_id, topic_slug, correct)
     _bump_method_progress(learner_id, topic_slug, method_slug, correct)
-    _bump_learner(learner_id, correct)
+    _bump_learner(learner_id, correct, mode)
     touch_day(learner_id)
 
 
@@ -162,15 +186,30 @@ def _bump_method_progress(learner_id: int, topic_slug: str, method_slug: str | N
     )
 
 
-def _bump_learner(learner_id: int, correct: bool) -> None:
-    from config import get_config
+def reward_amounts(learner_id: int, mode: str = "practice") -> tuple[int, int]:
+    """Сколько опыта и монет даёт верный ответ с учётом усилителей."""
+    from services import shop as shop_service
 
     cfg = get_config()
-    if correct:
-        execute(
-            "UPDATE learners SET xp = xp + ?, coins = coins + ? WHERE id = ?",
-            (cfg.XP_PER_CORRECT, cfg.COINS_PER_CORRECT, learner_id),
-        )
+    base_xp = cfg.XP_PER_BOSS if mode == "boss" else cfg.XP_PER_CORRECT
+    base_coins = cfg.COINS_PER_CORRECT
+    return (
+        shop_service.apply_multiplier(learner_id, base_xp, "xp"),
+        shop_service.apply_multiplier(learner_id, base_coins, "coins"),
+    )
+
+
+def _bump_learner(learner_id: int, correct: bool, mode: str = "practice") -> None:
+    if not correct:
+        return
+    xp, coins = reward_amounts(learner_id, mode)
+    execute(
+        "UPDATE learners SET xp = xp + ?, coins = coins + ? WHERE id = ?",
+        (xp, coins, learner_id),
+    )
+    from services import shop as shop_service
+
+    shop_service.bump_pet(learner_id)
 
 
 def apply_round_result(learner_id: int, topic_slug: str, correct: int, total: int) -> int:
@@ -194,8 +233,6 @@ def apply_round_result(learner_id: int, topic_slug: str, correct: int, total: in
 
 def mark_topic_read(learner_id: int, topic_slug: str) -> dict[str, Any]:
     """Отметить изучение темы по пособию. Награда начисляется один раз."""
-    from config import get_config
-
     already = query_one(
         """SELECT id FROM attempts
             WHERE learner_id = ? AND topic_slug = ? AND mode = 'reading' AND correct = 1
@@ -215,8 +252,8 @@ def mark_topic_read(learner_id: int, topic_slug: str) -> dict[str, Any]:
                stars = MAX(topic_progress.stars, 1), updated_at = datetime('now')""",
         (learner_id, topic_slug),
     )
-    cfg = get_config()
-    return {"already": False, "xp": cfg.XP_PER_CORRECT, "coins": cfg.COINS_PER_CORRECT}
+    xp, coins = reward_amounts(learner_id, "reading")
+    return {"already": False, "xp": xp, "coins": coins}
 
 
 def mark_boss_cleared(learner_id: int, topic_slug: str) -> None:
@@ -332,7 +369,7 @@ def learner_stats(learner_id: int) -> dict[str, Any]:
     )
     daily_done = len(daily_rows)
 
-    xp = learner["xp"] or 0
+    xp = total_xp(learner)
     info = level_info(xp)
     return {
         "learner_id": learner_id,
@@ -341,6 +378,7 @@ def learner_stats(learner_id: int) -> dict[str, Any]:
         "grade": learner["grade"],
         "coins": learner["coins"] or 0,
         "xp": xp,
+        "xp_balance": learner["xp"] or 0,
         "level": info["level"],
         "level_info": info,
         "streak_days": learner["streak_days"] or 0,

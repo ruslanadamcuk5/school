@@ -638,3 +638,59 @@ CREATE TABLE IF NOT EXISTS self_quiz_reviews (
 
 CREATE INDEX IF NOT EXISTS idx_self_quiz_reviews_learner
     ON self_quiz_reviews(learner_id, created_at);
+
+-- ============================================================
+--  Магазин: покупки за монеты и опыт
+-- ============================================================
+
+-- Купленные предметы. Для расходуемых (подсказки, щиты) quantity > 1;
+-- для постоянных quantity = 1. progress — рост питомца.
+CREATE TABLE IF NOT EXISTS learner_items (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    learner_id  INTEGER NOT NULL,
+    item_key    TEXT    NOT NULL,
+    quantity    INTEGER NOT NULL DEFAULT 1,
+    progress    INTEGER NOT NULL DEFAULT 0,
+    equipped    INTEGER NOT NULL DEFAULT 0,
+    slot        TEXT    NOT NULL DEFAULT '',
+    acquired_at TEXT    NOT NULL DEFAULT (datetime('now')),
+    updated_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (learner_id, item_key),
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_learner_items_learner
+    ON learner_items(learner_id);
+
+-- История покупок: чтобы видеть, куда ушли монеты и опыт.
+CREATE TABLE IF NOT EXISTS shop_purchases (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    learner_id INTEGER NOT NULL,
+    item_key   TEXT    NOT NULL,
+    paid_coins INTEGER NOT NULL DEFAULT 0,
+    paid_xp    INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT    NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_shop_purchases_learner
+    ON shop_purchases(learner_id, created_at);
+
+-- Активные усилители (двойной опыт/монеты) с временем окончания.
+CREATE TABLE IF NOT EXISTS learner_effects (
+    learner_id INTEGER NOT NULL,
+    effect     TEXT    NOT NULL,
+    value      REAL    NOT NULL DEFAULT 0,
+    expires_at TEXT,
+    updated_at TEXT    NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (learner_id, effect),
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
+);
+
+-- Ежедневный бесплатный сундук.
+CREATE TABLE IF NOT EXISTS daily_chests (
+    learner_id INTEGER PRIMARY KEY,
+    last_day   TEXT    NOT NULL,
+    updated_at TEXT    NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
+);

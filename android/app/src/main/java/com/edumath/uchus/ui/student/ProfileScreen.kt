@@ -46,6 +46,7 @@ fun ProfileScreen(
     onLogout: () -> Unit,
     onAbout: () -> Unit,
     onSchedule: () -> Unit,
+    onShop: (() -> Unit)? = null,
 ) {
     if (session?.learner == null) {
         SimpleProfile(session, serverUrl, onBack, onLogout, onAbout)
@@ -133,6 +134,14 @@ fun ProfileScreen(
                             }
                             KeyValue("Сервер", serverUrl)
                             KeyValue("Аккаунт", session?.user?.login ?: "семейный профиль")
+                        }
+                    }
+                }
+
+                if (onShop != null && playful) {
+                    item {
+                        Button(onClick = onShop, modifier = Modifier.fillMaxWidth()) {
+                            Text("🛍 Магазин приключений")
                         }
                     }
                 }

@@ -11,6 +11,7 @@ from .main import bp as main_bp
 from .notifications import bp as notifications_bp
 from .parent import bp as parent_bp
 from .play import bp as play_bp
+from .shop import bp as shop_bp
 from .student import bp as student_bp
 from .teacher import bp as teacher_bp
 
@@ -23,6 +24,7 @@ BLUEPRINTS = (
     ai_bp,
     api_v1_bp,
     play_bp,
+    shop_bp,
     teacher_bp,
     student_bp,
     parent_bp,

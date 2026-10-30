@@ -5,15 +5,23 @@
 <section class="hero">
   <div>
     <div class="row" style="gap:16px; align-items:center;">
-      <span class="avatar avatar--lg">{{ learner.avatar }}</span>
+      <span class="avatar avatar--lg {% if learner_decor.frame_css %}avatar--frame-{{ learner_decor.frame_css }}{% endif %}">{{ learner.avatar }}</span>
       <div>
-        <h1 style="margin:0;">{{ learner.name }}</h1>
+        <h1 style="margin:0;">{{ learner.name }}
+          {% if learner_decor.title %}<span class="shop-title">{{ learner_decor.title }}</span>{% endif %}</h1>
         <p class="muted" style="margin:0;">{{ learner.grade }} класс · уровень {{ stats.level }} · {{ stats.level_info.title }}</p>
+        {% if learner_decor.pet %}
+          <p class="small muted" style="margin:4px 0 0;">
+            {{ learner_decor.pet.icon }} <b>{{ learner_decor.pet.name }}</b> · {{ learner_decor.pet.stage_name }}
+            {% if not learner_decor.pet.max %} · {{ learner_decor.pet.progress }}/{{ learner_decor.pet.next_at }} верных{% endif %}
+          </p>
+        {% endif %}
       </div>
     </div>
     <div class="mt-2">
       <div class="level-bar"><div class="level-bar__fill" style="width: {{ stats.level_info.percent }}%"></div></div>
-      <p class="muted small mt-1">{{ stats.xp }} XP · до следующего уровня {{ stats.level_info.need }} XP</p>
+      <p class="muted small mt-1">Всего {{ stats.xp }} XP · свободно {{ stats.xp_balance }} XP ·
+        до следующего уровня {{ stats.level_info.need }} XP</p>
     </div>
     <div class="row mt-2">
       <span class="stat-pill stat-pill--coins">💰 {{ stats.coins }}</span>
@@ -64,6 +72,7 @@
 <div class="row mt-3">
   <a class="btn" href="{{ url_for('main.map_page') }}">🗺 К карте тем</a>
   <a class="btn btn--ghost" href="{{ url_for('main.profile') }}">🏆 Все достижения</a>
+  <a class="btn btn--warn" href="{{ url_for('shop.index') }}">🛍 Магазин</a>
 </div>
 
 {% endblock %}

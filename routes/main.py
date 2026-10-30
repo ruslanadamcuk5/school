@@ -49,7 +49,7 @@ def _visible_slugs(learner, subject_id: int) -> set[str]:
 
 def _topic_cards(learner, visible: set[str] | None = None) -> list[dict]:
     """Данные для карты тем: прогресс, звёзды, доступность."""
-    level = progress_service.level_for_xp(learner["xp"] or 0)
+    level = progress_service.level_for_xp(progress_service.total_xp(learner))
     tp = progress_service.topic_progress_map(learner["id"])
     mp = progress_service.method_progress_map(learner["id"])
     cards = []
@@ -308,7 +308,7 @@ def change_grade():
     learner = learners_service.current_learner()
     if not learner:
         return redirect(url_for("main.welcome"))
-    level = progress_service.level_for_xp(learner["xp"] or 0)
+    level = progress_service.level_for_xp(progress_service.total_xp(learner))
     grade = int(request.form.get("grade") or learner["grade"])
     if not 1 <= grade <= 11 or level < 3:
         flash("Этот класс пока не открыт. Нужно дорасти до 3 уровня.", "error")

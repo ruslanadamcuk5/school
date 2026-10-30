@@ -75,6 +75,13 @@ data class LearnerDto(
     @SerializedName("coins") val coins: Int = 0,
     @SerializedName("streak_days") val streakDays: Int = 0,
     @SerializedName("has_pin") val hasPin: Boolean = false,
+    @SerializedName("xp_total") val xpTotal: Int = 0,
+    @SerializedName("xp_balance") val xpBalance: Int = 0,
+    @SerializedName("frame") val frame: String? = null,
+    @SerializedName("frame_css") val frameCss: String? = null,
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("shop_theme") val shopTheme: String? = null,
+    @SerializedName("pet") val pet: ShopPetDto? = null,
 ) {
     val displayName: String get() = name ?: "Ученик"
     val emoji: String get() = avatar ?: "🦊"
@@ -1336,3 +1343,142 @@ data class PadruchnikImportDto(
     @SerializedName("created") val created: Int = 0,
 )
 
+
+// ---------------------------------------------------------------- магазин
+
+data class ShopBalanceDto(
+    @SerializedName("coins") val coins: Int = 0,
+    @SerializedName("xp") val xp: Int = 0,
+)
+
+data class ShopLevelDto(
+    @SerializedName("level") val level: Int = 1,
+    @SerializedName("xp") val xp: Int = 0,
+    @SerializedName("need") val need: Int = 0,
+    @SerializedName("percent") val percent: Int = 0,
+    @SerializedName("title") val title: String? = null,
+)
+
+data class ShopStageDto(
+    @SerializedName("index") val index: Int = 1,
+    @SerializedName("stage_name") val stageName: String? = null,
+    @SerializedName("stage_icon") val stageIcon: String? = null,
+    @SerializedName("progress") val progress: Int = 0,
+    @SerializedName("next_at") val nextAt: Int? = null,
+    @SerializedName("percent") val percent: Int = 0,
+    @SerializedName("max") val max: Boolean = false,
+)
+
+data class ShopPetDto(
+    @SerializedName("key") val key: String? = null,
+    @SerializedName("icon") val icon: String? = null,
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("index") val index: Int = 1,
+    @SerializedName("stage_name") val stageName: String? = null,
+    @SerializedName("stage_icon") val stageIcon: String? = null,
+    @SerializedName("progress") val progress: Int = 0,
+    @SerializedName("next_at") val nextAt: Int? = null,
+    @SerializedName("percent") val percent: Int = 0,
+    @SerializedName("max") val max: Boolean = false,
+)
+
+data class ShopItemDto(
+    @SerializedName("key") val key: String = "",
+    @SerializedName("category") val category: String? = null,
+    @SerializedName("kind") val kind: String? = null,
+    @SerializedName("slot") val slot: String? = null,
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("icon") val icon: String? = null,
+    @SerializedName("tagline") val tagline: String? = null,
+    @SerializedName("description") val description: String? = null,
+    @SerializedName("price_coins") val priceCoins: Int = 0,
+    @SerializedName("price_xp") val priceXp: Int = 0,
+    @SerializedName("discount") val discount: Int = 0,
+    @SerializedName("level") val level: Int = 1,
+    @SerializedName("owned") val owned: Boolean = false,
+    @SerializedName("quantity") val quantity: Int = 0,
+    @SerializedName("equipped") val equipped: Boolean = false,
+    @SerializedName("locked") val locked: Boolean = false,
+    @SerializedName("reason") val reason: String? = null,
+    @SerializedName("can_buy") val canBuy: Boolean = false,
+    @SerializedName("repeatable") val repeatable: Boolean = false,
+    @SerializedName("avatars") val avatars: List<String> = emptyList(),
+    @SerializedName("stage") val stage: ShopStageDto? = null,
+)
+
+data class ShopCategoryDto(
+    @SerializedName("key") val key: String = "",
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("icon") val icon: String? = null,
+    @SerializedName("items") val items: List<ShopItemDto> = emptyList(),
+)
+
+data class ShopEffectDto(
+    @SerializedName("key") val key: String? = null,
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("icon") val icon: String? = null,
+    @SerializedName("remaining_seconds") val remainingSeconds: Int = 0,
+    @SerializedName("remaining_minutes") val remainingMinutes: Int = 0,
+)
+
+data class ShopDecorDto(
+    @SerializedName("frame") val frame: String? = null,
+    @SerializedName("frame_css") val frameCss: String? = null,
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("theme") val theme: String? = null,
+    @SerializedName("pet") val pet: ShopPetDto? = null,
+)
+
+data class ShopChestDto(
+    @SerializedName("available") val available: Boolean = false,
+    @SerializedName("last_day") val lastDay: String? = null,
+    @SerializedName("min_coins") val minCoins: Int = 0,
+    @SerializedName("max_coins") val maxCoins: Int = 0,
+    @SerializedName("min_xp") val minXp: Int = 0,
+    @SerializedName("max_xp") val maxXp: Int = 0,
+)
+
+data class ShopCollectionDto(
+    @SerializedName("owned") val owned: Int = 0,
+    @SerializedName("total") val total: Int = 0,
+    @SerializedName("percent") val percent: Int = 0,
+)
+
+data class ShopDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("balance") val balance: ShopBalanceDto? = null,
+    @SerializedName("total_xp") val totalXp: Int = 0,
+    @SerializedName("level") val level: Int = 1,
+    @SerializedName("level_info") val levelInfo: ShopLevelDto? = null,
+    @SerializedName("categories") val categories: List<ShopCategoryDto> = emptyList(),
+    @SerializedName("featured") val featured: ShopItemDto? = null,
+    @SerializedName("discount_percent") val discountPercent: Int = 0,
+    @SerializedName("effects") val effects: List<ShopEffectDto> = emptyList(),
+    @SerializedName("decor") val decor: ShopDecorDto? = null,
+    @SerializedName("avatars") val avatars: List<String> = emptyList(),
+    @SerializedName("chest") val chest: ShopChestDto? = null,
+    @SerializedName("collection") val collection: ShopCollectionDto? = null,
+    @SerializedName("pet") val pet: ShopPetDto? = null,
+)
+
+data class ShopResponseDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("shop") val shop: ShopDto? = null,
+    @SerializedName("coins") val coins: Int = 0,
+    @SerializedName("xp") val xp: Int = 0,
+    @SerializedName("avatar") val avatar: String? = null,
+)
+
+data class ShopKeyRequest(
+    @SerializedName("item_key") val itemKey: String,
+)
+
+data class ShopEquipRequest(
+    @SerializedName("item_key") val itemKey: String? = null,
+    @SerializedName("slot") val slot: String? = null,
+)
+
+data class ShopAvatarRequest(
+    @SerializedName("avatar") val avatar: String,
+)

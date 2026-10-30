@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   {% block head %}{% endblock %}
 </head>
-<body class="theme-{{ theme_mode }}"{% block body_attrs %}{% endblock %}>
+<body class="theme-{{ theme_mode }}" data-shop-theme="{{ shop_theme }}"{% block body_attrs %}{% endblock %}>
 <header class="topbar">
   <div class="wrap topbar__inner">
     <a class="brand" href="{{ url_for('main.map_page') if current_learner else url_for('auth.login') }}">
@@ -30,6 +30,9 @@
         {% if user_role == 'student' %}
           <a class="btn btn--ghost btn--small" href="{{ url_for('student.dashboard') }}">🎒 Мой кабинет</a>
           <a class="btn btn--ghost btn--small" href="{{ url_for('main.map_page') }}">{% if is_playful %}🗺 Играть{% else %}📖 Обучение{% endif %}</a>
+          {% if is_playful %}
+            <a class="btn btn--ghost btn--small" href="{{ url_for('shop.index') }}">🛍 Магазин</a>
+          {% endif %}
         {% elif user_role == 'teacher' %}
           <a class="btn btn--ghost btn--small" href="{{ url_for('teacher.dashboard') }}">👩‍🏫 Кабинет</a>
         {% elif user_role == 'parent' %}
@@ -59,8 +62,12 @@
       {% endif %}
       <div data-react-bell data-feed="{{ url_for('notifications.feed') }}"></div>
       <noscript><a class="btn btn--ghost btn--small" href="{{ url_for('notifications.page') }}">🔔 Уведомления</a></noscript>
+      <a class="btn btn--ghost btn--small" href="{{ url_for('shop.index') }}">🛍 Магазин</a>
       <a class="btn btn--ghost btn--small" href="{{ url_for('main.profile') }}">
-        <span aria-hidden="true">{{ current_learner.avatar }}</span> {{ current_learner.name }}
+        <span class="avatar avatar--sm {% if learner_decor.frame_css %}avatar--frame-{{ learner_decor.frame_css }}{% endif %}"
+              aria-hidden="true">{{ current_learner.avatar }}</span>
+        {{ current_learner.name }}
+        {% if learner_decor.title %}<span class="shop-title">{{ learner_decor.title }}</span>{% endif %}
       </a>
       <form method="post" action="{{ url_for('main.logout') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

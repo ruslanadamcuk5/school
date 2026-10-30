@@ -121,6 +121,22 @@ interface ApiService {
     @POST("daily/start")
     suspend fun dailyStart(@Body body: DailyStartRequest): PlayStartDto
 
+    // ---------------------------------------------------------- магазин
+    @GET("shop")
+    suspend fun shop(): ShopDto
+
+    @POST("shop/buy")
+    suspend fun shopBuy(@Body body: ShopKeyRequest): ShopResponseDto
+
+    @POST("shop/equip")
+    suspend fun shopEquip(@Body body: ShopEquipRequest): ShopResponseDto
+
+    @POST("shop/avatar")
+    suspend fun shopAvatar(@Body body: ShopAvatarRequest): ShopResponseDto
+
+    @POST("shop/chest")
+    suspend fun shopChest(): ShopResponseDto
+
     // ---------------------------------------------------------- работы: ученик
     @GET("assignments")
     suspend fun studentAssignments(): AssignmentsDto

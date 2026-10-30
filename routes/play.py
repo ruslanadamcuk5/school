@@ -13,6 +13,7 @@ from services import learners as learners_service
 from services import progress as progress_service
 from services import rewards as rewards_service
 from services import rounds as rounds_service
+from services import shop as shop_service
 
 bp = Blueprint("play", __name__)
 
@@ -92,6 +93,7 @@ def task_page(slug: str):
     cfg = get_config()
     mode = state.get("mode", "practice")
     total = state.get("total") or (cfg.TASKS_PER_ROUND if mode == "practice" else cfg.BOSS_TASKS)
+    hint_base, hint_credits = shop_service.hints_budget(learner["id"])
     return render_template(
         "play.html",
         learner=learner,
@@ -103,7 +105,7 @@ def task_page(slug: str):
         correct=state.get("correct", 0),
         combo=state.get("combo", 0),
         mode=mode,
-        hints_left=max(0, cfg.MAX_HINTS - item.get("hints", 0)),
+        hints_left=max(0, hint_base + hint_credits - item.get("hints", 0)),
         learner_stats=progress_service.learner_stats(learner["id"]),
     )
 
@@ -143,10 +145,9 @@ def api_answer():
         state["combo"] = state.get("combo", 0) + 1
         state["max_combo"] = max(state.get("max_combo", 0), state["combo"])
         state["wrong_streak"] = 0
-        xp_gained = cfg.XP_PER_CORRECT
-        coins_gained = cfg.COINS_PER_CORRECT
-        if state.get("mode") == "boss":
-            xp_gained = cfg.XP_PER_BOSS
+        xp_gained, coins_gained = progress_service.reward_amounts(
+            learner["id"], state.get("mode", "practice")
+        )
         state["xp"] = state.get("xp", 0) + xp_gained
         state["coins"] = state.get("coins", 0) + coins_gained
         final = True
@@ -198,9 +199,12 @@ def api_answer():
     if not correct:
         hints = task.get("hints", [])
         index = item.get("hints", 0)
-        if index < min(len(hints), cfg.MAX_HINTS):
+        base, credits = shop_service.hints_budget(learner["id"])
+        if index < min(len(hints), base + credits):
             hint = hints[index]
             item["hints"] = index + 1
+            if index >= base:
+                shop_service.consume_hint_credit(learner["id"])
             state["hints_used"] = state.get("hints_used", 0) + 1
             rounds_service.save_round(round_id, state)
 
@@ -236,13 +240,16 @@ def api_hint():
         return jsonify({"ok": False, "error": "no_task"}), 404
     hints = item["task"].get("hints", [])
     index = item.get("hints", 0)
-    if index >= min(len(hints), cfg.MAX_HINTS):
+    base, credits = shop_service.hints_budget(learner["id"])
+    if index >= min(len(hints), base + credits):
         return jsonify({"ok": False, "error": "no_hints"}), 409
     hint = hints[index]
     item["hints"] = index + 1
+    if index >= base:
+        shop_service.consume_hint_credit(learner["id"])
     state["hints_used"] = state.get("hints_used", 0) + 1
     rounds_service.save_round(round_id, state)
-    return jsonify({"ok": True, "hint": hint, "left": max(0, cfg.MAX_HINTS - item["hints"])})
+    return jsonify({"ok": True, "hint": hint, "left": max(0, base + credits - item["hints"])})
 
 
 @bp.route("/api/switch-method", methods=["POST"])

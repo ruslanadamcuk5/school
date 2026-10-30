@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+{% block title %}Магазин — {{ learner.name }}{% endblock %}
+{% block content %}
+
+<section class="shop-hero">
+  <div class="shop-hero__me">
+    <span class="avatar avatar--xl {% if shop.decor.frame_css %}avatar--frame-{{ shop.decor.frame_css }}{% endif %}">{{ learner.avatar }}</span>
+    <div>
+      <h1>🛍 Магазин приключений</h1>
+      <p class="muted" style="margin:2px 0 0;">
+        {{ learner.grade }} класс · {{ shop.level }} уровень
+        {% if shop.decor.title %}<span class="shop-title">{{ shop.decor.title }}</span>{% endif %}
+      </p>
+      {% if shop.pet %}
+        <div class="shop-pet-line">
+          <span class="shop-pet-line__icon">{{ shop.pet.icon }}</span>
+          <span><b>{{ shop.pet.name }}</b> · {{ shop.pet.stage_name }}</span>
+          <span class="shop-pet-line__bar"><span style="width: {{ shop.pet.percent }}%"></span></span>
+          <span class="muted small">
+            {% if shop.pet.max %}максимум!{% else %}{{ shop.pet.progress }}/{{ shop.pet.next_at }} верных{% endif %}
+          </span>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="shop-wallet">
+    <div class="shop-wallet__pill shop-wallet__pill--coins">
+      <span>💰</span><b>{{ shop.balance.coins }}</b><small>монет</small>
+    </div>
+    <div class="shop-wallet__pill shop-wallet__pill--xp">
+      <span>⭐</span><b>{{ shop.balance.xp }}</b><small>свободный опыт</small>
+    </div>
+    <div class="shop-wallet__total">Всего заработано: {{ shop.total_xp }} XP</div>
+    <div class="shop-wallet__next">
+      До уровня {{ shop.level + 1 }}: {{ shop.level_info.need }} XP
+      <span class="shop-wallet__bar"><span style="width: {{ shop.level_info.percent }}%"></span></span>
+    </div>
+    <p class="small muted" style="margin:6px 0 0;">
+      Покупки тратят свободный опыт, но <b>не понижают уровень</b>.
+    </p>
+  </div>
+</section>
+
+{% if shop.effects %}
+<section class="shop-effects">
+  {% for effect in shop.effects %}
+    <span class="shop-effect">{{ effect.icon }} {{ effect.name }}
+      <b>{{ effect.remaining_minutes }} мин</b></span>
+  {% endfor %}
+</section>
+{% endif %}
+
+<div class="shop-top grid-2 mt-3">
+  <section class="shop-chest {% if shop.chest.available %}shop-chest--ready{% endif %}">
+    <div class="shop-chest__icon">{% if shop.chest.available %}🎁{% else %}📦{% endif %}</div>
+    <div>
+      <h2>{% if shop.chest.available %}Сундук дня готов!{% else %}Сундук уже открыт{% endif %}</h2>
+      <p class="muted small" style="margin:2px 0 8px;">
+        {% if shop.chest.available %}
+          Бесплатно: {{ shop.chest.min_coins }}–{{ shop.chest.max_coins }} монет и
+          {{ shop.chest.min_xp }}–{{ shop.chest.max_xp }} опыта. Каждый день новый!
+        {% else %}
+          Возвращайся завтра — сундук наполнится снова.
+        {% endif %}
+      </p>
+      {% if shop.chest.available %}
+        <form method="post" action="{{ url_for('shop.chest') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn--warn" type="submit">Открыть сундук</button>
+        </form>
+      {% else %}
+        <span class="chip chip--green">✅ Сегодня открыт</span>
+      {% endif %}
+    </div>
+  </section>
+
+  {% if shop.featured %}
+  <section class="shop-featured" id="featured">
+    <span class="shop-featured__flag">🔥 Товар дня −{{ shop.discount_percent }}%</span>
+    <div class="shop-featured__body">
+      <span class="shop-featured__icon">{{ shop.featured.icon }}</span>
+      <div>
+        <h2>{{ shop.featured.name }}</h2>
+        <p class="small" style="margin:0;">{{ shop.featured.tagline }}</p>
+        <div class="shop-price">
+          <span class="shop-price__coins">💰 {{ shop.featured.price_coins }}</span>
+          {% if shop.featured.discount %}
+            <span class="shop-price__old">{{ shop.featured.base_coins }}</span>
+          {% endif %}
+          {% if shop.featured.price_xp %}
+            <span class="shop-price__xp">⭐ {{ shop.featured.price_xp }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <a class="btn btn--small" href="#{{ shop.featured.key }}">Посмотреть</a>
+  </section>
+  {% endif %}
+</div>
+
+<div class="shop-progress card mt-3">
+  <div>
+    <b>🏆 Коллекция:</b> {{ shop.collection.owned }} из {{ shop.collection.total }} постоянных предметов
+  </div>
+  <div class="shop-progress__bar"><span style="width: {{ shop.collection.percent }}%"></span></div>
+  <span class="muted small">{{ shop.collection.percent }}%</span>
+</div>
+
+<nav class="shop-categories mt-3" aria-label="Категории магазина">
+  {% for category in shop.categories %}
+    <a class="shop-categories__item" href="#cat-{{ category.key }}">
+      <span>{{ category.icon }}</span>{{ category.name }}
+      <small>{{ category["items"]|length }}</small>
+    </a>
+  {% endfor %}
+</nav>
+
+{% for category in shop.categories %}
+<section class="mt-3" id="cat-{{ category.key }}">
+  <div class="shop-section-head">
+    <h2 class="section-title" style="margin:0;">{{ category.icon }} {{ category.name }}</h2>
+    <span class="muted small">{{ category.hint }}</span>
+  </div>
+
+  <div class="shop-grid">
+    {% for item in category["items"] %}
+      <article class="shop-item
+        {% if item.discount %}shop-item--deal{% endif %}
+        {% if item.equipped %}shop-item--equipped{% endif %}
+        {% if item.locked %}shop-item--locked{% endif %}
+        {% if bought == item.key %}shop-item--bought{% endif %}"
+        id="{{ item.key }}">
+        <div class="shop-item__top">
+          <span class="shop-item__icon">{{ item.icon }}</span>
+          <div class="shop-item__head">
+            <div class="shop-item__name">{{ item.name }}</div>
+            <div class="shop-item__tagline">{{ item.tagline }}</div>
+          </div>
+          {% if item.discount %}<span class="shop-item__deal">−{{ item.discount }}%</span>{% endif %}
+        </div>
+
+        <p class="shop-item__desc">{{ item.description }}</p>
+
+        {% if item.stage %}
+          <div class="shop-item__pet">
+            <span class="shop-item__pet-icon">{{ item.stage.stage_icon }}</span>
+            <div style="flex:1;">
+              <div class="small"><b>{{ item.stage.stage_name }}</b>
+                {% if not item.stage.max %} · {{ item.stage.progress }}/{{ item.stage.next_at }} верных{% endif %}
+              </div>
+              <div class="shop-item__pet-bar"><span style="width: {{ item.stage.percent }}%"></span></div>
+            </div>
+          </div>
+        {% endif %}
+
+        {% if item.avatars %}
+          <div class="shop-item__avatars">
+            {% for emoji in item.avatars %}<span>{{ emoji }}</span>{% endfor %}
+          </div>
+        {% endif %}
+
+        {% if item.owned and item.repeatable and item.quantity %}
+          <div class="small muted">В копилке: <b>{{ item.quantity }}</b></div>
+        {% endif %}
+
+        <div class="shop-item__foot">
+          <div class="shop-price">
+            {% if item.price_coins %}
+              <span class="shop-price__coins">💰 {{ item.price_coins }}</span>
+            {% endif %}
+            {% if item.price_xp %}
+              <span class="shop-price__xp">⭐ {{ item.price_xp }}</span>
+            {% endif %}
+            {% if item.discount %}
+              <span class="shop-price__old">{{ item.base_coins }} 💰</span>
+            {% endif %}
+          </div>
+
+          <div class="shop-item__actions">
+            {% if item.can_buy %}
+              <form method="post" action="{{ url_for('shop.buy') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="item_key" value="{{ item.key }}">
+                <button class="btn btn--small {% if item.discount %}btn--warn{% endif %}" type="submit">
+                  {% if item.owned %}Купить ещё{% else %}Купить{% endif %}
+                </button>
+              </form>
+            {% endif %}
+
+            {% if item.owned and item.slot %}
+              {% if item.equipped %}
+                <span class="chip chip--green">✅ Надето</span>
+                <form method="post" action="{{ url_for('shop.equip') }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="slot" value="{{ item.slot }}">
+                  <button class="btn btn--ghost btn--small" type="submit">Снять</button>
+                </form>
+              {% else %}
+                <form method="post" action="{{ url_for('shop.equip') }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="item_key" value="{{ item.key }}">
+                  <button class="btn btn--small" type="submit">Надеть</button>
+                </form>
+              {% endif %}
+            {% elif item.owned and not item.repeatable %}
+              <span class="chip chip--green">✅ В коллекции</span>
+            {% endif %}
+
+            {% if not item.can_buy and not item.owned %}
+              <span class="shop-item__reason">{{ item.reason }}</span>
+            {% elif not item.can_buy and item.repeatable %}
+              <span class="shop-item__reason">{{ item.reason }}</span>
+            {% endif %}
+          </div>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+</section>
+{% endfor %}
+
+<section class="card mt-3">
+  <h2>🙂 Мой аватар</h2>
+  <p class="muted small">Новые аватары открываются наборами из магазина. Выбери, кем будешь сегодня.</p>
+  <div class="shop-avatars mt-2">
+    {% for emoji in shop.avatars %}
+      <form method="post" action="{{ url_for('shop.avatar') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="avatar" value="{{ emoji }}">
+        <button type="submit"
+                class="shop-avatar {% if emoji == learner.avatar %}shop-avatar--current{% endif %}"
+                title="Выбрать {{ emoji }}">{{ emoji }}</button>
+      </form>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="card mt-3 shop-about">
+  <h2>Как это работает</h2>
+  <div class="grid-2 mt-2">
+    <div>
+      <h3>⭐ Опыт</h3>
+      <p class="muted small">Опыт капает за верные ответы. Уровень считается по всему
+        заработанному опыту, поэтому покупка не отбросит тебя назад.</p>
+    </div>
+    <div>
+      <h3>💰 Монеты</h3>
+      <p class="muted small">Монеты дают за задания, серии, изученные темы и сундук дня.
+        Копи на большую мечту — редкие предметы открываются на новых уровнях.</p>
+    </div>
+    <div>
+      <h3>⚡ Усилители</h3>
+      <p class="muted small">Двойной опыт или монеты работают 30 минут и складываются:
+        купил ещё — время продлилось.</p>
+    </div>
+    <div>
+      <h3>🐾 Питомцы</h3>
+      <p class="muted small">Питомец растёт за верные ответы: от Малыша до Легенды.
+        Он всегда рядом в профиле и в приложении.</p>
+    </div>
+  </div>
+</section>
+
+<div class="row mt-3" style="justify-content:center;">
+  <a class="btn" href="{{ url_for('main.map_page') }}">🗺 Скорее решать задания</a>
+  <a class="btn btn--ghost" href="{{ url_for('main.profile') }}">🏅 Мой профиль</a>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    if (window.App && App.confetti) {
+      {% if bought %}App.confetti(90);{% endif %}
+      {% if chest_opened %}App.confetti(70);{% endif %}
+    }
+    var target = document.querySelector(".shop-item--bought");
+    if (target) { target.scrollIntoView({block: "center", behavior: "smooth"}); }
+  })();
+</script>
+{% endblock %}
