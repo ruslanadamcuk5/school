@@ -198,6 +198,33 @@ class TestShopService(ShopTestCase):
         shop_service.purchase(learner_id, "title_fast")
         self.assertEqual(shop_service.decorations(learner_id)["title"], "Быстрый как молния")
 
+    def test_avatar_packs_do_not_overlap_free_avatars(self):
+        free = set(learners_service.AVATARS)
+        for item in shop_service.CATALOG:
+            if item["kind"] != "avatar_pack":
+                continue
+            self.assertEqual(len(item["avatars"]), 5)
+            self.assertFalse(
+                free & set(item["avatars"]),
+                f"{item['key']} дублирует бесплатные аватары",
+            )
+
+    def test_reset_progress_clears_shop_and_returns_to_level_one(self):
+        learner_id = make_learner(coins=1000, xp=5000)
+        shop_service.purchase(learner_id, "theme_ocean")
+        shop_service.purchase(learner_id, "boost_xp")
+        self.assertTrue(learner_row(learner_id)["xp_spent"] > 0)
+
+        learners_service.reset_progress(learner_id)
+
+        row = learner_row(learner_id)
+        self.assertEqual(row["xp"], 0)
+        self.assertEqual(row["xp_spent"], 0)
+        self.assertEqual(row["coins"], 0)
+        self.assertEqual(progress_service.level_for_xp(progress_service.total_xp(row)), 1)
+        self.assertEqual(shop_service.owned_map(learner_id), {})
+        self.assertFalse(shop_service.active_effects(learner_id))
+
     def test_pet_grows_with_correct_answers(self):
         learner_id = make_learner(coins=5000, xp=5000)
         shop_service.purchase(learner_id, "pet_cat")
