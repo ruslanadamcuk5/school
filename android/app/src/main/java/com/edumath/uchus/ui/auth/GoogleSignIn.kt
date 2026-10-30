@@ -58,13 +58,19 @@ object GoogleSignIn {
         )
 
         var lastNoCredential: NoCredentialException? = null
-        for (request in requests) {
+        for ((index, request) in requests.withIndex()) {
             val response = try {
                 credentialManager.getCredential(
                     context = requestContext,
                     request = request,
                 )
             } catch (e: GetCredentialCancellationException) {
+                // Первая попытка — только «разрешённые» аккаунты. Если таких
+                // нет, Play Services на части устройств отвечает не
+                // NoCredentialException, а отменой, и раньше цепочка на этом
+                // обрывалась. Пробуем следующий вариант; отмену на нём уже
+                // считаем выбором пользователя.
+                if (index == 0) continue
                 val detail = e.message?.trim().orEmpty()
                 throw GoogleSignInException(
                     if (detail.isEmpty()) "Вход через Google отменён"
