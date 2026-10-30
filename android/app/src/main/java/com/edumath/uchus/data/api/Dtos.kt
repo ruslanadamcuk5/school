@@ -1525,3 +1525,193 @@ data class ShopAvatarRequest(
 data class ShopGiftClaimRequest(
     @SerializedName("gift_id") val giftId: Int? = null,
 )
+
+// ------------------------------------------------------------------ админ: магазин
+
+data class AdminShopSummaryDto(
+    @SerializedName("pending") val pending: Int = 0,
+    @SerializedName("claimed") val claimed: Int = 0,
+    @SerializedName("today") val today: Int = 0,
+    @SerializedName("purchases_today") val purchasesToday: Int = 0,
+    @SerializedName("coins_spent") val coinsSpent: Int = 0,
+)
+
+data class AdminShopReasonDto(
+    @SerializedName("icon") val icon: String? = null,
+    @SerializedName("text") val text: String = "",
+)
+
+data class AdminShopIdeaDto(
+    @SerializedName("key") val key: String = "",
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("icon") val icon: String? = null,
+    @SerializedName("tagline") val tagline: String? = null,
+    @SerializedName("coins") val coins: Int = 0,
+    @SerializedName("level") val level: Int = 1,
+    @SerializedName("rarity") val rarity: String? = null,
+    @SerializedName("rarity_name") val rarityName: String? = null,
+)
+
+data class AdminShopLeaderDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("avatar") val avatar: String? = null,
+    @SerializedName("grade") val grade: Int = 1,
+    @SerializedName("coins") val coins: Int = 0,
+    @SerializedName("xp") val xp: Int = 0,
+    @SerializedName("total_xp") val totalXp: Int = 0,
+    @SerializedName("level") val level: Int = 1,
+    @SerializedName("streak_days") val streakDays: Int = 0,
+    @SerializedName("attempts") val attempts: Int = 0,
+    @SerializedName("correct") val correct: Int = 0,
+    @SerializedName("accuracy") val accuracy: Int = 0,
+    @SerializedName("days_active") val daysActive: Int = 0,
+    @SerializedName("attempts_prev") val attemptsPrev: Int = 0,
+    @SerializedName("growth") val growth: Int = 0,
+    @SerializedName("score") val score: Double = 0.0,
+    @SerializedName("rank") val rank: Int = 0,
+    @SerializedName("pending_gifts") val pendingGifts: Int = 0,
+    @SerializedName("reasons") val reasons: List<AdminShopReasonDto> = emptyList(),
+    @SerializedName("reason_text") val reasonText: String? = null,
+    @SerializedName("ideas") val ideas: List<AdminShopIdeaDto> = emptyList(),
+    @SerializedName("deserving") val deserving: Boolean = false,
+    @SerializedName("account_login") val accountLogin: String? = null,
+    @SerializedName("last_attempt") val lastAttempt: String? = null,
+    @SerializedName("days_since_attempt") val daysSinceAttempt: Int? = null,
+    @SerializedName("days_since_gift") val daysSinceGift: Int? = null,
+)
+
+data class AdminShopOverrideDto(
+    @SerializedName("item_key") val itemKey: String? = null,
+    @SerializedName("price_coins") val priceCoins: Int? = null,
+    @SerializedName("price_xp") val priceXp: Int? = null,
+    @SerializedName("discount_percent") val discountPercent: Int? = null,
+    @SerializedName("level") val level: Int? = null,
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("icon") val icon: String? = null,
+    @SerializedName("tagline") val tagline: String? = null,
+    @SerializedName("description") val description: String? = null,
+    @SerializedName("is_active") val isActive: Int? = null,
+    @SerializedName("updated_at") val updatedAt: String? = null,
+)
+
+data class AdminShopItemDto(
+    @SerializedName("key") val key: String = "",
+    @SerializedName("category") val category: String = "",
+    @SerializedName("kind") val kind: String? = null,
+    @SerializedName("slot") val slot: String? = null,
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("icon") val icon: String? = null,
+    @SerializedName("tagline") val tagline: String? = null,
+    @SerializedName("description") val description: String? = null,
+    @SerializedName("coins") val coins: Int = 0,
+    @SerializedName("xp") val xp: Int = 0,
+    @SerializedName("final_coins") val finalCoins: Int = 0,
+    @SerializedName("level") val level: Int = 1,
+    @SerializedName("is_active") val isActive: Boolean = true,
+    @SerializedName("rarity") val rarity: String? = null,
+    @SerializedName("rarity_name") val rarityName: String? = null,
+    @SerializedName("rarity_icon") val rarityIcon: String? = null,
+    @SerializedName("avatars") val avatars: List<String> = emptyList(),
+    @SerializedName("override") val override: AdminShopOverrideDto? = null,
+)
+
+data class AdminShopCategoryDto(
+    @SerializedName("key") val key: String = "",
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("icon") val icon: String? = null,
+)
+
+data class AdminShopEventDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("description") val description: String? = null,
+    @SerializedName("icon") val icon: String? = null,
+    @SerializedName("kind") val kind: String? = null,
+    @SerializedName("value") val value: Double = 0.0,
+    @SerializedName("starts_on") val startsOn: String? = null,
+    @SerializedName("ends_on") val endsOn: String? = null,
+    @SerializedName("is_active") val isActive: Boolean = false,
+    @SerializedName("created_at") val createdAt: String? = null,
+)
+
+data class AdminShopGiftDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("learner_id") val learnerId: Int = 0,
+    @SerializedName("learner_name") val learnerName: String? = null,
+    @SerializedName("learner_avatar") val learnerAvatar: String? = null,
+    @SerializedName("learner_grade") val learnerGrade: Int = 0,
+    @SerializedName("item_key") val itemKey: String? = null,
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("icon") val icon: String? = null,
+    @SerializedName("tagline") val tagline: String? = null,
+    @SerializedName("rarity") val rarity: String? = null,
+    @SerializedName("rarity_name") val rarityName: String? = null,
+    @SerializedName("reason") val reason: String? = null,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("coins") val coins: Int = 0,
+    @SerializedName("xp") val xp: Int = 0,
+    @SerializedName("status") val status: String? = null,
+    @SerializedName("created_at") val createdAt: String? = null,
+    @SerializedName("claimed_at") val claimedAt: String? = null,
+)
+
+data class AdminShopDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("summary") val summary: AdminShopSummaryDto = AdminShopSummaryDto(),
+    @SerializedName("board") val board: List<AdminShopLeaderDto> = emptyList(),
+    @SerializedName("catalog") val catalog: List<AdminShopItemDto> = emptyList(),
+    @SerializedName("categories") val categories: List<AdminShopCategoryDto> = emptyList(),
+    @SerializedName("events") val events: List<AdminShopEventDto> = emptyList(),
+    @SerializedName("gifts") val gifts: List<AdminShopGiftDto> = emptyList(),
+    @SerializedName("featured_key") val featuredKey: String? = null,
+    @SerializedName("announcement") val announcement: String? = null,
+    @SerializedName("reasons") val reasons: List<AdminShopReasonDto> = emptyList(),
+    @SerializedName("today") val today: String? = null,
+    @SerializedName("default_end") val defaultEnd: String? = null,
+)
+
+data class AdminShopResponseDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("shop") val shop: AdminShopDto? = null,
+)
+
+data class AdminShopItemRequest(
+    @SerializedName("name") val name: String? = null,
+    @SerializedName("icon") val icon: String? = null,
+    @SerializedName("tagline") val tagline: String? = null,
+    @SerializedName("description") val description: String? = null,
+    @SerializedName("price_coins") val priceCoins: Int? = null,
+    @SerializedName("price_xp") val priceXp: Int? = null,
+    @SerializedName("discount_percent") val discountPercent: Int? = null,
+    @SerializedName("level") val level: Int? = null,
+    @SerializedName("is_active") val isActive: Boolean = true,
+)
+
+data class AdminShopFeaturedRequest(
+    @SerializedName("item_key") val itemKey: String? = null,
+)
+
+data class AdminShopAnnouncementRequest(
+    @SerializedName("announcement") val announcement: String,
+)
+
+data class AdminShopEventRequest(
+    @SerializedName("title") val title: String,
+    @SerializedName("description") val description: String? = null,
+    @SerializedName("icon") val icon: String? = null,
+    @SerializedName("kind") val kind: String = "double_coins",
+    @SerializedName("value") val value: Double = 2.0,
+    @SerializedName("starts_on") val startsOn: String? = null,
+    @SerializedName("ends_on") val endsOn: String? = null,
+)
+
+data class AdminShopGiftRequest(
+    @SerializedName("learner_id") val learnerId: Int,
+    @SerializedName("item_key") val itemKey: String? = null,
+    @SerializedName("reason") val reason: String,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("coins") val coins: Int = 0,
+    @SerializedName("xp") val xp: Int = 0,
+)

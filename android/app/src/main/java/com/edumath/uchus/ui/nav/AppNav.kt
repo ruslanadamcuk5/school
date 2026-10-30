@@ -113,6 +113,7 @@ private val homeRoutes = setOf(
     "admin/4",
     "admin/5",
     "admin/6",
+    "admin/7",
 )
 
 @Composable

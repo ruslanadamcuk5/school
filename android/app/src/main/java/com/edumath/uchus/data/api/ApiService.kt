@@ -476,6 +476,45 @@ interface ApiService {
     @GET("admin/audit")
     suspend fun adminAudit(@Query("limit") limit: Int?): AuditDto
 
+    // ---------------------------------------------------------- админ: магазин
+    @GET("admin/shop")
+    suspend fun adminShop(): AdminShopDto
+
+    @POST("admin/shop/items/{key}")
+    suspend fun adminShopSaveItem(
+        @Path("key") key: String,
+        @Body body: AdminShopItemRequest,
+    ): AdminShopResponseDto
+
+    @POST("admin/shop/items/{key}/reset")
+    suspend fun adminShopResetItem(@Path("key") key: String): AdminShopResponseDto
+
+    @PUT("admin/shop/featured")
+    suspend fun adminShopSetFeatured(
+        @Body body: AdminShopFeaturedRequest,
+    ): AdminShopResponseDto
+
+    @PUT("admin/shop/announcement")
+    suspend fun adminShopSetAnnouncement(
+        @Body body: AdminShopAnnouncementRequest,
+    ): AdminShopResponseDto
+
+    @POST("admin/shop/events")
+    suspend fun adminShopCreateEvent(
+        @Body body: AdminShopEventRequest,
+    ): AdminShopResponseDto
+
+    @POST("admin/shop/events/{id}/stop")
+    suspend fun adminShopStopEvent(@Path("id") id: Int): AdminShopResponseDto
+
+    @POST("admin/shop/gifts")
+    suspend fun adminShopCreateGift(
+        @Body body: AdminShopGiftRequest,
+    ): AdminShopResponseDto
+
+    @POST("admin/shop/gifts/{id}/cancel")
+    suspend fun adminShopCancelGift(@Path("id") id: Int): AdminShopResponseDto
+
     // ---------------------------------------------------------- ИИ
     @GET("ai/status")
     suspend fun aiStatus(): AiStatusResponseDto

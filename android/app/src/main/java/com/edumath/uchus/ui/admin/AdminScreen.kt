@@ -73,6 +73,7 @@ private val adminTabs = listOf(
     "Пособия",
     "ИИ",
     "Журнал",
+    "Магазин",
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -110,7 +111,8 @@ fun AdminScreen(
                 3 -> AdminTopicsTab(container)
                 4 -> AdminTextbooksTab(container)
                 5 -> AdminAiTab(container)
-                else -> AdminAuditTab(container)
+                6 -> AdminAuditTab(container)
+                else -> AdminShopTab(container)
             }
         }
     }

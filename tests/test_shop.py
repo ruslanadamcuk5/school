@@ -611,3 +611,201 @@ class TestShopApi(ShopTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestShopAdminApi(ShopTestCase):
+    """JSON API админки магазина для Android-приложения."""
+
+    def setUp(self):
+        fresh_db()
+        from app import create_app
+        from services import auth as auth_service
+
+        application = create_app("testing")
+        application.config["TESTING"] = True
+        self.client = application.test_client()
+        auth_service.create_user(
+            "shop_admin", "secret123", auth_service.ROLE_ADMIN, first_name="Админ"
+        )
+        self.learner_id = make_learner(coins=100, xp=100)
+        self.token = self._login("shop_admin", "secret123")
+
+    def _login(self, login: str, password: str) -> str:
+        response = self.client.post(
+            "/api/v1/auth/login", json={"login": login, "password": password}
+        )
+        self.assertEqual(response.status_code, 200, response.get_data(as_text=True))
+        return response.get_json()["token"]
+
+    def _headers(self, token: str | None = None) -> dict:
+        return {"Authorization": f"Bearer {token or self.token}"}
+
+    def test_admin_shop_requires_admin(self):
+        self.assertEqual(self.client.get("/api/v1/admin/shop").status_code, 401)
+
+        from services import auth as auth_service
+
+        auth_service.create_user("shop_teacher", "secret123", "teacher")
+        teacher_token = self._login("shop_teacher", "secret123")
+        response = self.client.get(
+            "/api/v1/admin/shop", headers=self._headers(teacher_token)
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.get_json()["error"], "forbidden")
+
+    def test_dashboard_returns_ranking_catalog_and_settings(self):
+        response = self.client.get("/api/v1/admin/shop", headers=self._headers())
+        self.assertEqual(response.status_code, 200, response.get_data(as_text=True))
+        body = response.get_json()
+        self.assertTrue(body["ok"])
+        self.assertIn("pending", body["summary"])
+        self.assertTrue(body["board"])
+        self.assertEqual(body["board"][0]["id"], self.learner_id)
+        self.assertTrue(body["board"][0]["ideas"])
+        self.assertTrue(body["reasons"])
+        self.assertTrue(body["catalog"])
+        self.assertEqual(
+            {category["key"] for category in body["categories"]},
+            {"perks", "minecraft", "style", "pets"},
+        )
+        self.assertIsInstance(body["featured_key"], str)
+        self.assertIn("gifts", body)
+        self.assertIn("announcement", body)
+        self.assertIn("today", body)
+        self.assertIn("default_end", body)
+
+    def test_item_override_save_and_reset(self):
+        response = self.client.post(
+            "/api/v1/admin/shop/items/frame_gold",
+            headers=self._headers(),
+            json={
+                "name": "Золотая рамка недели",
+                "price_coins": 5,
+                "discount_percent": 10,
+                "level": 2,
+                "is_active": False,
+            },
+        )
+        self.assertEqual(response.status_code, 200, response.get_data(as_text=True))
+        body = response.get_json()
+        self.assertTrue(body["ok"])
+        self.assertIn("message", body)
+        item = next(
+            entry for entry in body["shop"]["catalog"] if entry["key"] == "frame_gold"
+        )
+        self.assertEqual(item["name"], "Золотая рамка недели")
+        self.assertEqual(item["coins"], 5)
+        self.assertFalse(item["is_active"])
+        self.assertEqual(item["override"]["discount_percent"], 10)
+
+        reset = self.client.post(
+            "/api/v1/admin/shop/items/frame_gold/reset", headers=self._headers()
+        )
+        self.assertEqual(reset.status_code, 200, reset.get_data(as_text=True))
+        item = next(
+            entry
+            for entry in reset.get_json()["shop"]["catalog"]
+            if entry["key"] == "frame_gold"
+        )
+        self.assertEqual(item["name"], "Золотая рамка")
+        self.assertEqual(item["coins"], 90)
+        self.assertTrue(item["is_active"])
+        self.assertIsNone(item["override"])
+
+    def test_featured_and_announcement(self):
+        response = self.client.put(
+            "/api/v1/admin/shop/featured",
+            headers=self._headers(),
+            json={"item_key": "frame_gold"},
+        )
+        self.assertEqual(response.status_code, 200, response.get_data(as_text=True))
+        self.assertEqual(response.get_json()["shop"]["featured_key"], "frame_gold")
+
+        response = self.client.put(
+            "/api/v1/admin/shop/announcement",
+            headers=self._headers(),
+            json={"announcement": "На выходных двойные монеты!"},
+        )
+        self.assertEqual(response.status_code, 200, response.get_data(as_text=True))
+        self.assertEqual(
+            response.get_json()["shop"]["announcement"],
+            "На выходных двойные монеты!",
+        )
+        self.assertEqual(shop_service.get_setting("announcement"), "На выходных двойные монеты!")
+
+    def test_event_create_and_stop(self):
+        response = self.client.post(
+            "/api/v1/admin/shop/events",
+            headers=self._headers(),
+            json={
+                "title": "Монетная лихорадка",
+                "description": "Все выходные монеты удваиваются",
+                "icon": "🪙",
+                "kind": "double_coins",
+                "value": 2,
+                "starts_on": "2026-01-01",
+                "ends_on": "2026-01-03",
+            },
+        )
+        self.assertEqual(response.status_code, 200, response.get_data(as_text=True))
+        events = response.get_json()["shop"]["events"]
+        event = next(row for row in events if row["title"] == "Монетная лихорадка")
+        self.assertTrue(event["is_active"])
+        self.assertEqual(event["kind"], "double_coins")
+
+        stop = self.client.post(
+            f"/api/v1/admin/shop/events/{event['id']}/stop",
+            headers=self._headers(),
+        )
+        self.assertEqual(stop.status_code, 200, stop.get_data(as_text=True))
+        event = next(
+            row
+            for row in stop.get_json()["shop"]["events"]
+            if row["id"] == event["id"]
+        )
+        self.assertFalse(event["is_active"])
+
+        bad = self.client.post(
+            "/api/v1/admin/shop/events",
+            headers=self._headers(),
+            json={"title": "Плохие даты", "starts_on": "2026-02-02", "ends_on": "2026-02-01"},
+        )
+        self.assertEqual(bad.status_code, 400)
+        self.assertEqual(bad.get_json()["error"], "bad_dates")
+
+    def test_gift_create_and_cancel(self):
+        response = self.client.post(
+            "/api/v1/admin/shop/gifts",
+            headers=self._headers(),
+            json={
+                "learner_id": self.learner_id,
+                "item_key": "frame_gold",
+                "reason": "За 6 дней занятий и серию 5 дней",
+                "message": "Ты настоящий герой недели!",
+                "coins": 25,
+                "xp": 10,
+            },
+        )
+        self.assertEqual(response.status_code, 200, response.get_data(as_text=True))
+        body = response.get_json()
+        self.assertTrue(body["ok"])
+        self.assertEqual(len(shop_service.pending_gifts(self.learner_id)), 1)
+        gift = body["shop"]["gifts"][0]
+        self.assertEqual(gift["learner_name"], "Тест")
+        self.assertEqual(gift["reason"], "За 6 дней занятий и серию 5 дней")
+
+        cancel = self.client.post(
+            f"/api/v1/admin/shop/gifts/{gift['id']}/cancel",
+            headers=self._headers(),
+        )
+        self.assertEqual(cancel.status_code, 200, cancel.get_data(as_text=True))
+        self.assertEqual(shop_service.pending_gifts(self.learner_id), [])
+        self.assertEqual(cancel.get_json()["shop"]["gifts"][0]["status"], "cancelled")
+
+        no_reason = self.client.post(
+            "/api/v1/admin/shop/gifts",
+            headers=self._headers(),
+            json={"learner_id": self.learner_id, "coins": 5},
+        )
+        self.assertEqual(no_reason.status_code, 400)
+        self.assertEqual(no_reason.get_json()["error"], "reason_required")

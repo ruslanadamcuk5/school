@@ -337,6 +337,7 @@ private fun homeItems(
         HomeItem("padruchnik", "🌐", "e-padruchnik", "Поиск и импорт пособий с портала"),
         HomeItem("admin/5", "🤖", "Искусственный интеллект", "Провайдер, модель, ключ"),
         HomeItem("admin/6", "🧾", "Журнал", "Действия администраторов"),
+        HomeItem("admin/7", "🛍", "Магазин", "Подарки, каталог и события"),
         HomeItem("about", "ℹ️", "О приложении", "Версия и связь с сервером"),
     )
     "teacher" -> buildList {

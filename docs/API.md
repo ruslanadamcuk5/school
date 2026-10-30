@@ -488,6 +488,26 @@ POST /api/v1/daily/start   {"generator": "add.within20"}
 | PUT | `/admin/ai` | сохранить настройки |
 | POST | `/admin/ai/test` | проверить связь: `{"ok": true, "message": "…"}` |
 | GET | `/admin/audit?limit=200` | журнал действий |
+| GET | `/admin/shop` | сводка, рейтинг стараний, каталог, события и подарки |
+| POST | `/admin/shop/items/{key}` | изменить товар: `name`, `icon`, `price_coins`, `price_xp`, `discount_percent`, `level`, `is_active` |
+| POST | `/admin/shop/items/{key}/reset` | сбросить ручные настройки товара |
+| PUT | `/admin/shop/featured` | `{"item_key": "frame_gold"}` — товар дня; пустой ключ — автоматически |
+| PUT | `/admin/shop/announcement` | `{"announcement": "На выходных двойные монеты!"}` |
+| POST | `/admin/shop/events` | запустить событие: `title`, `kind`, `value`, `starts_on`, `ends_on` |
+| POST | `/admin/shop/events/{id}/stop` | остановить событие |
+| POST | `/admin/shop/gifts` | выдать подарок: `learner_id`, `item_key`, `reason`, `message`, `coins`, `xp` |
+| POST | `/admin/shop/gifts/{id}/cancel` | отменить ещё не открытый подарок |
+
+`GET /admin/shop` отдаёт `summary` (счётчики), `board` (рейтинг с причинами и
+идеями подарков), `catalog` (товары с ручными настройками в `override`),
+`categories`, `events`, `gifts`, `featured_key`, `announcement`, `reasons`,
+`today` и `default_end`. Каждое изменение возвращает `message` и свежее
+состояние в `shop`, поэтому Android-админке не нужен повторный запрос.
+
+```json
+{"learner_id": 12, "item_key": "frame_gold", "reason": "За серию 5 дней",
+ "message": "Ты молодец!", "coins": 25, "xp": 10}
+```
 
 Создание пользователя:
 
