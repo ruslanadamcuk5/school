@@ -195,6 +195,37 @@ class TestLocationService(unittest.TestCase):
         self.assertLess(summary["distance_m"], 1600)
         self.assertGreater(summary["duration_min"], 180)
 
+    def test_home_all_day_gives_zero_distance(self):
+        """Домашний день с дрожанием GPS не должен давать маршрут и километры."""
+        start = (datetime.now(timezone.utc) - timedelta(days=2)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        points = []
+        for index in range(120):
+            # GPS «гуляет» в радиусе до ~250 метров, иногда вылетает на 600 м.
+            step = index % 12
+            if step == 7:
+                lat_shift, lon_shift = 0.0054, 0.0       # ~600 м
+            elif step == 9:
+                lat_shift, lon_shift = -0.0030, 0.0030   # ~450 м
+            else:
+                lat_shift = ((step % 5) - 2) * 0.0009
+                lon_shift = ((step % 4) - 1.5) * 0.0011
+            points.append(
+                {
+                    "lat": 53.9000 + lat_shift,
+                    "lon": 27.5600 + lon_shift,
+                    "accuracy": 35,
+                    "recorded_at": (start + timedelta(minutes=5 * index)).isoformat(),
+                }
+            )
+        locations_service.record_points(self.learner_id, points)
+        trail = locations_service.trail(self.learner_id, start.date(), 0)
+        summary = trail["summary"]
+        self.assertEqual(summary["distance_m"], 0)
+        self.assertLessEqual(summary["points"], 3)
+        self.assertGreaterEqual(summary["raw_points"], 100)
+
     def test_latest_point_ignores_coarse_network_fix(self):
         now = datetime.now(timezone.utc).replace(microsecond=0)
         locations_service.record_points(

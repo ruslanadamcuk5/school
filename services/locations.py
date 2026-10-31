@@ -32,6 +32,20 @@ TRACK_STATIONARY_MAX_M = 120.0
 TRACK_TELEPORT_MIN_M = 400.0
 TRACK_TELEPORT_WINDOW_S = 20 * 60
 TRACK_MAX_SPEED_MPS = 55.0          # ~198 км/ч
+# Одиночные «выбросы»: точка улетела на километры и тут же вернулась.
+# Соседние точки рядом друг с другом, а до выброса — далеко.
+TRACK_SPIKE_NEIGHBOR_M = 1000.0
+TRACK_SPIKE_MIN_LEG_M = 500.0
+TRACK_SPIKE_MAX_PASSES = 8
+# «Стоянка»: несколько точек подряд в радиусе квартала. Такие точки
+# схлопываются в одну вершину, иначе дрожание GPS за день даёт километры.
+STAY_RADIUS_M = 320.0
+STAY_MIN_POINTS = 3
+STAY_MIN_MINUTES = 10
+STAY_MERGE_M = 450.0
+STAY_BRIDGE_MAX_ENTRIES = 4
+STAY_BRIDGE_MAX_MINUTES = 60
+STAY_BRIDGE_MAX_DISTANCE_M = 800.0
 LATEST_MAX_ACCURACY_M = 150.0
 LATEST_GOOD_WINDOW = timedelta(minutes=15)
 
@@ -413,6 +427,135 @@ def _distance_m(a: dict, b: dict) -> float:
     return 2 * radius * math.asin(min(1.0, math.sqrt(h)))
 
 
+def _drop_spikes(points: list[dict]) -> list[dict]:
+    """Убрать одиночные выбросы, которые не поймал фильтр скорости.
+
+    Бывает, что GPS на пару минут «улетает» на километры и возвращается:
+    скорость при этом выглядит правдоподобно (например, 80 км/ч), поэтому
+    проверка телепорта такой выброс пропускает. Признак выброса: соседние
+    точки стоят рядом, а выброс далеко от обеих. Проходы повторяются, пока
+    список не перестанет меняться — так убираются и пары подряд идущих
+    выбросов (сначала один, затем второй).
+    """
+    if len(points) < 3:
+        return points
+    for _ in range(TRACK_SPIKE_MAX_PASSES):
+        kept: list[dict] = [points[0]]
+        removed = False
+        for index in range(1, len(points) - 1):
+            previous = kept[-1]
+            current = points[index]
+            following = points[index + 1]
+            span = _distance_m(previous, following)
+            if span > TRACK_SPIKE_NEIGHBOR_M:
+                kept.append(current)
+                continue
+            leg_in = _distance_m(previous, current)
+            leg_out = _distance_m(current, following)
+            if min(leg_in, leg_out) < TRACK_SPIKE_MIN_LEG_M:
+                kept.append(current)
+                continue
+            if leg_in + leg_out < 3 * max(span, 100.0):
+                kept.append(current)
+                continue
+            removed = True
+        kept.append(points[-1])
+        points = kept
+        if not removed:
+            break
+    return points
+
+
+def _collapse_stays(points: list[dict]) -> list[dict]:
+    """Схлопнуть длительное стояние в одну вершину.
+
+    Если несколько точек подряд укладываются в радиус квартала, ребёнок никуда
+    не шёл — это телефон лежит на столе, а GPS гуляет. Стоянки в одном и том же
+    месте объединяются, даже если между ними затесалась пара выбросов: так
+    «выход на минуту» не превращается в маршрут на пару километров.
+    """
+    count = len(points)
+    if count < STAY_MIN_POINTS:
+        return points
+    # (вершина, это стоянка, сколько точек, начало, конец)
+    result: list[tuple[dict, bool, int, datetime | None, datetime | None]] = []
+    index = 0
+    while index < count:
+        member_count = 1
+        lat_sum = float(points[index]["lat"])
+        lon_sum = float(points[index]["lon"])
+        center = {"lat": lat_sum, "lon": lon_sum}
+        cursor = index + 1
+        while cursor < count:
+            candidate = points[cursor]
+            if _distance_m(center, candidate) > STAY_RADIUS_M:
+                break
+            member_count += 1
+            lat_sum += float(candidate["lat"])
+            lon_sum += float(candidate["lon"])
+            center = {"lat": lat_sum / member_count, "lon": lon_sum / member_count}
+            cursor += 1
+        first_at = _point_time(points[index].get("recorded_at"))
+        last_at = _point_time(points[cursor - 1].get("recorded_at"))
+        span_min = (last_at - first_at).total_seconds() / 60 if first_at and last_at else 0
+        if member_count >= STAY_MIN_POINTS and span_min >= STAY_MIN_MINUTES:
+            vertex = dict(points[cursor - 1])
+            vertex["lat"] = center["lat"]
+            vertex["lon"] = center["lon"]
+            result.append((vertex, True, member_count, first_at, last_at))
+            index = cursor
+        else:
+            point_at = _point_time(points[index].get("recorded_at"))
+            result.append((dict(points[index]), False, 1, point_at, point_at))
+            index += 1
+
+    # Объединяем стоянки в одном месте, если между ними не больше нескольких
+    # точек и пауза не больше полутора часов.
+    merged: list[tuple[dict, bool, int, datetime | None, datetime | None]] = []
+    position = 0
+    while position < len(result):
+        entry = result[position]
+        if not entry[1]:
+            merged.append(entry)
+            position += 1
+            continue
+        next_position = position + 1
+        while next_position < len(result) and not result[next_position][1]:
+            next_position += 1
+        if next_position < len(result):
+            between = next_position - position - 1
+            following = result[next_position]
+            gap_min = float("inf")
+            if entry[4] and following[3]:
+                gap_min = (following[3] - entry[4]).total_seconds() / 60
+            if (
+                between <= STAY_BRIDGE_MAX_ENTRIES
+                and gap_min <= STAY_BRIDGE_MAX_MINUTES
+                and _distance_m(entry[0], following[0]) <= STAY_MERGE_M
+                and all(
+                    _distance_m(entry[0], result[position + offset][0])
+                    <= STAY_BRIDGE_MAX_DISTANCE_M
+                    for offset in range(1, between + 1)
+                )
+            ):
+                total = entry[2] + following[2]
+                vertex = dict(following[0])
+                vertex["lat"] = (
+                    float(entry[0]["lat"]) * entry[2]
+                    + float(following[0]["lat"]) * following[2]
+                ) / total
+                vertex["lon"] = (
+                    float(entry[0]["lon"]) * entry[2]
+                    + float(following[0]["lon"]) * following[2]
+                ) / total
+                merged.append((vertex, True, total, entry[3], following[4]))
+                position = next_position + 1
+                continue
+        merged.append(entry)
+        position += 1
+    return [entry[0] for entry in merged]
+
+
 def _clean_track(points: list[dict]) -> list[dict]:
     """Убрать из трека шум GPS, стояние на месте и невозможные скачки.
 
@@ -455,6 +598,12 @@ def _clean_track(points: list[dict]) -> list[dict]:
                 continue
         accepted.append(dict(point))
         last_stationary = None
+    # Несколько проходов: выбросы убираем до и после схлопывания стоянок,
+    # потому что после удаления выброса соседние стоянки становятся рядом.
+    accepted = _drop_spikes(accepted)
+    accepted = _collapse_stays(accepted)
+    accepted = _drop_spikes(accepted)
+    accepted = _collapse_stays(accepted)
     if accepted and last_stationary is not None:
         tail_at = _point_time(last_stationary.get("recorded_at"))
         anchor_at = _point_time(accepted[-1].get("recorded_at"))
@@ -524,6 +673,17 @@ def trail(learner_id: int, day: date, tz_minutes: int = 0) -> dict:
     summary = _summary(points)
     summary["raw_points"] = len(raw_points)
     summary["hidden_points"] = max(0, len(raw_points) - len(points))
+    # Границы дня показываем по сырым точкам: после схлопывания стоянок первая
+    # вершина трека может быть позже первой точки (например, ребёнок дома).
+    if raw_points:
+        summary["first_at"] = raw_points[0]["recorded_at"]
+        summary["last_at"] = raw_points[-1]["recorded_at"]
+        start_at = _point_time(summary["first_at"])
+        end_at = _point_time(summary["last_at"])
+        if start_at and end_at:
+            summary["duration_min"] = max(
+                0, int((end_at - start_at).total_seconds() // 60)
+            )
     return {
         "day": day.isoformat(),
         "sharing": settings(learner_id),
