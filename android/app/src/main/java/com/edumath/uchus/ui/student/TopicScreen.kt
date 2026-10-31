@@ -144,6 +144,15 @@ fun TopicScreen(
             key = "topic:$slug",
             block = { container.api.topic(slug) },
         ) { data, refresh ->
+            LaunchedEffect(data) {
+                // Сразу показываем видео из ответа темы (кэш), не ожидая
+                // отдельного запроса. Если кэш устарел, он обновится ниже.
+                if (data.youtubeEnabled && videos.isEmpty()) {
+                    videosEnabled = true
+                    videos = data.videos
+                    selectedVideoId = data.videos.firstOrNull()?.videoId
+                }
+            }
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
