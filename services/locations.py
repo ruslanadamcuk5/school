@@ -195,8 +195,8 @@ def _notify_force(learner_id: int, sender_id: int) -> None:
 
     title = "📍 Родитель включил геолокацию"
     body = (
-        "Родитель просит включить передачу местоположения. "
-        "Открой приложение или страницу «Геолокация» и разреши доступ к GPS."
+        "Передача местоположения включена родителем и запускается автоматически. "
+        "Если Android или браузер ещё не дал доступ к GPS, разреши его один раз."
     )
     dedup_key = (
         "location_force:" + str(int(learner_id)) + ":"
@@ -309,7 +309,12 @@ def record_points(learner_id: int, points, battery: int | None = None) -> dict:
         last = max(row[-1] for row in rows)
         conn.execute(
             """UPDATE location_sharing
-                  SET enabled = 1, last_point_at = ?, updated_at = datetime('now')
+                  SET enabled = 1, last_point_at = ?,
+                      force_ack_at = CASE
+                          WHEN force_requested_at IS NOT NULL THEN datetime('now')
+                          ELSE force_ack_at
+                      END,
+                      updated_at = datetime('now')
                 WHERE learner_id = ?""",
             (last, int(learner_id)),
         )
@@ -477,42 +482,3 @@ def can_parent_see(parent_id: int, learner_id: int) -> bool:
         )
     )
 
-
-def request_sharing(learner_id: int, sender_id: int = 0) -> dict:
-    """Попросить ребёнка включить передачу геолокации (уведомление)."""
-    from services import notifications as notifications_service
-
-    ensure_settings(learner_id)
-    title = "📍 Родитель ждёт твою геопозицию"
-    body = (
-        "Родитель просит включить передачу местоположения. "
-        "Открой «Геолокация» в приложении или на сайте и нажми «Делиться»."
-    )
-    day_key = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    linked = query_one(
-        "SELECT user_id FROM learner_accounts WHERE learner_id = ?", (int(learner_id),)
-    )
-    try:
-        if linked and linked["user_id"]:
-            notifications_service.push(
-                int(linked["user_id"]), "location_request", title, body,
-                learner_id=int(learner_id), sender_id=int(sender_id or 0),
-                link="/location/",
-                dedup_key=f"location_request:{learner_id}:{day_key}:user",
-            )
-        else:
-            notifications_service.push(
-                0, "location_request", title, body,
-                learner_id=int(learner_id), sender_id=int(sender_id or 0),
-                link="/location/",
-                dedup_key=f"location_request:{learner_id}:{day_key}:learner",
-            )
-    except Exception:  # pragma: no cover - уведомление не должно ломать запрос
-        pass
-    if sender_id:
-        execute(
-            "INSERT INTO audit_log (user_id, action, entity, entity_id, details) "
-            "VALUES (?, 'location_request', 'learner', ?, '')",
-            (int(sender_id), str(int(learner_id))),
-        )
-    return settings(learner_id)

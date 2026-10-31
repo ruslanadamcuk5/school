@@ -205,8 +205,8 @@ def parent_force_location(learner_id: int):
         {
             "ok": True,
             "message": (
-                f"Команда включения отправлена: {profile['name']} получит запрос "
-                "и разрешит геолокацию на телефоне"
+                f"Включаем GPS на телефоне: {profile['name']}. "
+                "Точка появится на карте автоматически."
             ),
             "settings": info,
             "force_pending": info["force_pending"],

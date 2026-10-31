@@ -54,6 +54,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -102,6 +103,14 @@ fun ParentMapScreen(
             .onSuccess { track = it }
             .onFailure { trackError = it.message }
         trackLoading = false
+    }
+
+    // Карта и последняя точка обновляются сами: родителю не нужно ничего нажимать.
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(30_000)
+            tick++
+        }
     }
 
     ScreenScaffold(title = "Карта детей", onBack = onBack) { padding ->
@@ -186,7 +195,7 @@ fun ParentMapScreen(
                             )
                             if (sharing?.forcePending == true) {
                                 Text(
-                                    "Команда включения отправлена на телефон ребёнка",
+                                    "Включаем GPS на телефоне ребёнка…",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.primary,
                                 )

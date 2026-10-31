@@ -30,10 +30,12 @@
     center_lon: 27.5619,
     zoom: 11
   };
+  // EPSG:3395 (Яндекс). Радиус Земли обязателен: без него карта уезжает.
+  var YANDEX_SCALE = 0.5 / (Math.PI * L.Projection.Mercator.R);
   var YANDEX_CRS = L.extend({}, L.CRS.EPSG3857, {
     code: "EPSG:3395",
     projection: L.Projection.Mercator,
-    transformation: new L.Transformation(0.5 / Math.PI, 0.5, -0.5 / Math.PI, 0.5)
+    transformation: new L.Transformation(YANDEX_SCALE, 0.5, -YANDEX_SCALE, 0.5)
   });
 
   var map = null;
@@ -59,7 +61,8 @@
     L.tileLayer(settings.tile_url || DEFAULTS.tile_url, {
       minZoom: Number(settings.min_zoom || 1),
       maxZoom: Number(settings.max_zoom || 19),
-      tms: settings.crs === "yandex",
+      // Яндекс, как и OSM, нумерует тайлы сверху вниз.
+      tms: false,
       attribution: settings.attribution || DEFAULTS.attribution
     }).addTo(map);
     overviewLayer = L.layerGroup().addTo(map);

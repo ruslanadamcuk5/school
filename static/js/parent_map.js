@@ -37,10 +37,13 @@
   var trackBounds = null;
 
   function yandexCrs() {
+    // Яндекс отдаёт тайлы в EPSG:3395. Масштаб перевода метров в мировые
+    // координаты Leaflet обязан учитывать радиус Земли, иначе карта уезжает.
+    var scale = 0.5 / (Math.PI * L.Projection.Mercator.R);
     return L.extend({}, L.CRS.EPSG3857, {
       code: "EPSG:3395",
       projection: L.Projection.Mercator,
-      transformation: new L.Transformation(0.5 / Math.PI, 0.5, -0.5 / Math.PI, 0.5)
+      transformation: new L.Transformation(scale, 0.5, -scale, 0.5)
     });
   }
 
@@ -55,7 +58,8 @@
     L.tileLayer(settings.tile_url || "https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       minZoom: Number(settings.min_zoom || 1),
       maxZoom: Number(settings.max_zoom || 19),
-      tms: settings.crs === "yandex",
+      // Тайлы Яндекса нумеруются сверху вниз, как у OSM, поэтому tms не нужен.
+      tms: false,
       attribution: settings.attribution || "&copy; OpenStreetMap"
     }).addTo(map);
     trackLayer = L.layerGroup().addTo(map);
@@ -118,7 +122,7 @@
     return url.toString();
   }
 
-  function drawTrack(data) {
+  function drawTrack(data, keepView) {
     if (!map) return;
     trackLayer.clearLayers();
     trackBounds = null;
@@ -155,7 +159,7 @@
       }
     });
 
-    map.fitBounds(trackBounds, { padding: [28, 28], maxZoom: 17 });
+    if (!keepView) map.fitBounds(trackBounds, { padding: [28, 28], maxZoom: 17 });
   }
 
   function renderSummary(data) {
@@ -168,7 +172,7 @@
         addText(summaryBox, "p", "Последняя точка: " + dateTimeOfIso(data.sharing.last_point_at), "small muted");
       }
       if (data.sharing && data.sharing.force_pending) {
-        addText(summaryBox, "p", "Команда включения отправлена на телефон ребёнка.", "small muted");
+        addText(summaryBox, "p", "Включаем GPS на телефоне ребёнка…", "small muted");
       }
       return;
     }
@@ -237,7 +241,7 @@
       } else {
         meta = "точек пока нет";
       }
-      if (sharing.force_pending) meta += " · ждёт включения GPS";
+      if (sharing.force_pending) meta += " · включаем GPS…";
       addText(body, "span", meta, "geo-child__meta");
       row.appendChild(body);
       overviewBox.appendChild(row);
@@ -263,7 +267,7 @@
     });
   }
 
-  async function loadTrack() {
+  async function loadTrack(keepView) {
     if (!learnerSelect.value) return;
     setFlash("Загружаем трек…", false);
     try {
@@ -276,8 +280,10 @@
       var data = await response.json().catch(function () { return {}; });
       if (!response.ok || !data.ok) throw new Error(data.message || "Не удалось загрузить трек");
       renderSummary(data);
-      drawTrack(data);
-      if (map && trackBounds) map.fitBounds(trackBounds, { padding: [28, 28], maxZoom: 17 });
+      drawTrack(data, keepView);
+      if (!keepView && map && trackBounds) {
+        map.fitBounds(trackBounds, { padding: [28, 28], maxZoom: 17 });
+      }
       var next = new URL(window.location.href);
       next.searchParams.set("learner_id", learnerSelect.value);
       next.searchParams.set("date", dateInput.value);
@@ -323,14 +329,18 @@
     }
   }
 
-  refreshBtn.addEventListener("click", loadTrack);
-  learnerSelect.addEventListener("change", loadTrack);
-  dateInput.addEventListener("change", loadTrack);
+  refreshBtn.addEventListener("click", function () { loadTrack(); });
+  learnerSelect.addEventListener("change", function () { loadTrack(); });
+  dateInput.addEventListener("change", function () { loadTrack(); });
   if (forceBtn) forceBtn.addEventListener("click", forceLocation);
 
   var initialDate = new URL(window.location.href).searchParams.get("date");
   if (initialDate) dateInput.value = initialDate;
   loadOverview();
   loadTrack();
-  setInterval(loadOverview, 60000);
+  // Держим карту и последнюю точку актуальными без кнопки «Показать».
+  setInterval(function () {
+    loadOverview();
+    if (dateInput.value === localIso(new Date())) loadTrack(true);
+  }, 30000);
 })();

@@ -836,8 +836,8 @@ def map_force_location(learner_id: int):
         {
             "ok": True,
             "message": (
-                f"Команда отправлена: {profile['name']} получит запрос "
-                "и включит геолокацию на телефоне"
+                f"Включаем GPS на телефоне: {profile['name']}. "
+                "Точка появится на карте автоматически."
             ),
             "force_pending": info["force_pending"],
             "settings": info,

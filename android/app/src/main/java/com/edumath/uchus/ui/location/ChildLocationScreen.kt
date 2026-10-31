@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,6 +38,7 @@ import com.edumath.uchus.ui.common.ScreenScaffold
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -105,6 +105,14 @@ fun ChildLocationScreen(
         }
     }
 
+    // Статус и команда родителя проверяются сами, без кнопок «подтвердить».
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(30_000)
+            tick++
+        }
+    }
+
     ScreenScaffold(title = "Геолокация", onBack = onBack) { padding ->
         Load(
             key = "child-location:$tick",
@@ -161,8 +169,9 @@ fun ChildLocationScreen(
                 if (forcePending) {
                     item {
                         InfoBox(
-                            "📍 Родитель включил геолокацию на этом телефоне. " +
-                                "Разрешите доступ к местоположению, чтобы он увидел, где ты."
+                            "📍 Геолокация включена родителем. Передача запускается " +
+                                "автоматически; если Android ещё не дал доступ к " +
+                                "местоположению, разрешите его один раз."
                         )
                     }
                 }
@@ -194,13 +203,6 @@ fun ChildLocationScreen(
                             "Если геолокация выключена в настройках Android, приложение " +
                             "напомнит включить её после команды родителя."
                     )
-                }
-
-                item {
-                    OutlinedButton(
-                        onClick = { tick++ },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { Text("🔄 Проверить команду родителя") }
                 }
 
                 item { Spacer(Modifier.height(16.dp)) }
