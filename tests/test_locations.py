@@ -226,6 +226,57 @@ class TestLocationService(unittest.TestCase):
         self.assertLessEqual(summary["points"], 3)
         self.assertGreaterEqual(summary["raw_points"], 100)
 
+    def test_low_accuracy_points_do_not_make_false_route(self):
+        """Точки с точностью >100 м не должны рисовать «поездку» на километр."""
+        start = (datetime.now(timezone.utc) - timedelta(days=1)).replace(
+            microsecond=0
+        )
+        points = []
+        # Ребёнок дома: ровное дрожание GPS в радиусе пары десятков метров.
+        for index in range(40):
+            shift = (index % 5 - 2) * 0.00008
+            points.append(
+                {
+                    "lat": 53.1160 + shift,
+                    "lon": 26.0254 - shift,
+                    "accuracy": 20,
+                    "recorded_at": (start + timedelta(minutes=index)).isoformat(),
+                }
+            )
+        # Глюк GPS: на две минуты «уехал» на километр и вернулся.
+        # Точность таких точек 120–150 м — для маршрута это недостоверно.
+        points.extend(
+            [
+                {
+                    "lat": 53.1121,
+                    "lon": 26.0262,
+                    "accuracy": 147.9,
+                    "recorded_at": (start + timedelta(minutes=41)).isoformat(),
+                },
+                {
+                    "lat": 53.1236,
+                    "lon": 26.0147,
+                    "accuracy": 123.8,
+                    "recorded_at": (start + timedelta(minutes=42)).isoformat(),
+                },
+            ]
+        )
+        for index in range(43, 60):
+            shift = (index % 5 - 2) * 0.00008
+            points.append(
+                {
+                    "lat": 53.1160 + shift,
+                    "lon": 26.0254 - shift,
+                    "accuracy": 20,
+                    "recorded_at": (start + timedelta(minutes=index)).isoformat(),
+                }
+            )
+        locations_service.record_points(self.learner_id, points)
+        trail = locations_service.trail(self.learner_id, start.date(), 0)
+        summary = trail["summary"]
+        self.assertEqual(summary["distance_m"], 0)
+        self.assertLessEqual(summary["points"], 3)
+
     def test_latest_point_ignores_coarse_network_fix(self):
         now = datetime.now(timezone.utc).replace(microsecond=0)
         locations_service.record_points(
@@ -474,6 +525,44 @@ class TestLocationApi(unittest.TestCase):
         )
         self.assertEqual(bad_point.status_code, 400)
         self.assertEqual(bad_point.get_json()["error"], "bad_lat")
+
+    def test_parent_account_cannot_upload_location(self):
+        """Маршруты родителя не должны попадать в трек ребёнка."""
+        parent_login, parent_pass, parent_id = self._user("loc_up_p", "parent")
+        child_login, child_pass, child_id = self._user("loc_up_c", "student")
+        auth_service.link_parent_child(parent_id, child_id)
+        learner_id = learners_service.ensure_learner_for_user(
+            query_one("SELECT * FROM users WHERE id = ?", (child_id,))
+        )
+        parent_token = self._login(parent_login, parent_pass)
+        point = {
+            "lat": 53.9,
+            "lon": 27.5,
+            "accuracy": 8,
+            "recorded_at": now_iso(),
+        }
+        denied = self.client.post(
+            "/api/v1/location/points",
+            headers=self._headers(parent_token),
+            json={"points": [point]},
+        )
+        self.assertEqual(denied.status_code, 403, denied.get_data(as_text=True))
+
+        # Даже если в токене окажется learner_id ребёнка — писать нельзя.
+        from services import api_tokens
+
+        forged = api_tokens.create(user_id=parent_id, learner_id=learner_id)
+        denied = self.client.post(
+            "/api/v1/location/points",
+            headers=self._headers(forged),
+            json={"points": [point]},
+        )
+        self.assertEqual(denied.status_code, 403, denied.get_data(as_text=True))
+
+        rows = query_all(
+            "SELECT * FROM learner_locations WHERE learner_id = ?", (learner_id,)
+        )
+        self.assertEqual(rows, [])
 
     def test_web_pages_and_admin_map_settings(self):
         parent_token, child_token, learner_id = self._pair()

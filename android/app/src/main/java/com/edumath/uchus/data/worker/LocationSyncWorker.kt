@@ -20,6 +20,8 @@ import androidx.work.WorkerParameters
 import com.edumath.uchus.MainActivity
 import com.edumath.uchus.R
 import com.edumath.uchus.UchusApp
+import com.edumath.uchus.data.api.ApiJson
+import com.edumath.uchus.data.api.SessionDto
 import com.edumath.uchus.data.api.apiCall
 import com.edumath.uchus.data.location.LocationTrackingService
 import java.util.TimeZone
@@ -43,6 +45,16 @@ class LocationSyncWorker(
             ?: return Result.success()
         val stored = container.session.hydrate()
         if (stored == null || stored.token.isBlank()) return Result.success()
+        // Геолокацию передаёт только приложение ребёнка. У родителя нет
+        // профиля ученика — не тревожим сервер и не держим службу.
+        val session = runCatching {
+            ApiJson.gson.fromJson(stored.sessionJson, SessionDto::class.java)
+        }.getOrNull()
+        val isLearner = session?.learner != null || session?.user?.role == "student"
+        if (!isLearner) {
+            LocationTrackingService.stop(applicationContext)
+            return Result.success()
+        }
 
         val tzMinutes = TimeZone.getDefault().getOffset(System.currentTimeMillis()) / 60000
         val status = runCatching {

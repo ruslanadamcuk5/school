@@ -163,6 +163,10 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
                     )
                 )
             }
+        } else {
+            // Родительский аккаунт не должен передавать свои маршруты:
+            // служба могла остаться запущенной после входа ребёнка.
+            LocationTrackingService.stop(context)
         }
     }
 

@@ -68,11 +68,43 @@ def set_status():
     return jsonify(payload)
 
 
-@bp.route("/location/points", methods=["POST"])
-def points():
+def _upload_learner():
+    """Профиль, которому разрешено писать точки с этого запроса.
+
+    Геолокацию передаёт только телефон ребёнка. Аккаунт родителя (даже если
+    он открыл карту ребёнка) не должен сохранять свои маршруты в чужой трек.
+    """
     profile = _learner()
     if profile is None:
+        return None, "unauthorized"
+    from services import auth
+
+    user = auth.current_user()
+    if user is not None:
+        if user["role"] != auth.ROLE_STUDENT:
+            return None, "forbidden"
+        from database import query_one
+
+        linked = query_one(
+            "SELECT 1 AS ok FROM learner_accounts WHERE learner_id = ? AND user_id = ?",
+            (int(profile["id"]), int(user["id"])),
+        )
+        if not linked:
+            return None, "forbidden"
+    return profile, None
+
+
+@bp.route("/location/points", methods=["POST"])
+def points():
+    profile, error = _upload_learner()
+    if error == "unauthorized":
         return jsonify({"ok": False, "error": "unauthorized"}), 401
+    if error == "forbidden":
+        return jsonify({
+            "ok": False,
+            "error": "forbidden",
+            "message": "Геолокацию передаёт только телефон ребёнка",
+        }), 403
     data = request.get_json(silent=True) or {}
     raw = data.get("points")
     if raw is None and ("lat" in data or "latitude" in data):

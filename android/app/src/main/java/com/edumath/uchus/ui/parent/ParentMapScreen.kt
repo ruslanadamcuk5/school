@@ -168,7 +168,7 @@ fun ParentMapScreen(
                             selected = showRoute,
                             onClick = { showRoute = !showRoute },
                             label = {
-                                Text(if (showRoute) "Маршруты видны" else "Маршруты скрыты")
+                                Text(if (showRoute) "Маршрут ребёнка: виден" else "Маршрут ребёнка: скрыт")
                             },
                         )
                         Spacer(Modifier.weight(1f))
@@ -271,8 +271,8 @@ fun ParentMapScreen(
                             "время" to formatDuration(summary.durationMin),
                         )
                         Text(
-                            "Маршрут очищен от GPS-шума: стоянки и невозможные скачки " +
-                                "не увеличивают путь.",
+                            "В маршрут попадают только точки ребёнка с точностью до 100 м: " +
+                                "GPS-шум, стоянки и скачки не увеличивают путь.",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

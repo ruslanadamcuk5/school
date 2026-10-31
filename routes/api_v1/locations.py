@@ -84,7 +84,16 @@ def location_set_status():
 @bp.post("/location/points")
 @require_learner
 def location_add_points():
+    user = current_user()
+    if user is not None and user["role"] != "student":
+        # Родитель, учитель или админ не должны сохранять свои маршруты
+        # в трек ребёнка, даже если открыли его карту.
+        fail(403, "forbidden", "Геолокацию передаёт только телефон ребёнка")
     profile = learner()
+    if user is not None:
+        own_learner_id = learners_service.ensure_learner_for_user(user)
+        if int(profile["id"]) != int(own_learner_id):
+            fail(403, "forbidden", "Это не ваш профиль ученика")
     data = json_body()
     points = data.get("points")
     if points is None and ("lat" in data or "latitude" in data):

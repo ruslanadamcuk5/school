@@ -602,7 +602,7 @@ private suspend fun loadTile(client: OkHttpClient, url: String): Bitmap? =
         runCatching {
             val request = Request.Builder()
                 .url(url)
-                .header("User-Agent", "Uchus-Android/1.9.12")
+                .header("User-Agent", "Uchus-Android/1.9.13")
                 .header("Accept", "image/png,image/*;q=0.8")
                 .build()
             client.newCall(request).execute().use { response ->

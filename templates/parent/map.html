@@ -34,7 +34,7 @@
 <div class="row row--between mt-3">
   <div>
     <h1 style="margin:0;">📍 Дети на карте</h1>
-    <p class="muted small" style="margin:4px 0 0;">Последние точки и трек за день. История хранится {{ retention_days }} дня, маршрут очищается от шума GPS.</p>
+    <p class="muted small" style="margin:4px 0 0;">Последние точки и трек за день. История хранится {{ retention_days }} дня. В маршрут попадают только точки ребёнка с точностью до 100 м — шум, стоянки и скачки отбрасываются.</p>
   </div>
   <div class="row" style="gap:8px;">
     <a class="btn btn--ghost btn--small" href="{{ url_for('parent.dashboard') }}">← К статистике</a>
@@ -66,12 +66,12 @@
     <button class="btn btn--small" id="geo-force" type="button">📍 Включить геолокацию на телефоне ребёнка</button>
     <label class="geo-toggle" for="geo-show-route">
       <input id="geo-show-route" type="checkbox" checked>
-      Показывать маршруты
+      Показывать маршрут ребёнка
     </label>
   </div>
   <div id="geo-flash" class="muted small mt-2" style="min-height:18px;"></div>
   <div class="geo-legend">
-    <span class="small muted"><span class="geo-dot"></span>трек за день</span>
+    <span class="small muted"><span class="geo-dot"></span>маршрут ребёнка за день</span>
     <span class="small muted"><span class="geo-dot geo-dot--live"></span>точка недавно</span>
     <span class="small muted"><span class="geo-dot geo-dot--stale"></span>давно не было данных</span>
   </div>
@@ -109,6 +109,6 @@
 {% endblock %}
 {% block scripts %}
 <script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
-{# v=1.9.12 сбрасывает недельный кэш старых сломанных карт в браузерах. #}
-<script src="{{ url_for('static', filename='js/parent_map.js', v='1.9.12') }}"></script>
+{# v=1.9.13 сбрасывает недельный кэш старых сломанных карт в браузерах. #}
+<script src="{{ url_for('static', filename='js/parent_map.js', v='1.9.13') }}"></script>
 {% endblock %}
