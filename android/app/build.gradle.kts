@@ -12,8 +12,8 @@ android {
         applicationId = "com.edumath.uchus"
         minSdk = 24
         targetSdk = 35
-        versionCode = 30
-        versionName = "1.9.15"
+        versionCode = 31
+        versionName = "1.9.16"
 
         vectorDrawables { useSupportLibrary = true }
 
