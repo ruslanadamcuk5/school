@@ -507,6 +507,33 @@ interface ApiService {
     @POST("admin/ai/test")
     suspend fun adminAiTest(): AiTestDto
 
+    @GET("admin/youtube")
+    suspend fun adminYoutube(@Query("search") search: String? = null): AdminYoutubeDto
+
+    @PUT("admin/youtube")
+    suspend fun saveYoutube(@Body body: SaveYoutubeRequest): AdminYoutubeDto
+
+    @POST("admin/youtube/test")
+    suspend fun adminYoutubeTest(): YoutubeTestDto
+
+    @POST("admin/youtube/clear-cache")
+    suspend fun adminYoutubeClearCache(): YoutubeClearCacheDto
+
+    @POST("admin/youtube/warm")
+    suspend fun adminYoutubeWarm(@Body body: Map<String, Int>): YoutubeWarmDto
+
+    @POST("admin/youtube/refresh-topic")
+    suspend fun adminYoutubeRefreshTopic(@Body body: Map<String, String>): YoutubeRefreshDto
+
+    @POST("admin/youtube/manual")
+    suspend fun adminYoutubeAddManual(@Body body: Map<String, String>): YoutubeManualDto
+
+    @DELETE("admin/youtube/videos/{id}")
+    suspend fun adminYoutubeDeleteVideo(@Path("id") id: Int): MessageDto
+
+    @POST("admin/youtube/videos/{id}/unblock")
+    suspend fun adminYoutubeUnblockVideo(@Path("id") id: Int): MessageDto
+
     @GET("admin/audit")
     suspend fun adminAudit(@Query("limit") limit: Int?): AuditDto
 

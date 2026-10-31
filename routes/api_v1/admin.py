@@ -11,6 +11,7 @@ from services import map_settings as map_settings_service
 from services import orgs
 from services import textbooks as textbooks_service
 from services import topics as topics_service
+from services import youtube as youtube_service
 
 from . import bp
 from .deps import current_user, fail, json_body, require_user, row_dict, user_payload
@@ -634,6 +635,210 @@ def map_settings_save():
             "message": "Настройки карты сохранены",
         }
     )
+
+
+# ----------------------------------------------------------------- YouTube
+def _youtube_settings_payload(settings: dict | None = None) -> dict:
+    values = settings or youtube_service.get_settings()
+    return {
+        "enabled": bool(values.get("enabled")),
+        "has_key": bool((values.get("api_key") or "").strip()),
+        "region_code": values.get("region_code") or "BY",
+        "relevance_language": values.get("relevance_language") or "ru",
+        "max_per_topic": int(values.get("max_per_topic") or 3),
+        "min_duration": int(values.get("min_duration") or 60),
+        "max_duration": int(values.get("max_duration") or 3600),
+        "cache_days": int(values.get("cache_days") or 14),
+        "ai_ranking": bool(values.get("ai_ranking")),
+        "updated_at": values.get("updated_at"),
+    }
+
+
+def _youtube_payload() -> dict:
+    return {
+        "ok": True,
+        "settings": _youtube_settings_payload(),
+        "status": youtube_service.status(),
+        "stats": youtube_service.stats(),
+        "limits": {
+            "warm": youtube_service.MAX_WARM_TOPICS,
+            "manual_per_topic": youtube_service.MAX_MANUAL_PER_TOPIC,
+        },
+    }
+
+
+@bp.get("/admin/youtube")
+@require_user("admin")
+def youtube_admin_status():
+    search = (request.args.get("search") or "").strip()
+    payload = _youtube_payload()
+    payload["topics"] = youtube_service.topic_rows(limit=300, search=search)
+    payload["manual"] = youtube_service.manual_rows(limit=100)
+    payload["search"] = search
+    return jsonify(payload)
+
+
+@bp.put("/admin/youtube")
+@require_user("admin")
+def youtube_admin_save():
+    data = json_body()
+    current = youtube_service.get_settings()
+    raw_key = str(data.get("api_key") or "").strip()
+    clear_key = data.get("clear_key") is True or data.get("clear_key") == "1"
+    if clear_key:
+        raw_key = ""
+        keep_key = False
+    elif "keep_key" in data:
+        keep_key = bool(data.get("keep_key"))
+    else:
+        keep_key = raw_key == ""
+
+    payload = {
+        "enabled": data.get("enabled", bool(current.get("enabled"))),
+        "api_key": raw_key,
+        "region_code": data.get("region_code", current.get("region_code")),
+        "relevance_language": data.get(
+            "relevance_language", current.get("relevance_language")
+        ),
+        "max_per_topic": data.get("max_per_topic", current.get("max_per_topic")),
+        "min_duration": data.get("min_duration", current.get("min_duration")),
+        "max_duration": data.get("max_duration", current.get("max_duration")),
+        "cache_days": data.get("cache_days", current.get("cache_days")),
+        "ai_ranking": data.get("ai_ranking", bool(current.get("ai_ranking"))),
+    }
+    saved = youtube_service.save_settings(payload, keep_key=keep_key)
+    _log(
+        "youtube_save", "youtube", "",
+        f"enabled={saved.get('enabled')} region={saved.get('region_code')}",
+    )
+    message = "Настройки YouTube сохранены"
+    if saved.get("enabled") and not youtube_service.is_enabled():
+        message = "Сохранено, но YouTube ещё не готов: укажите ключ API."
+    result = _youtube_payload()
+    result["message"] = message
+    return jsonify(result)
+
+
+@bp.post("/admin/youtube/test")
+@require_user("admin")
+def youtube_admin_test():
+    ok, message = youtube_service.test_connection()
+    _log("youtube_test", "youtube", "", message)
+    return jsonify({"ok": ok, "message": message})
+
+
+@bp.post("/admin/youtube/clear-cache")
+@require_user("admin")
+def youtube_admin_clear_cache():
+    removed = youtube_service.clear_cache()
+    _log(
+        "youtube_clear_cache", "youtube", "",
+        f"видео: {removed['videos']}, тем: {removed['topics']}",
+    )
+    return jsonify(
+        {
+            "ok": True,
+            "removed": removed,
+            "message": (
+                f"Кэш очищен: удалено автоматических видео — {removed['videos']}, "
+                f"записей по темам — {removed['topics']}. Ручные ссылки сохранены."
+            ),
+        }
+    )
+
+
+@bp.post("/admin/youtube/warm")
+@require_user("admin")
+def youtube_admin_warm():
+    data = json_body()
+    try:
+        limit = int(data.get("limit") or youtube_service.MAX_WARM_TOPICS)
+    except (TypeError, ValueError):
+        limit = youtube_service.MAX_WARM_TOPICS
+    user = current_user()
+    result = youtube_service.warm_topics(
+        limit, user_id=int(user["id"]) if user else None
+    )
+    _log("youtube_warm", "youtube", "", f"обработано {result['processed']}")
+    return jsonify(
+        {
+            "ok": True,
+            "processed": result["processed"],
+            "results": result["results"],
+            "stopped": result.get("stopped") or "",
+            "message": f"Обработано тем: {result['processed']}.",
+        }
+    )
+
+
+@bp.post("/admin/youtube/refresh-topic")
+@require_user("admin")
+def youtube_admin_refresh_topic():
+    data = json_body()
+    slug = str(data.get("slug") or data.get("topic_slug") or "").strip()
+    if not slug:
+        fail(400, "slug_required", "Укажите тему")
+    user = current_user()
+    count, error = youtube_service.refresh_all_topic_cache(
+        slug, user_id=int(user["id"]) if user else None
+    )
+    _log("youtube_refresh_topic", "topic", slug, error or f"видео: {count}")
+    if error:
+        fail(400, "youtube_refresh_failed", error)
+    return jsonify(
+        {
+            "ok": True,
+            "slug": slug,
+            "count": count,
+            "message": f"Подобрано видео: {count}.",
+        }
+    )
+
+
+@bp.post("/admin/youtube/manual")
+@require_user("admin")
+def youtube_admin_manual_add():
+    data = json_body()
+    slug = str(data.get("slug") or data.get("topic_slug") or "").strip()
+    value = str(data.get("video_url") or data.get("url") or "").strip()
+    if not slug:
+        fail(400, "slug_required", "Укажите тему")
+    if not value:
+        fail(400, "url_required", "Укажите ссылку на YouTube")
+    video, error = youtube_service.add_manual_video(slug, value)
+    _log(
+        "youtube_manual_add", "topic", slug,
+        error or (video or {}).get("video_id", ""),
+    )
+    if error:
+        fail(400, "youtube_manual_failed", error)
+    return jsonify(
+        {
+            "ok": True,
+            "video": video,
+            "message": f"Видео добавлено: {(video or {}).get('title') or ''}".strip(),
+        }
+    )
+
+
+@bp.delete("/admin/youtube/videos/<int:video_row_id>")
+@require_user("admin")
+def youtube_admin_block_video(video_row_id: int):
+    ok, message = youtube_service.block_video(video_row_id)
+    _log("youtube_block_video", "video", str(video_row_id), message)
+    if not ok:
+        fail(404, "video_not_found", message)
+    return jsonify({"ok": True, "message": message})
+
+
+@bp.post("/admin/youtube/videos/<int:video_row_id>/unblock")
+@require_user("admin")
+def youtube_admin_unblock_video(video_row_id: int):
+    ok, message = youtube_service.unblock_video(video_row_id)
+    _log("youtube_unblock_video", "video", str(video_row_id), message)
+    if not ok:
+        fail(404, "video_not_found", message)
+    return jsonify({"ok": True, "message": message})
 
 
 # ------------------------------------------------------------------ журнал

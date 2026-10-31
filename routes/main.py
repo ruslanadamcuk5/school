@@ -10,6 +10,7 @@ from flask import (
     abort,
     flash,
     jsonify,
+    make_response,
     redirect,
     render_template,
     request,
@@ -378,6 +379,30 @@ def topic_videos(slug: str):
         user_id=int(learner["user_id"]) if learner["user_id"] else None,
     )
     return jsonify(payload)
+
+
+_EMBED_VIDEO_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
+
+
+@bp.route("/embed/youtube/<video_id>")
+def youtube_embed(video_id: str):
+    """Страница-обёртка для встроенного плеера (сайт и Android WebView).
+
+    YouTube требует HTTP Referer при встраивании. Если открыть адрес
+    ``youtube-nocookie.com/embed/...`` напрямую в WebView, Referer не
+    передаётся и плеер показывает ошибку 153. Эта страница загружается как
+    обычный HTTPS-документ нашего сайта, поэтому браузер отправляет корректный
+    Referer, а ``origin`` подтверждает домен плееру.
+    """
+    if not _EMBED_VIDEO_RE.fullmatch(video_id or ""):
+        abort(404)
+    origin = request.host_url.rstrip("/")
+    response = make_response(
+        render_template("embed_youtube.html", video_id=video_id, origin=origin)
+    )
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["X-Robots-Tag"] = "noindex"
+    return response
 
 
 def _reading_topic_page(learner, topic):

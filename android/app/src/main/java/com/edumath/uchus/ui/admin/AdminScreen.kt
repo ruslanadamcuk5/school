@@ -75,6 +75,7 @@ private val adminTabs = listOf(
     "Темы",
     "Пособия",
     "ИИ",
+    "YouTube",
     "Карты",
     "Журнал",
     "Магазин",
@@ -115,8 +116,9 @@ fun AdminScreen(
                 3 -> AdminTopicsTab(container)
                 4 -> AdminTextbooksTab(container)
                 5 -> AdminAiTab(container)
-                6 -> AdminMapsTab(container)
-                7 -> AdminAuditTab(container)
+                6 -> AdminYoutubeTab(container)
+                7 -> AdminMapsTab(container)
+                8 -> AdminAuditTab(container)
                 else -> AdminShopTab(container)
             }
         }

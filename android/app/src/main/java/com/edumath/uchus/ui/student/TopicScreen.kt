@@ -223,6 +223,7 @@ fun TopicScreen(
                             selectedId = selectedVideoId,
                             busy = videosBusy,
                             error = videosError,
+                            serverBaseUrl = container.session.baseUrl,
                             onSelect = { selectedVideoId = it },
                         )
                     }
@@ -354,6 +355,7 @@ private fun TopicVideosCard(
     selectedId: String?,
     busy: Boolean,
     error: String?,
+    serverBaseUrl: String,
     onSelect: (String) -> Unit,
 ) {
     val selected = videos.firstOrNull { it.videoId == selectedId } ?: videos.firstOrNull()
@@ -376,6 +378,7 @@ private fun TopicVideosCard(
                 key(selected.videoId) {
                     YouTubePlayer(
                         videoId = selected.videoId,
+                        serverBaseUrl = serverBaseUrl,
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(16f / 9f)
@@ -466,9 +469,19 @@ private fun VideoRow(video: TopicVideoDto, onClick: () -> Unit) {
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-private fun YouTubePlayer(videoId: String, modifier: Modifier = Modifier) {
+private fun YouTubePlayer(
+    videoId: String,
+    serverBaseUrl: String,
+    modifier: Modifier = Modifier,
+) {
     val safeId = videoId.filter { it.isLetterOrDigit() || it == '_' || it == '-' }.take(11)
     if (safeId.length != 11) return
+    // Открываем не сам youtube-nocookie.com, а HTTPS-страницу нашего сервера.
+    // Только в этом случае WebView передаёт YouTube корректный Referer,
+    // иначе плеер показывает «Ошибка 153» и не запускается.
+    val pageUrl = remember(safeId, serverBaseUrl) {
+        serverBaseUrl.trimEnd('/') + "/embed/youtube/" + safeId
+    }
     var webView by remember { mutableStateOf<WebView?>(null) }
     DisposableEffect(safeId) {
         onDispose {
@@ -487,47 +500,30 @@ private fun YouTubePlayer(videoId: String, modifier: Modifier = Modifier) {
                 setBackgroundColor(android.graphics.Color.BLACK)
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
-                settings.mediaPlaybackRequiresUserGesture = true
+                settings.mediaPlaybackRequiresUserGesture = false
                 settings.allowFileAccess = false
                 settings.allowContentAccess = false
                 settings.builtInZoomControls = false
                 settings.displayZoomControls = false
+                settings.useWideViewPort = true
+                settings.loadWithOverviewMode = true
                 settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+                settings.cacheMode = WebSettings.LOAD_DEFAULT
+                webChromeClient = android.webkit.WebChromeClient()
                 webViewClient = WebViewClient()
+                setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
                 webView = this
                 tag = safeId
-                loadVideo(safeId)
+                loadUrl(pageUrl)
             }
         },
         update = { view ->
             if (view.tag != safeId) {
                 view.tag = safeId
-                view.loadVideo(safeId)
+                view.loadUrl(pageUrl)
             }
         },
     )
-}
-
-private fun WebView.loadVideo(videoId: String) {
-    val html = """
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-            <style>
-              html, body { margin:0; padding:0; height:100%; background:#000; overflow:hidden; }
-              iframe { position:absolute; top:0; left:0; width:100%; height:100%; border:0; }
-            </style>
-          </head>
-          <body>
-            <iframe
-              src="https://www.youtube-nocookie.com/embed/$videoId?rel=0&amp;playsinline=1"
-              allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowfullscreen></iframe>
-          </body>
-        </html>
-    """.trimIndent()
-    loadDataWithBaseURL("https://www.youtube-nocookie.com", html, "text/html", "UTF-8", null)
 }
 
 @Composable

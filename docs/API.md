@@ -753,6 +753,39 @@ POST /api/v1/daily/start   {"generator": "add.within20"}
 Клиент встраивает `embed_url` в `iframe`/`WebView`; домены
 `www.youtube.com` и `www.youtube-nocookie.com` разрешены в CSP.
 
+### Встроенный плеер в WebView
+
+YouTube требует HTTP Referer. Если загрузить `youtube-nocookie.com/embed/…`
+в WebView напрямую, Referer не передаётся и плеер показывает ошибку 153.
+Поэтому Android открывает страницу-обёртку на своём сервере:
+
+| Метод | Путь | Описание |
+|---|---|---|
+| GET | `/embed/youtube/{video_id}` | HTTPS-страница с `iframe` и корректным `Referrer-Policy` |
+
+Страница публичная (не требует cookie-сессии) и отдаёт заголовок
+`Referrer-Policy: strict-origin-when-cross-origin`. В WebView нужно включить
+JavaScript, DOM Storage и `mediaPlaybackRequiresUserGesture = false`.
+
+### Админка YouTube в приложении
+
+Те же настройки, что и на сайте, доступны администратору через API v1
+(Bearer-токен, роль `admin`).
+
+| Метод | Путь | Описание |
+|---|---|---|
+| GET | `/admin/youtube?search=` | настройки, состояние, статистика, темы и ручные видео |
+| PUT | `/admin/youtube` | сохранить настройки; `keep_key` сохраняет старый ключ, `clear_key` удаляет |
+| POST | `/admin/youtube/test` | проверить ключ дешёвым запросом |
+| POST | `/admin/youtube/clear-cache` | очистить автоматические видео и кэш (ручные остаются) |
+| POST | `/admin/youtube/warm` | подобрать видео заранее, `{"limit": 5}` |
+| POST | `/admin/youtube/refresh-topic` | обновить одну тему, `{"slug": "fractions"}` |
+| POST | `/admin/youtube/manual` | добавить ручную ссылку, `{"slug": "…", "video_url": "…"}` |
+| DELETE | `/admin/youtube/videos/{id}` | скрыть авто-видео или удалить ручную ссылку |
+| POST | `/admin/youtube/videos/{id}/unblock` | снова показывать скрытое видео |
+
+Ключ API в ответах не раскрывается: клиент получает только `has_key: true/false`.
+
 ---
 
 ## Дополнительные эндпоинты (версия 1.7)

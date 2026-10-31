@@ -1786,6 +1786,156 @@ data class MapSettingsRequest(
     @SerializedName("zoom") val zoom: Int,
 )
 
+data class YoutubeSettingsDto(
+    @SerializedName("enabled") val enabled: Boolean = false,
+    @SerializedName("has_key") val hasKey: Boolean = false,
+    @SerializedName("region_code") val regionCode: String = "BY",
+    @SerializedName("relevance_language") val relevanceLanguage: String = "ru",
+    @SerializedName("max_per_topic") val maxPerTopic: Int = 3,
+    @SerializedName("min_duration") val minDuration: Int = 60,
+    @SerializedName("max_duration") val maxDuration: Int = 3600,
+    @SerializedName("cache_days") val cacheDays: Int = 14,
+    @SerializedName("ai_ranking") val aiRanking: Boolean = true,
+    @SerializedName("updated_at") val updatedAt: String? = null,
+)
+
+data class YoutubeStatusDto(
+    @SerializedName("enabled") val enabled: Boolean = false,
+    @SerializedName("configured") val configured: Boolean = false,
+    @SerializedName("has_key") val hasKey: Boolean = false,
+    @SerializedName("region_code") val regionCode: String = "BY",
+    @SerializedName("relevance_language") val relevanceLanguage: String = "ru",
+    @SerializedName("max_per_topic") val maxPerTopic: Int = 3,
+    @SerializedName("min_duration") val minDuration: Int = 60,
+    @SerializedName("max_duration") val maxDuration: Int = 3600,
+    @SerializedName("cache_days") val cacheDays: Int = 14,
+    @SerializedName("ai_ranking") val aiRanking: Boolean = false,
+    @SerializedName("updated_at") val updatedAt: String? = null,
+)
+
+data class YoutubeLastErrorDto(
+    @SerializedName("error") val error: String? = null,
+    @SerializedName("checked_at") val checkedAt: String? = null,
+    @SerializedName("title") val title: String? = null,
+)
+
+data class YoutubeStatsDto(
+    @SerializedName("topics") val topics: Int = 0,
+    @SerializedName("with_videos") val withVideos: Int = 0,
+    @SerializedName("fresh") val fresh: Int = 0,
+    @SerializedName("errors") val errors: Int = 0,
+    @SerializedName("manual") val manual: Int = 0,
+    @SerializedName("auto") val auto: Int = 0,
+    @SerializedName("last_error") val lastError: YoutubeLastErrorDto? = null,
+)
+
+data class YoutubeTopicDto(
+    @SerializedName("slug") val slug: String = "",
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("grade") val grade: Int = 0,
+    @SerializedName("subject_name") val subjectName: String? = null,
+    @SerializedName("videos") val videos: Int = 0,
+    @SerializedName("manual") val manual: Int = 0,
+    @SerializedName("status") val status: String? = null,
+    @SerializedName("error") val error: String? = null,
+    @SerializedName("checked_at") val checkedAt: String? = null,
+    @SerializedName("expires_at") val expiresAt: String? = null,
+    @SerializedName("fresh") val fresh: Int = 0,
+)
+
+data class AdminYoutubeVideoDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("video_id") val videoId: String = "",
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("channel") val channel: String? = null,
+    @SerializedName("duration_seconds") val durationSeconds: Int = 0,
+    @SerializedName("duration_label") val durationLabel: String? = null,
+    @SerializedName("source") val source: String? = null,
+    @SerializedName("embed_url") val embedUrl: String? = null,
+    @SerializedName("watch_url") val watchUrl: String? = null,
+    @SerializedName("topic_slug") val topicSlug: String? = null,
+    @SerializedName("topic_title") val topicTitle: String? = null,
+)
+
+data class YoutubeLimitsDto(
+    @SerializedName("warm") val warm: Int = 5,
+    @SerializedName("manual_per_topic") val manualPerTopic: Int = 10,
+)
+
+data class AdminYoutubeDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("settings") val settings: YoutubeSettingsDto = YoutubeSettingsDto(),
+    @SerializedName("status") val status: YoutubeStatusDto = YoutubeStatusDto(),
+    @SerializedName("stats") val stats: YoutubeStatsDto = YoutubeStatsDto(),
+    @SerializedName("topics") val topics: List<YoutubeTopicDto> = emptyList(),
+    @SerializedName("manual") val manual: List<AdminYoutubeVideoDto> = emptyList(),
+    @SerializedName("limits") val limits: YoutubeLimitsDto = YoutubeLimitsDto(),
+    @SerializedName("search") val search: String? = null,
+    @SerializedName("message") val message: String? = null,
+)
+
+data class SaveYoutubeRequest(
+    @SerializedName("enabled") val enabled: Boolean,
+    @SerializedName("api_key") val apiKey: String? = null,
+    @SerializedName("keep_key") val keepKey: Boolean = true,
+    @SerializedName("clear_key") val clearKey: Boolean = false,
+    @SerializedName("region_code") val regionCode: String,
+    @SerializedName("relevance_language") val relevanceLanguage: String,
+    @SerializedName("max_per_topic") val maxPerTopic: Int,
+    @SerializedName("min_duration") val minDuration: Int,
+    @SerializedName("max_duration") val maxDuration: Int,
+    @SerializedName("cache_days") val cacheDays: Int,
+    @SerializedName("ai_ranking") val aiRanking: Boolean,
+)
+
+data class YoutubeTestDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("message") val message: String? = null,
+)
+
+data class YoutubeRemovedDto(
+    @SerializedName("videos") val videos: Int = 0,
+    @SerializedName("topics") val topics: Int = 0,
+)
+
+data class YoutubeClearCacheDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("removed") val removed: YoutubeRemovedDto = YoutubeRemovedDto(),
+    @SerializedName("message") val message: String? = null,
+)
+
+data class YoutubeWarmItemDto(
+    @SerializedName("slug") val slug: String = "",
+    @SerializedName("count") val count: Int = 0,
+    @SerializedName("error") val error: String = "",
+)
+
+data class YoutubeWarmDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("processed") val processed: Int = 0,
+    @SerializedName("results") val results: List<YoutubeWarmItemDto> = emptyList(),
+    @SerializedName("stopped") val stopped: String = "",
+    @SerializedName("message") val message: String? = null,
+)
+
+data class YoutubeRefreshDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("slug") val slug: String = "",
+    @SerializedName("count") val count: Int = 0,
+    @SerializedName("message") val message: String? = null,
+)
+
+data class YoutubeManualDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("video") val video: TopicVideoDto? = null,
+    @SerializedName("message") val message: String? = null,
+)
+
+data class MessageDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("message") val message: String? = null,
+)
+
 data class LocationSharingDto(
     @SerializedName("enabled") val enabled: Boolean = true,
     @SerializedName("retention_days") val retentionDays: Int = 3,

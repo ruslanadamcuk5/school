@@ -327,6 +327,127 @@ class TestWebAndApi(YouTubeTestCase):
         page = self.client.get("/topic/fractions").get_data(as_text=True)
         self.assertNotIn("Видео по теме", page)
 
+    def test_embed_relay_page_sets_referer_for_webview(self):
+        response = self.client.get("/embed/youtube/web00000001")
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn("youtube-nocookie.com/embed/web00000001", html)
+        self.assertIn('referrerpolicy="strict-origin-when-cross-origin"', html)
+        self.assertIn("enablejsapi=1", html)
+        self.assertIn("origin=", html)
+        self.assertEqual(
+            response.headers["Referrer-Policy"], "strict-origin-when-cross-origin"
+        )
+        self.assertEqual(self.client.get("/embed/youtube/bad").status_code, 404)
+
+    def _admin_headers(self) -> dict:
+        response = self.client.post(
+            "/api/v1/auth/login",
+            json={"login": "admin", "password": "math2025"},
+        )
+        self.assertEqual(response.status_code, 200)
+        return {"Authorization": f"Bearer {response.get_json()['token']}"}
+
+    def test_admin_api_returns_settings_and_stats(self):
+        headers = self._admin_headers()
+        response = self.client.get("/api/v1/admin/youtube", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload["ok"])
+        self.assertTrue(payload["settings"]["has_key"])
+        self.assertIn("max_per_topic", payload["settings"])
+        self.assertIn("topics", payload)
+        self.assertIn("manual", payload)
+        self.assertIn("stats", payload)
+
+    def test_admin_api_saves_settings_and_keeps_key(self):
+        headers = self._admin_headers()
+        response = self.client.put(
+            "/api/v1/admin/youtube",
+            json={
+                "enabled": True,
+                "keep_key": True,
+                "region_code": "by",
+                "relevance_language": "ru",
+                "max_per_topic": 4,
+                "min_duration": 90,
+                "max_duration": 2400,
+                "cache_days": 21,
+                "ai_ranking": False,
+            },
+            headers=headers,
+        )
+        self.assertEqual(response.status_code, 200)
+        settings = response.get_json()["settings"]
+        self.assertTrue(settings["has_key"])
+        self.assertEqual(settings["region_code"], "BY")
+        self.assertEqual(settings["max_per_topic"], 4)
+        self.assertEqual(settings["cache_days"], 21)
+        self.assertFalse(settings["ai_ranking"])
+
+    def test_admin_api_manual_video_and_delete(self):
+        headers = self._admin_headers()
+        manual = video("manualapi01", "Дроби: разбор для 5 класса")
+        with mock.patch.object(
+            youtube_service, "_fetch_details", return_value=([manual], None)
+        ):
+            response = self.client.post(
+                "/api/v1/admin/youtube/manual",
+                json={"slug": "fractions", "video_url": "https://youtu.be/manualapi01"},
+                headers=headers,
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["video"]["video_id"], "manualapi01")
+
+        row = query_one(
+            "SELECT * FROM topic_videos WHERE video_id = 'manualapi01'"
+        )
+        self.assertIsNotNone(row)
+        deleted = self.client.delete(
+            f"/api/v1/admin/youtube/videos/{row['id']}", headers=headers
+        )
+        self.assertEqual(deleted.status_code, 200)
+        self.assertIsNone(
+            query_one("SELECT * FROM topic_videos WHERE video_id = 'manualapi01'")
+        )
+
+    def test_admin_api_warm_and_clear_cache(self):
+        headers = self._admin_headers()
+        good = video("warmapi0001", "Обыкновенные дроби — объяснение 5 класс")
+        with mock.patch.object(youtube_service, "_ai_available", return_value=False), \
+                mock.patch.object(
+                    youtube_service, "_search", return_value=(["warmapi0001"], None)
+                ), \
+                mock.patch.object(
+                    youtube_service, "_fetch_details", return_value=([good], None)
+                ):
+            response = self.client.post(
+                "/api/v1/admin/youtube/warm", json={"limit": 1}, headers=headers
+            )
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertEqual(payload["processed"], 1)
+        self.assertFalse(payload["results"][0]["error"])
+
+        execute(
+            """INSERT INTO topic_videos
+                   (topic_slug, video_id, title, channel, duration, source)
+               VALUES ('fractions', 'cacheapi001', 'Дроби', 'Школа', 600, 'auto')"""
+        )
+        cleared = self.client.post(
+            "/api/v1/admin/youtube/clear-cache", headers=headers
+        )
+        self.assertEqual(cleared.status_code, 200)
+        self.assertGreaterEqual(cleared.get_json()["removed"]["videos"], 1)
+
+    def test_admin_api_forbidden_for_non_admin(self):
+        response = self.client.get(
+            "/api/v1/admin/youtube",
+            headers={"Authorization": f"Bearer {self.token}"},
+        )
+        # Семейный профиль не является пользователем-администратором.
+        self.assertIn(response.status_code, (401, 403))
+
 
 if __name__ == "__main__":
     unittest.main()
