@@ -1,11 +1,15 @@
 package com.edumath.uchus.ui.student
 
 import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -29,6 +33,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -36,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -55,6 +61,7 @@ import com.edumath.uchus.ui.common.SectionTitle
 import com.edumath.uchus.ui.common.Speaker
 import com.edumath.uchus.ui.common.Tag
 import com.edumath.uchus.ui.common.plainAiText
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -359,6 +366,7 @@ private fun TopicVideosCard(
     onSelect: (String) -> Unit,
 ) {
     val selected = videos.firstOrNull { it.videoId == selectedId } ?: videos.firstOrNull()
+    val context = LocalContext.current
     Card(Modifier.fillMaxWidth()) {
         Column(
             Modifier.padding(14.dp),
@@ -401,6 +409,21 @@ private fun TopicVideosCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                Text(
+                    "Не запускается? Открыть на YouTube",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable {
+                        runCatching {
+                            context.startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("https://www.youtube.com/watch?v=${selected.videoId}"),
+                                )
+                            )
+                        }
+                    },
+                )
             } else if (busy) {
                 Text(
                     "Подбираем видео для этой темы…",
@@ -476,13 +499,59 @@ private fun YouTubePlayer(
 ) {
     val safeId = videoId.filter { it.isLetterOrDigit() || it == '_' || it == '-' }.take(11)
     if (safeId.length != 11) return
-    // Открываем не сам youtube-nocookie.com, а HTTPS-страницу нашего сервера.
-    // Только в этом случае WebView передаёт YouTube корректный Referer,
-    // иначе плеер показывает «Ошибка 153» и не запускается.
-    val pageUrl = remember(safeId, serverBaseUrl) {
-        serverBaseUrl.trimEnd('/') + "/embed/youtube/" + safeId
+
+    val context = LocalContext.current
+
+    // Источник, от которого загружается плеер. Он же уходит в параметр origin
+    // и в заголовок Referer — без согласованной пары YouTube показывает
+    // «Ошибка 153» и чёрный экран.
+    val origin = remember(serverBaseUrl) {
+        runCatching {
+            val uri = java.net.URI(serverBaseUrl.trim())
+            buildString {
+                append(uri.scheme ?: "https")
+                append("://")
+                append(uri.host ?: "virusadk.alwaysdata.net")
+                if (uri.port > 0 && uri.port != 80 && uri.port != 443) {
+                    append(':').append(uri.port)
+                }
+            }
+        }.getOrDefault("https://virusadk.alwaysdata.net")
     }
+
+    // Грузим страницу плеера напрямую, но с заголовком Referer: это
+    // рекомендуемый Google способ для WebView. Раньше здесь был iframe на
+    // своей странице — в WebView вложенный запрос оставался без Referer,
+    // поэтому плеер не запускался.
+    val embedUrl = remember(safeId, origin) {
+        "https://www.youtube-nocookie.com/embed/$safeId" +
+            "?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1" +
+            "&origin=" + Uri.encode(origin)
+    }
+    val referer = remember(origin) { "$origin/" }
+    val watchUrl = remember(safeId) { "https://www.youtube.com/watch?v=$safeId" }
+
     var webView by remember { mutableStateOf<WebView?>(null) }
+    var failed by remember(safeId) { mutableStateOf(false) }
+    var loaded by remember(safeId) { mutableStateOf(false) }
+    var attempt by remember(safeId) { mutableIntStateOf(0) }
+
+    fun reload() {
+        loaded = false
+        failed = false
+        attempt++
+        webView?.loadUrl(embedUrl, mapOf("Referer" to referer))
+    }
+
+    // Страховка от бесконечного чёрного прямоугольника: если за 15 секунд
+    // страница так и не загрузилась, показываем понятное сообщение и кнопки.
+    LaunchedEffect(safeId, attempt) {
+        loaded = false
+        failed = false
+        delay(15_000)
+        if (!loaded) failed = true
+    }
+
     DisposableEffect(safeId) {
         onDispose {
             webView?.apply {
@@ -493,37 +562,104 @@ private fun YouTubePlayer(
             webView = null
         }
     }
-    AndroidView(
-        modifier = modifier,
-        factory = { context ->
-            WebView(context).apply {
-                setBackgroundColor(android.graphics.Color.BLACK)
-                settings.javaScriptEnabled = true
-                settings.domStorageEnabled = true
-                settings.mediaPlaybackRequiresUserGesture = false
-                settings.allowFileAccess = false
-                settings.allowContentAccess = false
-                settings.builtInZoomControls = false
-                settings.displayZoomControls = false
-                settings.useWideViewPort = true
-                settings.loadWithOverviewMode = true
-                settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-                settings.cacheMode = WebSettings.LOAD_DEFAULT
-                webChromeClient = android.webkit.WebChromeClient()
-                webViewClient = WebViewClient()
-                setLayerType(android.view.View.LAYER_TYPE_HARDWARE, null)
-                webView = this
-                tag = safeId
-                loadUrl(pageUrl)
+
+    Box(modifier) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { ctx ->
+                WebView(ctx).apply {
+                    setBackgroundColor(android.graphics.Color.BLACK)
+                    settings.javaScriptEnabled = true
+                    settings.domStorageEnabled = true
+                    settings.mediaPlaybackRequiresUserGesture = false
+                    settings.allowFileAccess = false
+                    settings.allowContentAccess = false
+                    settings.builtInZoomControls = false
+                    settings.displayZoomControls = false
+                    settings.useWideViewPort = true
+                    settings.loadWithOverviewMode = true
+                    settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+                    settings.cacheMode = WebSettings.LOAD_DEFAULT
+                    settings.setSupportMultipleWindows(false)
+                    // Метка «wv» выдаёт встроенный WebView. Убираем её, чтобы
+                    // YouTube не включал для такого клиента ограниченный плеер.
+                    settings.userAgentString = settings.userAgentString
+                        .replace("; wv", "")
+                        .replace("Version/4.0 ", "")
+                    webChromeClient = android.webkit.WebChromeClient()
+                    webViewClient = object : WebViewClient() {
+                        override fun onPageFinished(view: WebView?, url: String?) {
+                            super.onPageFinished(view, url)
+                            loaded = true
+                        }
+
+                        override fun onReceivedError(
+                            view: WebView?,
+                            request: android.webkit.WebResourceRequest?,
+                            error: android.webkit.WebResourceError?,
+                        ) {
+                            super.onReceivedError(view, request, error)
+                            if (request?.isForMainFrame == true) failed = true
+                        }
+
+                        override fun onReceivedHttpError(
+                            view: WebView?,
+                            request: android.webkit.WebResourceRequest?,
+                            errorResponse: android.webkit.WebResourceResponse?,
+                        ) {
+                            super.onReceivedHttpError(view, request, errorResponse)
+                            val code = errorResponse?.statusCode ?: 0
+                            if (request?.isForMainFrame == true && code >= 400) failed = true
+                        }
+                    }
+                    webView = this
+                    tag = safeId
+                    loadUrl(embedUrl, mapOf("Referer" to referer))
+                }
+            },
+            update = { view ->
+                if (view.tag != safeId) {
+                    view.tag = safeId
+                    view.loadUrl(embedUrl, mapOf("Referer" to referer))
+                }
+            },
+        )
+
+        if (failed) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xE6000000))
+                    .padding(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text(
+                    "Видео не загрузилось",
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedButton(onClick = { reload() }) {
+                        Text("Повторить", color = Color.White)
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            runCatching {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(watchUrl))
+                                )
+                            }
+                        },
+                    ) {
+                        Text("На YouTube", color = Color.White)
+                    }
+                }
             }
-        },
-        update = { view ->
-            if (view.tag != safeId) {
-                view.tag = safeId
-                view.loadUrl(pageUrl)
-            }
-        },
-    )
+        }
+    }
 }
 
 @Composable
