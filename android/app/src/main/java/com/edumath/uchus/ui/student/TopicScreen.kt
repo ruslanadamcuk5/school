@@ -546,8 +546,6 @@ private fun YouTubePlayer(
     // Страховка от бесконечного чёрного прямоугольника: если за 15 секунд
     // страница так и не загрузилась, показываем понятное сообщение и кнопки.
     LaunchedEffect(safeId, attempt) {
-        loaded = false
-        failed = false
         delay(15_000)
         if (!loaded) failed = true
     }
