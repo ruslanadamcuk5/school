@@ -293,6 +293,23 @@ class TestLocationService(unittest.TestCase):
         self.assertAlmostEqual(latest["lat"], 53.9000, places=4)
         self.assertEqual(latest["accuracy"], 9)
 
+    def test_latest_point_ignores_far_low_accuracy_jump(self):
+        """«Улетевшая» на километры точка на 120 м не должна менять адрес."""
+        now = datetime.now(timezone.utc).replace(microsecond=0)
+        locations_service.record_points(
+            self.learner_id,
+            [{"lat": 53.1160, "lon": 26.0254, "accuracy": 18,
+              "recorded_at": (now - timedelta(minutes=2)).isoformat()}],
+        )
+        locations_service.record_points(
+            self.learner_id,
+            [{"lat": 53.1606, "lon": 26.0081, "accuracy": 120,
+              "recorded_at": now.isoformat()}],
+        )
+        latest = locations_service.latest_point(self.learner_id)
+        self.assertAlmostEqual(latest["lat"], 53.1160, places=4)
+        self.assertEqual(latest["accuracy"], 18)
+
     def test_first_point_auto_acknowledges_force_command(self):
         """Родитель не должен видеть «ожидание» после того, как точка пришла."""
         sender_id = auth_service.create_user("autoack_parent", "secret123", "parent")
