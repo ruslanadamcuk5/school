@@ -5,21 +5,56 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <link rel="stylesheet" href="leaflet/leaflet.css">
   <style>
-    html, body { margin:0; padding:0; height:100%; background:#eef4ff; }
-    #map { position:absolute; inset:0; }
+    html, body {
+      margin:0; padding:0; width:100%; height:100%;
+      background:#eef4ff; overflow:hidden;
+      -webkit-tap-highlight-color:transparent;
+    }
+    /* Явные размеры вместо inset: старые WebView не знают inset и рисуют
+       пустой контейнер нулевого размера. */
+    #map {
+      position:absolute; top:0; left:0; right:0; bottom:0;
+      width:100%; height:100%;
+      background:#dfe7f5; z-index:1;
+    }
     .geo-time-label { background:#fff !important; border:1px solid #c7d2fe !important;
       border-radius:6px !important; color:#3730a3 !important; font-weight:700 !important;
       font-size:10px !important; padding:1px 4px !important; box-shadow:none !important; }
     .geo-time-label::before { display:none !important; }
     .leaflet-control-attribution { font-size:9px; }
+
+    #map-status {
+      position:absolute; left:12px; right:12px; bottom:14px; z-index:40;
+      display:none; justify-content:center;
+    }
+    #map-status.is-visible { display:flex; }
+    .map-status-card {
+      max-width:340px; width:100%;
+      background:#ffffffee; border:1px solid #c7d2fe; border-radius:12px;
+      padding:10px 12px; text-align:center;
+      font-family:-apple-system, "Roboto", "Segoe UI", Arial, sans-serif;
+      color:#1e293b; font-size:12px; line-height:1.35;
+      box-shadow:0 6px 18px rgba(30,41,59,0.16);
+    }
+    .map-status-card button {
+      margin-top:8px; border:0; border-radius:8px; padding:7px 14px;
+      background:#4338ca; color:#fff; font-size:12px; font-weight:700;
+    }
   </style>
 </head>
 <body>
 <div id="map"></div>
+<div id="map-status">
+  <div class="map-status-card">
+    <div id="map-status-text">Карта не загрузилась</div>
+    <button id="map-retry" type="button">Повторить</button>
+  </div>
+</div>
 <script src="leaflet/leaflet.js"></script>
 <script>
 (function () {
   "use strict";
+
   var DEFAULTS = {
     tile_url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
     attribution: "© OpenStreetMap",
@@ -30,6 +65,51 @@
     center_lon: 27.5619,
     zoom: 11
   };
+
+  var map = null;
+  var tileLayer = null;
+  var overviewLayer = null;
+  var trackLayer = null;
+  var currentKey = "";
+  var lastOverview = null;
+  var lastTrack = null;
+  var lastSettings = DEFAULTS;
+  var tileErrors = 0;
+  var tileLoaded = 0;
+  var tileTimer = null;
+  var diagnostics = { errors: [], lastTileError: null };
+
+  var statusBox = document.getElementById("map-status");
+  var statusText = document.getElementById("map-status-text");
+  var retryButton = document.getElementById("map-retry");
+
+  function showStatus(text) {
+    if (!statusBox || !statusText) return;
+    statusText.textContent = text;
+    statusBox.className = "is-visible";
+  }
+
+  function hideStatus() {
+    if (statusBox) statusBox.className = "";
+  }
+
+  if (retryButton) {
+    retryButton.addEventListener("click", function () {
+      hideStatus();
+      createMap(lastSettings || DEFAULTS);
+    });
+  }
+
+  window.addEventListener("error", function (event) {
+    diagnostics.errors.push(String(event.message || "error"));
+    showStatus("Карта не загрузилась. Нажмите «Повторить».");
+  });
+
+  if (typeof L === "undefined") {
+    showStatus("Не удалось загрузить библиотеку карты.");
+    return;
+  }
+
   // EPSG:3395 (Яндекс). Радиус Земли обязателен: без него карта уезжает.
   var YANDEX_SCALE = 0.5 / (Math.PI * L.Projection.Mercator.R);
   var YANDEX_CRS = L.extend({}, L.CRS.EPSG3857, {
@@ -38,14 +118,45 @@
     transformation: new L.Transformation(YANDEX_SCALE, 0.5, -YANDEX_SCALE, 0.5)
   });
 
-  var map = null;
-  var overviewLayer = null;
-  var trackLayer = null;
-  var currentKey = "";
-  var lastOverview = null;
-  var lastTrack = null;
+  function normalize(settings) {
+    var source = settings || {};
+    return {
+      tile_url: source.tile_url || DEFAULTS.tile_url,
+      attribution: source.attribution || DEFAULTS.attribution,
+      crs: source.crs === "yandex" ? "yandex" : "mercator",
+      min_zoom: Number(source.min_zoom || DEFAULTS.min_zoom),
+      max_zoom: Number(source.max_zoom || DEFAULTS.max_zoom),
+      center_lat: Number(source.center_lat || DEFAULTS.center_lat),
+      center_lon: Number(source.center_lon || DEFAULTS.center_lon),
+      zoom: Number(source.zoom || DEFAULTS.zoom)
+    };
+  }
+
+  function monitorTiles(layer) {
+    tileErrors = 0;
+    tileLoaded = 0;
+    layer.on("tileload", function () {
+      tileLoaded += 1;
+      if (tileLoaded > 0) hideStatus();
+    });
+    layer.on("tileerror", function (event) {
+      tileErrors += 1;
+      diagnostics.lastTileError = (event && event.tile && event.tile.src) || "";
+      if (tileErrors >= 5 && tileLoaded === 0) {
+        showStatus("Не удалось загрузить карту. Проверьте интернет.");
+      }
+    });
+    if (tileTimer) clearTimeout(tileTimer);
+    tileTimer = setTimeout(function () {
+      if (tileLoaded === 0) {
+        showStatus("Карта не загрузилась. Проверьте интернет и нажмите «Повторить».");
+      }
+    }, 9000);
+  }
 
   function createMap(settings) {
+    settings = normalize(settings);
+    lastSettings = settings;
     if (map) {
       map.remove();
       map = null;
@@ -53,20 +164,30 @@
     var options = { zoomControl: true };
     if (settings.crs === "yandex") options.crs = YANDEX_CRS;
     map = L.map("map", options).setView(
-      [Number(settings.center_lat || DEFAULTS.center_lat),
-       Number(settings.center_lon || DEFAULTS.center_lon)],
-      Math.max(Number(settings.min_zoom || 1),
-        Math.min(Number(settings.max_zoom || 19), Number(settings.zoom || 11)))
+      [settings.center_lat, settings.center_lon],
+      Math.max(settings.min_zoom, Math.min(settings.max_zoom, settings.zoom))
     );
-    L.tileLayer(settings.tile_url || DEFAULTS.tile_url, {
-      minZoom: Number(settings.min_zoom || 1),
-      maxZoom: Number(settings.max_zoom || 19),
+    tileLayer = L.tileLayer(settings.tile_url, {
+      minZoom: settings.min_zoom,
+      maxZoom: settings.max_zoom,
       // Яндекс, как и OSM, нумерует тайлы сверху вниз.
       tms: false,
-      attribution: settings.attribution || DEFAULTS.attribution
+      attribution: settings.attribution
     }).addTo(map);
+    monitorTiles(tileLayer);
     overviewLayer = L.layerGroup().addTo(map);
     trackLayer = L.layerGroup().addTo(map);
+    invalidate();
+    return map;
+  }
+
+  function invalidate() {
+    if (!map) return;
+    try {
+      map.invalidateSize(true);
+    } catch (err) {
+      diagnostics.errors.push(String(err && err.message || err));
+    }
   }
 
   function timeOf(value) {
@@ -85,6 +206,7 @@
 
   function drawOverview(data) {
     if (!map) return;
+    if (!overviewLayer) overviewLayer = L.layerGroup().addTo(map);
     overviewLayer.clearLayers();
     if (!data || !data.children) return;
     data.children.forEach(function (child) {
@@ -108,6 +230,7 @@
 
   function drawTrack(data) {
     if (!map) return;
+    if (!trackLayer) trackLayer = L.layerGroup().addTo(map);
     trackLayer.clearLayers();
     if (!data || !data.points || !data.points.length) return;
     var points = data.points;
@@ -133,19 +256,45 @@
       }
     });
     map.fitBounds(L.latLngBounds(latlngs), { padding: [26, 26], maxZoom: 17 });
+    invalidate();
   }
+
+  window.refreshMap = function () {
+    invalidate();
+  };
+
+  window.mapDiagnostics = function () {
+    var container = document.getElementById("map");
+    return {
+      mapReady: !!map,
+      size: container ? [container.clientWidth, container.clientHeight] : null,
+      mapSize: map ? [map.getSize().x, map.getSize().y] : null,
+      tiles: document.querySelectorAll("img.leaflet-tile").length,
+      tilesLoaded: tileLoaded,
+      tileErrors: tileErrors,
+      zoom: map ? map.getZoom() : null,
+      center: map ? [map.getCenter().lat, map.getCenter().lng] : null,
+      crs: map && map.options.crs ? map.options.crs.code : null,
+      errors: diagnostics.errors,
+      lastTileError: diagnostics.lastTileError
+    };
+  };
 
   window.configureMap = function (settings) {
     if (!settings) {
       if (!map) createMap(DEFAULTS);
       return;
     }
+    var clean = normalize(settings);
     var key = [
-      settings.tile_url, settings.crs, settings.min_zoom, settings.max_zoom,
-      settings.center_lat, settings.center_lon, settings.zoom
+      clean.tile_url, clean.crs, clean.min_zoom, clean.max_zoom,
+      clean.center_lat, clean.center_lon, clean.zoom
     ].join("|");
-    if (map && key === currentKey) return;
-    createMap(settings);
+    if (map && key === currentKey) {
+      invalidate();
+      return;
+    }
+    createMap(clean);
     currentKey = key;
     if (lastOverview) drawOverview(lastOverview);
     if (lastTrack) drawTrack(lastTrack);
@@ -162,6 +311,30 @@
     if (!map) createMap(DEFAULTS);
     drawTrack(data);
   };
+
+  // Страховка на случай ошибки в самом Leaflet: вместо пустого окна
+  // покажем понятное сообщение и кнопку «Повторить».
+  function refresh() {
+    invalidate();
+  }
+
+  window.addEventListener("resize", refresh);
+  window.addEventListener("orientationchange", function () {
+    setTimeout(refresh, 250);
+  });
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) refresh();
+  });
+  if (typeof ResizeObserver === "function") {
+    try {
+      new ResizeObserver(refresh).observe(document.getElementById("map"));
+    } catch (err) {
+      diagnostics.errors.push(String(err && err.message || err));
+    }
+  }
+  setTimeout(refresh, 0);
+  setTimeout(refresh, 300);
+  setTimeout(refresh, 1200);
 
   createMap(DEFAULTS);
   currentKey = [

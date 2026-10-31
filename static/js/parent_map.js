@@ -64,6 +64,13 @@
     }).addTo(map);
     trackLayer = L.layerGroup().addTo(map);
     overviewLayer = L.layerGroup().addTo(map);
+    function refreshMapSize() {
+      if (!map) return;
+      try { map.invalidateSize(); } catch (error) { /* карта уже удалена */ }
+    }
+    window.addEventListener("resize", refreshMapSize);
+    setTimeout(refreshMapSize, 0);
+    setTimeout(refreshMapSize, 300);
   } else {
     mapBox.innerHTML = '<div class="geo-empty">Карта не загрузилась. Проверьте соединение и обновите страницу.</div>';
   }

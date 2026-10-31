@@ -213,6 +213,12 @@
           tms: false,
           attribution: settings.attribution || ""
         }).addTo(map);
+        setTimeout(function () {
+          if (map) map.invalidateSize();
+        }, 0);
+        setTimeout(function () {
+          if (map) map.invalidateSize();
+        }, 300);
       } catch (error) {
         box.innerHTML = '<div style="padding:24px;text-align:center;color:#64748b;">' +
           "Не удалось показать карту: проверьте адрес тайлов.</div>";
@@ -226,6 +232,9 @@
       el.addEventListener("change", render);
     });
     refresh.addEventListener("click", function () { currentKey = ""; render(); });
+    window.addEventListener("resize", function () {
+      if (map) map.invalidateSize();
+    });
     form.addEventListener("submit", function () { /* сервер проверит поля */ });
 
     applyPreset(provider.value);

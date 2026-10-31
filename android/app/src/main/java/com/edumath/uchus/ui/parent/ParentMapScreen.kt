@@ -1,7 +1,12 @@
 package com.edumath.uchus.ui.parent
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.graphics.Color
+import android.util.Log
+import android.webkit.ConsoleMessage
+import android.webkit.WebChromeClient
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.Arrangement
@@ -34,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -308,6 +314,8 @@ internal fun MapWebView(
 ) {
     val context = LocalContext.current
     var ready by remember { mutableStateOf(false) }
+    var webView by remember { mutableStateOf<WebView?>(null) }
+    val html = remember(context) { mapHtml(context) }
     val trackJson = remember(track) {
         if (track == null) "null" else ApiJson.gson.toJson(track)
     }
@@ -317,46 +325,93 @@ internal fun MapWebView(
     val settingsJson = remember(mapSettings) {
         if (mapSettings == null) "null" else ApiJson.gson.toJson(mapSettings)
     }
-    val webView = remember {
-        @SuppressLint("SetJavaScriptEnabled")
-        WebView(context).apply {
-            setBackgroundColor(Color.parseColor("#eef4ff"))
-            settings.javaScriptEnabled = true
-            settings.domStorageEnabled = true
-            settings.allowFileAccess = true
-            settings.loadsImagesAutomatically = true
-            settings.setSupportZoom(false)
-            settings.builtInZoomControls = false
-            settings.displayZoomControls = false
-            webViewClient = object : WebViewClient() {
-                override fun onPageFinished(view: WebView?, url: String?) {
-                    ready = true
-                }
-            }
-            loadUrl("file:///android_asset/parent_map.html")
-        }
-    }
 
-    LaunchedEffect(ready, trackJson, overviewJson, settingsJson) {
+    LaunchedEffect(ready, webView, trackJson, overviewJson, settingsJson) {
+        val view = webView ?: return@LaunchedEffect
         if (!ready) return@LaunchedEffect
-        webView.evaluateJavascript("window.configureMap($settingsJson);", null)
-        webView.evaluateJavascript("window.showOverview($overviewJson);", null)
-        webView.evaluateJavascript("window.showTrack($trackJson);", null)
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            runCatching {
-                webView.stopLoading()
-                webView.destroy()
-            }
-        }
+        view.evaluateJavascript("window.configureMap($settingsJson);", null)
+        view.evaluateJavascript("window.showOverview($overviewJson);", null)
+        view.evaluateJavascript("window.showTrack($trackJson);", null)
+        view.evaluateJavascript("window.refreshMap && window.refreshMap();", null)
+        // WebView иногда узнаёт настоящий размер только после первой отрисовки —
+        // без повторного invalidateSize Leaflet остаётся с картой 0×0.
+        delay(200)
+        view.evaluateJavascript("window.refreshMap && window.refreshMap();", null)
     }
 
     AndroidView(
-        factory = { webView },
-        modifier = modifier,
+        factory = { ctx ->
+            @SuppressLint("SetJavaScriptEnabled")
+            WebView(ctx).apply {
+                setBackgroundColor(Color.parseColor("#eef4ff"))
+                settings.javaScriptEnabled = true
+                settings.domStorageEnabled = true
+                settings.loadsImagesAutomatically = true
+                settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                settings.setSupportZoom(false)
+                settings.builtInZoomControls = false
+                settings.displayZoomControls = false
+                webViewClient = object : WebViewClient() {
+                    override fun onPageFinished(view: WebView?, url: String?) {
+                        ready = true
+                    }
+                }
+                webChromeClient = object : WebChromeClient() {
+                    override fun onConsoleMessage(message: ConsoleMessage): Boolean {
+                        Log.w("MapWebView", "${message.message()} @${message.lineNumber()}")
+                        return true
+                    }
+                }
+                // Отдаём страницу как https-документ: так WebView не блокирует
+                // вложенные скрипты и внешние тайлы политикой file://.
+                loadDataWithBaseURL(
+                    "https://appassets.androidplatform.net/",
+                    html,
+                    "text/html",
+                    "utf-8",
+                    null,
+                )
+                webView = this
+            }
+        },
+        modifier = modifier.onSizeChanged { size ->
+            if (size.width > 0 && size.height > 0) {
+                webView?.evaluateJavascript(
+                    "window.refreshMap && window.refreshMap();",
+                    null,
+                )
+            }
+        },
     )
+
+    DisposableEffect(Unit) {
+        onDispose {
+            webView?.let { view ->
+                runCatching {
+                    view.stopLoading()
+                    view.destroy()
+                }
+            }
+            webView = null
+        }
+    }
+}
+
+/** Собирает страницу карты одним документом: Leaflet подставляется прямо в HTML. */
+private fun mapHtml(context: Context): String {
+    val assets = context.assets
+    val page = assets.open("parent_map.html").bufferedReader().use { it.readText() }
+    val css = assets.open("leaflet/leaflet.css").bufferedReader().use { it.readText() }
+    val js = assets.open("leaflet/leaflet.js").bufferedReader().use { it.readText() }
+    return page
+        .replace(
+            "<link rel=\"stylesheet\" href=\"leaflet/leaflet.css\">",
+            "<style>$css</style>",
+        )
+        .replace(
+            "<script src=\"leaflet/leaflet.js\"></script>",
+            "<script>$js</script>",
+        )
 }
 
 @Composable
