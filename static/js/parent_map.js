@@ -269,7 +269,7 @@
 
   async function loadTrack(keepView) {
     if (!learnerSelect.value) return;
-    setFlash("Загружаем трек…", false);
+    if (!keepView) setFlash("Загружаем трек…", false);
     try {
       var url = buildUrl(root.dataUrl, {
         learner_id: learnerSelect.value,

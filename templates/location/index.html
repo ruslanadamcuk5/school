@@ -90,5 +90,6 @@
 </script>
 {% endblock %}
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/child_location.js') }}"></script>
+{# v=1.9.9 сбрасывает недельный кэш старого скрипта в браузерах. #}
+<script src="{{ url_for('static', filename='js/child_location.js', v='1.9.9') }}"></script>
 {% endblock %}
