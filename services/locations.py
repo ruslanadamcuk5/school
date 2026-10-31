@@ -15,12 +15,25 @@ from datetime import date, datetime, time, timedelta, timezone
 
 from database import connect, execute, query_all, query_one
 
-RETENTION_DAYS = 14
+RETENTION_DAYS = 3
 MAX_POINTS_PER_BATCH = 300
 MAX_ACCURACY_M = 5000
 MAX_BACKDATE_DAYS = RETENTION_DAYS
 FUTURE_SKEW = timedelta(minutes=10)
 STALE_AFTER = timedelta(minutes=30)
+
+# Чистка трека. Сырые точки GPS «дрожат» даже когда телефон лежит на столе:
+# без фильтра за день набегают километры ложного пути. На трек попадают
+# только достаточно точные точки, стояние на месте схлопывается в одну
+# вершину, а невозможные скачки (телепорты) отбрасываются.
+TRACK_MAX_ACCURACY_M = 150.0
+TRACK_STATIONARY_MIN_M = 30.0
+TRACK_STATIONARY_MAX_M = 120.0
+TRACK_TELEPORT_MIN_M = 400.0
+TRACK_TELEPORT_WINDOW_S = 20 * 60
+TRACK_MAX_SPEED_MPS = 55.0          # ~198 км/ч
+LATEST_MAX_ACCURACY_M = 150.0
+LATEST_GOOD_WINDOW = timedelta(minutes=15)
 
 
 class LocationError(Exception):
@@ -333,13 +346,45 @@ def record_points(learner_id: int, points, battery: int | None = None) -> dict:
     }
 
 
+def _point_time(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+
+
+def _good_accuracy(row) -> bool:
+    """Точка достаточно точная, чтобы показывать её как местоположение."""
+    accuracy = row["accuracy"]
+    return accuracy is None or float(accuracy) <= LATEST_MAX_ACCURACY_M
+
+
 def latest_point(learner_id: int, tz_minutes: int = 0) -> dict | None:
-    row = query_one(
+    """Последняя точка, но без грубых сетевых «приблизительно здесь».
+
+    Если последняя точка пришла от сотовой вышки с точностью в километры,
+    показываем более раннюю точную точку (не старше 15 минут). Иначе лучше
+    честно показать свежую, но неточную позицию.
+    """
+    rows = query_all(
         "SELECT * FROM learner_locations WHERE learner_id = ? "
-        "ORDER BY recorded_at DESC LIMIT 1",
+        "ORDER BY recorded_at DESC, id DESC LIMIT 20",
         (int(learner_id),),
     )
-    return point_payload(row, tz_minutes) if row else None
+    if not rows:
+        return None
+    chosen = rows[0]
+    if not _good_accuracy(chosen):
+        for row in rows[1:]:
+            if _good_accuracy(row):
+                latest_at = _point_time(chosen["recorded_at"])
+                good_at = _point_time(row["recorded_at"])
+                if latest_at and good_at and latest_at - good_at <= LATEST_GOOD_WINDOW:
+                    chosen = row
+                break
+    return point_payload(chosen, tz_minutes)
 
 
 def point_payload(row, tz_minutes: int = 0) -> dict:
@@ -368,6 +413,65 @@ def _distance_m(a: dict, b: dict) -> float:
     return 2 * radius * math.asin(min(1.0, math.sqrt(h)))
 
 
+def _clean_track(points: list[dict]) -> list[dict]:
+    """Убрать из трека шум GPS, стояние на месте и невозможные скачки.
+
+    Возвращает вершины, по которым можно честно посчитать расстояние и
+    нарисовать маршрут. Если ребёнок весь день дома, останется одна точка
+    (плюс финальная точка с актуальным временем) и нулевой путь.
+    """
+    accepted: list[dict] = []
+    last_stationary: dict | None = None
+    for point in points:
+        accuracy = point.get("accuracy")
+        if accuracy is not None and float(accuracy) > TRACK_MAX_ACCURACY_M:
+            continue
+        if not accepted:
+            accepted.append(dict(point))
+            continue
+        anchor = accepted[-1]
+        distance = _distance_m(anchor, point)
+        radius = max(
+            TRACK_STATIONARY_MIN_M,
+            min(TRACK_STATIONARY_MAX_M, float(accuracy or 0) * 1.5),
+        )
+        if distance <= radius:
+            # Телефон лежит на столе, а GPS «гуляет» вокруг дома. Новую
+            # вершину не добавляем, но запоминаем время последнего визита.
+            last_stationary = point
+            continue
+        previous_at = _point_time(anchor.get("recorded_at"))
+        current_at = _point_time(point.get("recorded_at"))
+        if previous_at and current_at:
+            seconds = (current_at - previous_at).total_seconds()
+            if seconds <= 0:
+                continue
+            if (
+                distance >= TRACK_TELEPORT_MIN_M
+                and seconds <= TRACK_TELEPORT_WINDOW_S
+                and distance / seconds > TRACK_MAX_SPEED_MPS
+            ):
+                # 2 км за минуту пешком не пройти — это глюк GPS.
+                continue
+        accepted.append(dict(point))
+        last_stationary = None
+    if accepted and last_stationary is not None:
+        tail_at = _point_time(last_stationary.get("recorded_at"))
+        anchor_at = _point_time(accepted[-1].get("recorded_at"))
+        if tail_at and anchor_at and tail_at > anchor_at:
+            tail = dict(accepted[-1])
+            tail.update(
+                {
+                    "recorded_at": last_stationary["recorded_at"],
+                    "time": last_stationary.get("time", tail.get("time")),
+                    "battery": last_stationary.get("battery", tail.get("battery")),
+                    "id": last_stationary.get("id", tail.get("id")),
+                }
+            )
+            accepted.append(tail)
+    return accepted
+
+
 def _summary(points: list[dict]) -> dict:
     if not points:
         return {
@@ -390,8 +494,8 @@ def _summary(points: list[dict]) -> dict:
     first = points[0]["recorded_at"]
     last = points[-1]["recorded_at"]
     try:
-        start = datetime.fromisoformat(first.replace("Z", "+00:00"))
-        end = datetime.fromisoformat(last.replace("Z", "+00:00"))
+        start = datetime.fromisoformat(str(first).replace("Z", "+00:00"))
+        end = datetime.fromisoformat(str(last).replace("Z", "+00:00"))
         duration = int((end - start).total_seconds() // 60)
     except (TypeError, ValueError):
         duration = 0
@@ -415,12 +519,16 @@ def trail(learner_id: int, day: date, tz_minutes: int = 0) -> dict:
             ORDER BY recorded_at, id""",
         (int(learner_id), start, end),
     )
-    points = [point_payload(row, tz_minutes) for row in rows]
+    raw_points = [point_payload(row, tz_minutes) for row in rows]
+    points = _clean_track(raw_points)
+    summary = _summary(points)
+    summary["raw_points"] = len(raw_points)
+    summary["hidden_points"] = max(0, len(raw_points) - len(points))
     return {
         "day": day.isoformat(),
         "sharing": settings(learner_id),
         "points": points,
-        "summary": _summary(points),
+        "summary": summary,
         "latest": latest_point(learner_id, tz_minutes),
     }
 

@@ -25,6 +25,8 @@
     .geo-time-label { background:#fff !important; border:1px solid #c7d2fe !important; border-radius:6px !important; color:#3730a3 !important; font-weight:700 !important; font-size:10px !important; padding:1px 4px !important; box-shadow:none !important; }
     .geo-time-label::before { display:none !important; }
     .geo-empty { padding:26px; text-align:center; color:var(--muted); }
+    .geo-toggle { display:flex; align-items:center; gap:7px; font-size:.9rem; color:var(--muted); cursor:pointer; user-select:none; }
+    .geo-toggle input { width:16px; height:16px; accent-color:var(--brand); }
   </style>
 {% endblock %}
 {% block content %}
@@ -32,7 +34,7 @@
 <div class="row row--between mt-3">
   <div>
     <h1 style="margin:0;">📍 Дети на карте</h1>
-    <p class="muted small" style="margin:4px 0 0;">Последние точки и трек за день. История хранится {{ retention_days }} дней.</p>
+    <p class="muted small" style="margin:4px 0 0;">Последние точки и трек за день. История хранится {{ retention_days }} дня, маршрут очищается от шума GPS.</p>
   </div>
   <div class="row" style="gap:8px;">
     <a class="btn btn--ghost btn--small" href="{{ url_for('parent.dashboard') }}">← К статистике</a>
@@ -62,6 +64,10 @@
     </div>
     <button class="btn btn--small" id="geo-refresh" type="button">Показать</button>
     <button class="btn btn--small" id="geo-force" type="button">📍 Включить геолокацию на телефоне ребёнка</button>
+    <label class="geo-toggle" for="geo-show-route">
+      <input id="geo-show-route" type="checkbox" checked>
+      Показывать маршруты
+    </label>
   </div>
   <div id="geo-flash" class="muted small mt-2" style="min-height:18px;"></div>
   <div class="geo-legend">
@@ -95,6 +101,7 @@
     dataUrl: {{ url_for('parent.map_data')|tojson }},
     overviewUrl: {{ url_for('parent.map_overview')|tojson }},
     forceBase: {{ (url_for('parent.map_force_location', learner_id=0))[:-1]|tojson }},
+    retentionDays: {{ retention_days|tojson }},
     settings: {{ map_settings|tojson }}
   };
 </script>
@@ -102,6 +109,6 @@
 {% endblock %}
 {% block scripts %}
 <script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
-{# v=1.9.9 сбрасывает недельный кэш старых сломанных карт в браузерах. #}
-<script src="{{ url_for('static', filename='js/parent_map.js', v='1.9.11') }}"></script>
+{# v=1.9.12 сбрасывает недельный кэш старых сломанных карт в браузерах. #}
+<script src="{{ url_for('static', filename='js/parent_map.js', v='1.9.12') }}"></script>
 {% endblock %}

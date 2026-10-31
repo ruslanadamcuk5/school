@@ -14,7 +14,12 @@
   var summaryBox = document.getElementById("geo-summary");
   var timeline = document.getElementById("geo-timeline");
   var mapBox = document.getElementById("geo-map");
+  var routeToggle = document.getElementById("geo-show-route");
   if (!learnerSelect || !mapBox) return;
+
+  var showRoutes = routeToggle ? routeToggle.checked : true;
+  var retentionDays = Number(root.retentionDays || 3);
+  if (!(retentionDays > 0)) retentionDays = 3;
 
   var csrfMeta = document.querySelector('meta[name="csrf-token"]');
   var csrfToken = csrfMeta ? csrfMeta.getAttribute("content") : "";
@@ -30,11 +35,17 @@
 
   if (!dateInput.value) dateInput.value = localIso(new Date());
   dateInput.max = localIso(new Date());
+  dateInput.min = localIso(new Date(Date.now() - (retentionDays - 1) * 86400000));
+  if (dateInput.value < dateInput.min) dateInput.value = dateInput.min;
+  if (dateInput.value > dateInput.max) dateInput.value = dateInput.max;
 
   var map = null;
   var trackLayer = null;
   var overviewLayer = null;
   var trackBounds = null;
+  var lastTrack = null;
+  var lastOverview = null;
+  var mapSettings = root.settings || {};
 
   function yandexCrs() {
     // Яндекс отдаёт тайлы в EPSG:3395. Масштаб перевода метров в мировые
@@ -48,12 +59,12 @@
   }
 
   if (window.L) {
-    var settings = root.settings || {};
+    var settings = mapSettings;
     var mapOptions = { zoomControl: true };
     if (settings.crs === "yandex") mapOptions.crs = yandexCrs();
     map = L.map(mapBox, mapOptions).setView(
       [Number(settings.center_lat || 53.9023), Number(settings.center_lon || 27.5619)],
-      Number(settings.zoom || 11)
+      Number(settings.zoom || 16)
     );
     L.tileLayer(settings.tile_url || "https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       minZoom: Number(settings.min_zoom || 1),
@@ -129,12 +140,65 @@
     return url.toString();
   }
 
+  function overviewBounds() {
+    if (!lastOverview) return null;
+    var bounds = L.latLngBounds([]);
+    (lastOverview.children || []).forEach(function (child) {
+      var last = child.last_point;
+      if (last) bounds.extend([last.lat, last.lon]);
+    });
+    return bounds.isValid() ? bounds : null;
+  }
+
+  function selectedPoint() {
+    if (!lastOverview) return null;
+    var id = String(learnerSelect.value || "");
+    var children = lastOverview.children || [];
+    for (var index = 0; index < children.length; index += 1) {
+      var child = children[index];
+      var learner = child.learner || {};
+      if (String(learner.id) === id && child.last_point) return child.last_point;
+    }
+    return null;
+  }
+
+  function fitToData() {
+    if (!map) return;
+    if (showRoutes && trackBounds && trackBounds.isValid()) {
+      map.fitBounds(trackBounds, { padding: [30, 30], maxZoom: 17 });
+      return;
+    }
+    var point = selectedPoint();
+    if (point) {
+      // Без маршрутов показываем дом/школу крупно, а не весь город.
+      map.setView([point.lat, point.lon], 17);
+      return;
+    }
+    var bounds = overviewBounds();
+    if (bounds) {
+      if (bounds.getNorthEast().equals(bounds.getSouthWest())) {
+        map.setView(bounds.getCenter(), 17);
+      } else {
+        map.fitBounds(bounds, { padding: [30, 30], maxZoom: 17 });
+      }
+      return;
+    }
+    map.setView(
+      [Number(mapSettings.center_lat || 53.9023), Number(mapSettings.center_lon || 27.5619)],
+      Number(mapSettings.zoom || 16)
+    );
+  }
+
   function drawTrack(data, keepView) {
     if (!map) return;
+    lastTrack = data;
     trackLayer.clearLayers();
     trackBounds = null;
     var points = data.points || [];
-    if (!points.length) return;
+    if (!points.length || !showRoutes) {
+      if (!keepView) fitToData();
+      return;
+    }
 
     var latlngs = points.map(function (p) { return [p.lat, p.lon]; });
     trackBounds = L.latLngBounds(latlngs);
@@ -166,7 +230,7 @@
       }
     });
 
-    if (!keepView) map.fitBounds(trackBounds, { padding: [28, 28], maxZoom: 17 });
+    if (!keepView) fitToData();
   }
 
   function renderSummary(data) {
@@ -198,6 +262,7 @@
     if (summary.first_at) details.push("с " + timeOfIso(summary.first_at));
     if (summary.last_at) details.push("до " + timeOfIso(summary.last_at));
     if (summary.accuracy != null) details.push("точность ±" + Math.round(summary.accuracy) + " м");
+    if (summary.hidden_points) details.push("убрано шума: " + summary.hidden_points);
     if (summary.max_speed) details.push("макс. " + (summary.max_speed * 3.6).toFixed(1) + " км/ч");
     addText(summaryBox, "p", details.join(" · "), "small muted");
 
@@ -219,8 +284,9 @@
     }
   }
 
-  function renderOverview(data) {
+  function renderOverview(data, keepView) {
     if (!overviewBox || !map) return;
+    lastOverview = data;
     clear(overviewBox);
     overviewLayer.clearLayers();
     var children = data.children || [];
@@ -279,6 +345,7 @@
         });
       }
     });
+    if (!keepView && !(showRoutes && trackBounds)) fitToData();
   }
 
   async function loadTrack(keepView) {
@@ -295,9 +362,6 @@
       if (!response.ok || !data.ok) throw new Error(data.message || "Не удалось загрузить трек");
       renderSummary(data);
       drawTrack(data, keepView);
-      if (!keepView && map && trackBounds) {
-        map.fitBounds(trackBounds, { padding: [28, 28], maxZoom: 17 });
-      }
       var next = new URL(window.location.href);
       next.searchParams.set("learner_id", learnerSelect.value);
       next.searchParams.set("date", dateInput.value);
@@ -311,14 +375,14 @@
     }
   }
 
-  async function loadOverview() {
+  async function loadOverview(keepView) {
     if (!overviewBox) return;
     try {
       var url = buildUrl(root.overviewUrl, { tz: tzOffset() });
       var response = await fetch(url, { headers: { "Accept": "application/json" }, credentials: "same-origin" });
       var data = await response.json().catch(function () { return {}; });
       if (!response.ok || !data.ok) throw new Error(data.message || "Не удалось загрузить точки детей");
-      renderOverview(data);
+      renderOverview(data, keepView);
     } catch (error) {
       clear(overviewBox);
       addText(overviewBox, "p", error.message || "Ошибка загрузки", "muted small");
@@ -337,7 +401,7 @@
       var data = await response.json().catch(function () { return {}; });
       if (!response.ok || !data.ok) throw new Error(data.message || "Не удалось отправить команду");
       setFlash(data.message || "Команда отправлена", false);
-      loadOverview();
+      loadOverview(true);
     } catch (error) {
       setFlash(error.message || "Ошибка отправки", true);
     }
@@ -347,14 +411,23 @@
   learnerSelect.addEventListener("change", function () { loadTrack(); });
   dateInput.addEventListener("change", function () { loadTrack(); });
   if (forceBtn) forceBtn.addEventListener("click", forceLocation);
+  if (routeToggle) {
+    routeToggle.addEventListener("change", function () {
+      showRoutes = routeToggle.checked;
+      if (lastTrack) drawTrack(lastTrack, true);
+      fitToData();
+    });
+  }
 
   var initialDate = new URL(window.location.href).searchParams.get("date");
-  if (initialDate) dateInput.value = initialDate;
-  loadOverview();
+  if (initialDate && initialDate >= dateInput.min && initialDate <= dateInput.max) {
+    dateInput.value = initialDate;
+  }
+  loadOverview(false);
   loadTrack();
   // Держим карту и последнюю точку актуальными без кнопки «Показать».
   setInterval(function () {
-    loadOverview();
+    loadOverview(true);
     if (dateInput.value === localIso(new Date())) loadTrack(true);
   }, 30000);
 })();

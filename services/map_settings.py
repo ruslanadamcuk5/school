@@ -23,7 +23,7 @@ DEFAULT_SETTINGS: dict = {
     "max_zoom": 19,
     "center_lat": 53.9023,
     "center_lon": 27.5619,
-    "zoom": 11,
+    "zoom": 16,
 }
 
 PRESETS: list[dict] = [

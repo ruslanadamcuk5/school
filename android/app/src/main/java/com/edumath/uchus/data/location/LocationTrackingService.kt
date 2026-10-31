@@ -61,6 +61,7 @@ class LocationTrackingService : Service() {
     private var listener: LocationListener? = null
     private var api: com.edumath.uchus.data.api.ApiService? = null
     private var started = false
+    private var lastAccepted: Location? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -175,6 +176,23 @@ class LocationTrackingService : Service() {
     }
 
     private fun addPoint(location: Location) {
+        // Плохая точность (сотовая вышка, сырой GPS) даёт скачки на километры.
+        if (location.hasAccuracy() && location.accuracy > MAX_ACCURACY_M) return
+        val previous = lastAccepted
+        if (previous != null) {
+            val seconds = (location.time - previous.time) / 1000.0
+            if (seconds < 1.0) return
+            val distance = previous.distanceTo(location).toDouble()
+            // Стоим на месте: не плодим вершины, но раз в 5 минут отправляем
+            // точку, чтобы родитель видел актуальное время.
+            if (distance < MIN_MOVEMENT_M && seconds < STATIONARY_HEARTBEAT_S) return
+            if (seconds < TELEPORT_WINDOW_S && distance > TELEPORT_DISTANCE_M &&
+                distance / seconds > MAX_SPEED_MPS
+            ) {
+                return
+            }
+        }
+        lastAccepted = location
         val payload = LocationPointPayload(
             lat = location.latitude,
             lon = location.longitude,
@@ -271,6 +289,12 @@ class LocationTrackingService : Service() {
         private const val FLUSH_AT_POINTS = 5
         private const val MAX_BATCH = 100
         private const val MAX_PENDING = 500
+        private const val MAX_ACCURACY_M = 150f
+        private const val MIN_MOVEMENT_M = 12.0
+        private const val STATIONARY_HEARTBEAT_S = 300.0
+        private const val TELEPORT_WINDOW_S = 600.0
+        private const val TELEPORT_DISTANCE_M = 400.0
+        private const val MAX_SPEED_MPS = 55.0
 
         fun start(context: Context) {
             if (!hasPermission(context)) return

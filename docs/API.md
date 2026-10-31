@@ -464,7 +464,7 @@ POST /api/v1/daily/start   {"generator": "add.within20"}
 Передача местоположения работает **постоянно**: ребёнок не может её выключить, а
 согласие больше не запрашивается. Устройство (приложение или браузер) присылает
 точки GPS, родитель видит последнюю позицию и историю перемещений за день на карте,
-которую выбрал администратор. История хранится **14 дней**. Родитель видит только
+которую выбрал администратор. История хранится **3 дня**. Родитель видит только
 привязанных детей.
 
 Все методы требуют Bearer-токен. Параметр `tz` — смещение часового пояса в минутах
@@ -508,14 +508,14 @@ POST /api/v1/daily/start   {"generator": "add.within20"}
 Ответ:
 
 ```json
-{"ok": true, "saved": 2, "received": 2, "last_point_at": "2026-10-28T06:20:00Z", "settings": {"enabled": true, "retention_days": 14}}
+{"ok": true, "saved": 2, "received": 2, "last_point_at": "2026-10-28T06:20:00Z", "settings": {"enabled": true, "retention_days": 3}}
 ```
 
 Ошибки:
 
 | Код | HTTP | Когда |
 |---|---|---|
-| `no_points` | 400 | пустой список или все точки старше 14 дней |
+| `no_points` | 400 | пустой список или все точки старше 3 дней |
 | `too_many_points` | 400 | больше 300 точек за запрос |
 | `bad_lat` / `bad_lon` | 400 | координаты не числа или вне диапазона |
 | `bad_time` | 400 | не удалось разобрать `recorded_at` |
@@ -545,21 +545,25 @@ POST /api/v1/daily/start   {"generator": "add.within20"}
   "ok": true,
   "learner": {"id": 12, "name": "Миша", "avatar": "🚀", "grade": 3},
   "day": "2026-10-28",
-  "sharing": {"enabled": true, "last_point_at": "2026-10-28T06:20:00Z", "retention_days": 14, "force_pending": false},
+  "sharing": {"enabled": true, "last_point_at": "2026-10-28T06:20:00Z", "retention_days": 3, "force_pending": false},
   "points": [
     {"id": 1, "lat": 53.9006, "lon": 27.559, "accuracy": 12, "speed": 1.2, "battery": 76, "source": "gps", "recorded_at": "2026-10-28T06:15:00Z", "time": "09:15"},
     {"id": 2, "lat": 53.9021, "lon": 27.5612, "accuracy": 18, "speed": null, "battery": null, "source": "gps", "recorded_at": "2026-10-28T06:20:00Z", "time": "09:20"}
   ],
   "summary": {"points": 2, "distance_m": 214, "duration_min": 5, "first_at": "2026-10-28T06:15:00Z", "last_at": "2026-10-28T06:20:00Z", "max_speed": 1.2, "accuracy": 15},
   "latest": {"id": 2, "lat": 53.9021, "lon": 27.5612, "recorded_at": "2026-10-28T06:20:00Z", "time": "09:20"},
-  "map": {"provider": "osm", "tile_url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png", "crs": "mercator", "min_zoom": 3, "max_zoom": 19, "center_lat": 53.9023, "center_lon": 27.5619, "zoom": 11},
-  "retention_days": 14
+  "map": {"provider": "osm", "tile_url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png", "crs": "mercator", "min_zoom": 3, "max_zoom": 19, "center_lat": 53.9023, "center_lon": 27.5619, "zoom": 16},
+  "retention_days": 3
 }
 ```
 
 `date` по умолчанию — сегодняшний день в поясе `tz`. Поле `time` — локальные
-`ЧЧ:ММ` для подписей на карте. `summary.distance_m` не учитывает «телепорты»
-длиннее 5 км (обычно это плохая точка). Доступ к чужому ребёнку даёт `404`.
+`ЧЧ:ММ` для подписей на карте. `summary.distance_m` считается только по очищенным точкам: сервер
+отбрасывает GPS-шум и «телепорты», а стояние на месте схлопывает в одну
+вершину. Поэтому день, проведённый дома, даёт нулевой путь, а не десятки
+километров. В `summary` также есть `raw_points` и `hidden_points` — сколько
+точек пришло и сколько отфильтровано. `latest` — последняя достаточно точная
+точка (или свежая, если точной не было 15 минут). Доступ к чужому ребёнку даёт `404`.
 
 `POST .../location/force` ставит флаг `force_requested_at`, создаёт уведомление
 ребёнку и возвращает `force_pending`. Приложение ребёнка при следующей проверке

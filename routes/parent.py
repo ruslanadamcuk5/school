@@ -23,6 +23,7 @@ from content.achievements import ACHIEVEMENTS
 from database import execute, get_meta, query_all, query_one, set_meta
 from services import assignments as assignments_service
 from services import learners as learners_service
+from services import locations as locations_service
 from services import map_settings as map_settings_service
 from services import orgs
 from services import progress as progress_service
@@ -755,7 +756,7 @@ def map_page():
         "parent/map.html",
         learners=learners,
         selected=selected,
-        retention_days=14,
+        retention_days=locations_service.RETENTION_DAYS,
         map_settings=map_settings_service.public_settings(),
     )
 

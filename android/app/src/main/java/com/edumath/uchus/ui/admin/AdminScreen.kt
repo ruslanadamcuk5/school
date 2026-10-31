@@ -65,7 +65,7 @@ import com.edumath.uchus.ui.common.ScreenScaffold
 import com.edumath.uchus.ui.common.SectionTitle
 import com.edumath.uchus.ui.common.StatsRow
 import com.edumath.uchus.ui.common.Tag
-import com.edumath.uchus.ui.parent.MapWebView
+import com.edumath.uchus.ui.parent.NativeMapView
 import kotlinx.coroutines.launch
 
 private val adminTabs = listOf(
@@ -1013,7 +1013,7 @@ internal fun AdminMapsTab(container: AppContainer) {
                 )
                 Spacer(Modifier.height(6.dp))
                 Card(Modifier.fillMaxWidth()) {
-                    MapWebView(
+                    NativeMapView(
                         track = null,
                         overview = null,
                         mapSettings = MapSettingsDto(
@@ -1025,7 +1025,7 @@ internal fun AdminMapsTab(container: AppContainer) {
                             maxZoom = maxZoom.toIntOrNull() ?: 19,
                             centerLat = centerLat.toDoubleOrNull() ?: 53.9023,
                             centerLon = centerLon.toDoubleOrNull() ?: 27.5619,
-                            zoom = zoom.toIntOrNull() ?: 11,
+                            zoom = zoom.toIntOrNull() ?: 16,
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1105,7 +1105,7 @@ internal fun AdminMapsTab(container: AppContainer) {
                                                 maxZoom = maxZoom.toIntOrNull() ?: 19,
                                                 centerLat = centerLat.toDoubleOrNull() ?: 53.9023,
                                                 centerLon = centerLon.toDoubleOrNull() ?: 27.5619,
-                                                zoom = zoom.toIntOrNull() ?: 11,
+                                                zoom = zoom.toIntOrNull() ?: 16,
                                             )
                                         )
                                     }

@@ -44,7 +44,7 @@ class TestLocationService(unittest.TestCase):
         info = locations_service.settings(self.learner_id)
         self.assertTrue(info["enabled"])
         self.assertFalse(info["force_pending"])
-        self.assertEqual(info["retention_days"], 14)
+        self.assertEqual(info["retention_days"], 3)
         result = locations_service.record_points(
             self.learner_id,
             [{"lat": 53.9, "lon": 27.5, "recorded_at": now_iso()}],
@@ -129,6 +129,87 @@ class TestLocationService(unittest.TestCase):
         acked = locations_service.ack_force(self.learner_id)
         self.assertFalse(acked["force_pending"])
         self.assertIsNotNone(acked["force_ack_at"])
+
+    def test_track_cleaning_removes_stationary_noise_and_teleports(self):
+        """Ребёнок дома/в школе не должен «наматывать» десятки километров."""
+        start = (datetime.now(timezone.utc) - timedelta(days=1)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        points = []
+        # 2 часа дома: GPS дрожит в радиусе ~20 метров.
+        for index in range(60):
+            shift = (index % 4 - 1.5) * 0.00006
+            points.append(
+                {
+                    "lat": 53.9000 + shift,
+                    "lon": 27.5600 - shift,
+                    "accuracy": 8,
+                    "recorded_at": (start + timedelta(minutes=2 * index)).isoformat(),
+                }
+            )
+        # Дорога в школу: 1 км на север за 18 минут.
+        for index in range(1, 11):
+            points.append(
+                {
+                    "lat": 53.9000 + 0.0009 * index,
+                    "lon": 27.5600,
+                    "accuracy": 10,
+                    "recorded_at": (start + timedelta(minutes=120 + 2 * index)).isoformat(),
+                }
+            )
+        # 1 час в школе, снова дрожание.
+        for index in range(30):
+            shift = (index % 3 - 1) * 0.00007
+            points.append(
+                {
+                    "lat": 53.9090 + shift,
+                    "lon": 27.5600 - shift,
+                    "accuracy": 9,
+                    "recorded_at": (start + timedelta(minutes=140 + 2 * index)).isoformat(),
+                }
+            )
+        # Телепорт на 5 км и обратно — типичный глюк GPS.
+        points.append(
+            {
+                "lat": 53.9540,
+                "lon": 27.5600,
+                "accuracy": 12,
+                "recorded_at": (start + timedelta(minutes=199)).isoformat(),
+            }
+        )
+        points.append(
+            {
+                "lat": 53.9090,
+                "lon": 27.5600,
+                "accuracy": 9,
+                "recorded_at": (start + timedelta(minutes=200)).isoformat(),
+            }
+        )
+
+        locations_service.record_points(self.learner_id, points)
+        trail = locations_service.trail(self.learner_id, start.date(), 0)
+        summary = trail["summary"]
+        self.assertGreater(summary["raw_points"], summary["points"])
+        # Реальный путь — около километра, а не 57.
+        self.assertGreater(summary["distance_m"], 700)
+        self.assertLess(summary["distance_m"], 1600)
+        self.assertGreater(summary["duration_min"], 180)
+
+    def test_latest_point_ignores_coarse_network_fix(self):
+        now = datetime.now(timezone.utc).replace(microsecond=0)
+        locations_service.record_points(
+            self.learner_id,
+            [{"lat": 53.9000, "lon": 27.5600, "accuracy": 9,
+              "recorded_at": (now - timedelta(minutes=2)).isoformat()}],
+        )
+        locations_service.record_points(
+            self.learner_id,
+            [{"lat": 53.9300, "lon": 27.6000, "accuracy": 1800,
+              "recorded_at": now.isoformat()}],
+        )
+        latest = locations_service.latest_point(self.learner_id)
+        self.assertAlmostEqual(latest["lat"], 53.9000, places=4)
+        self.assertEqual(latest["accuracy"], 9)
 
     def test_first_point_auto_acknowledges_force_command(self):
         """Родитель не должен видеть «ожидание» после того, как точка пришла."""

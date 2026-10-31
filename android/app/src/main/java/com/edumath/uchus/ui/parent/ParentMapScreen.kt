@@ -1,14 +1,5 @@
 package com.edumath.uchus.ui.parent
 
-import android.annotation.SuppressLint
-import android.content.Context
-import android.graphics.Color
-import android.util.Log
-import android.webkit.ConsoleMessage
-import android.webkit.WebChromeClient
-import android.webkit.WebSettings
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -39,11 +30,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import com.edumath.uchus.core.AppContainer
 import com.edumath.uchus.data.api.ApiJson
 import com.edumath.uchus.data.api.LocationTrackDto
@@ -65,8 +54,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Карта детей для родителя: последние точки всех детей и трек за выбранный день.
- * Карта — локальный Leaflet в WebView, тайлы берутся из настроек админки
- * (OpenStreetMap, Яндекс или свои тайлы).
+ * Карта рисуется нативно (Compose Canvas), тайлы берутся из настроек админки
+ * (OpenStreetMap, Яндекс или свои тайлы). Маршрут можно скрыть переключателем.
  */
 @Composable
 fun ParentMapScreen(
@@ -88,6 +77,7 @@ fun ParentMapScreen(
     var tick by remember { mutableIntStateOf(0) }
     var message by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
+    var showRoute by remember { mutableStateOf(true) }
 
     LaunchedEffect(tick) {
         overviewError = null
@@ -103,6 +93,9 @@ fun ParentMapScreen(
 
     LaunchedEffect(selectedId, date, tick) {
         if (selectedId == 0) return@LaunchedEffect
+        if (track?.learner?.id != selectedId || track?.day != date) {
+            track = null
+        }
         trackLoading = true
         trackError = null
         runCatching { apiCall { container.api.parentChildLocation(selectedId, date, tzMinutes) } }
@@ -118,6 +111,9 @@ fun ParentMapScreen(
             tick++
         }
     }
+
+    val retentionDays = track?.retentionDays ?: overview?.retentionDays ?: 3
+    val minDate = shiftDate(todayIso(), -(retentionDays.coerceAtLeast(1) - 1))
 
     ScreenScaffold(title = "Карта детей", onBack = onBack) { padding ->
         LazyColumn(
@@ -157,18 +153,42 @@ fun ParentMapScreen(
                 item {
                     DateRow(
                         date = date,
-                        minDate = shiftDate(todayIso(), -13),
+                        minDate = minDate,
                         maxDate = todayIso(),
                         onChange = { date = it },
                     )
                 }
                 item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        FilterChip(
+                            selected = showRoute,
+                            onClick = { showRoute = !showRoute },
+                            label = {
+                                Text(if (showRoute) "Маршруты видны" else "Маршруты скрыты")
+                            },
+                        )
+                        Spacer(Modifier.weight(1f))
+                        Text(
+                            "История: $retentionDays дн.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                item {
                     Card(Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(6.dp)) {
-                            MapWebView(
+                            NativeMapView(
                                 track = track,
                                 overview = overview,
                                 mapSettings = overview?.map ?: track?.map,
+                                showRoute = showRoute,
+                                viewKey = "$selectedId|$date",
+                                focusLearnerId = selectedId,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(360.dp),
@@ -250,6 +270,12 @@ fun ParentMapScreen(
                             "путь" to formatDistance(summary.distanceM),
                             "время" to formatDuration(summary.durationMin),
                         )
+                        Text(
+                            "Маршрут очищен от GPS-шума: стоянки и невозможные скачки " +
+                                "не увеличивают путь.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
 
@@ -303,115 +329,6 @@ fun ParentMapScreen(
             item { Spacer(Modifier.height(16.dp)) }
         }
     }
-}
-
-@Composable
-internal fun MapWebView(
-    track: LocationTrackDto?,
-    overview: ParentLocationsDto?,
-    mapSettings: com.edumath.uchus.data.api.MapSettingsDto?,
-    modifier: Modifier = Modifier,
-) {
-    val context = LocalContext.current
-    var ready by remember { mutableStateOf(false) }
-    var webView by remember { mutableStateOf<WebView?>(null) }
-    val html = remember(context) { mapHtml(context) }
-    val trackJson = remember(track) {
-        if (track == null) "null" else ApiJson.gson.toJson(track)
-    }
-    val overviewJson = remember(overview) {
-        if (overview == null) "null" else ApiJson.gson.toJson(overview)
-    }
-    val settingsJson = remember(mapSettings) {
-        if (mapSettings == null) "null" else ApiJson.gson.toJson(mapSettings)
-    }
-
-    LaunchedEffect(ready, webView, trackJson, overviewJson, settingsJson) {
-        val view = webView ?: return@LaunchedEffect
-        if (!ready) return@LaunchedEffect
-        view.evaluateJavascript("window.configureMap($settingsJson);", null)
-        view.evaluateJavascript("window.showOverview($overviewJson);", null)
-        view.evaluateJavascript("window.showTrack($trackJson);", null)
-        view.evaluateJavascript("window.refreshMap && window.refreshMap();", null)
-        // WebView иногда узнаёт настоящий размер только после первой отрисовки —
-        // без повторного invalidateSize Leaflet остаётся с картой 0×0.
-        delay(200)
-        view.evaluateJavascript("window.refreshMap && window.refreshMap();", null)
-    }
-
-    AndroidView(
-        factory = { ctx ->
-            @SuppressLint("SetJavaScriptEnabled")
-            WebView(ctx).apply {
-                setBackgroundColor(Color.parseColor("#eef4ff"))
-                settings.javaScriptEnabled = true
-                settings.domStorageEnabled = true
-                settings.loadsImagesAutomatically = true
-                settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                settings.setSupportZoom(false)
-                settings.builtInZoomControls = false
-                settings.displayZoomControls = false
-                webViewClient = object : WebViewClient() {
-                    override fun onPageFinished(view: WebView?, url: String?) {
-                        ready = true
-                    }
-                }
-                webChromeClient = object : WebChromeClient() {
-                    override fun onConsoleMessage(message: ConsoleMessage): Boolean {
-                        Log.w("MapWebView", "${message.message()} @${message.lineNumber()}")
-                        return true
-                    }
-                }
-                // Отдаём страницу как https-документ: так WebView не блокирует
-                // вложенные скрипты и внешние тайлы политикой file://.
-                loadDataWithBaseURL(
-                    "https://appassets.androidplatform.net/",
-                    html,
-                    "text/html",
-                    "utf-8",
-                    null,
-                )
-                webView = this
-            }
-        },
-        modifier = modifier.onSizeChanged { size ->
-            if (size.width > 0 && size.height > 0) {
-                webView?.evaluateJavascript(
-                    "window.refreshMap && window.refreshMap();",
-                    null,
-                )
-            }
-        },
-    )
-
-    DisposableEffect(Unit) {
-        onDispose {
-            webView?.let { view ->
-                runCatching {
-                    view.stopLoading()
-                    view.destroy()
-                }
-            }
-            webView = null
-        }
-    }
-}
-
-/** Собирает страницу карты одним документом: Leaflet подставляется прямо в HTML. */
-private fun mapHtml(context: Context): String {
-    val assets = context.assets
-    val page = assets.open("parent_map.html").bufferedReader().use { it.readText() }
-    val css = assets.open("leaflet/leaflet.css").bufferedReader().use { it.readText() }
-    val js = assets.open("leaflet/leaflet.js").bufferedReader().use { it.readText() }
-    return page
-        .replace(
-            "<link rel=\"stylesheet\" href=\"leaflet/leaflet.css\">",
-            "<style>$css</style>",
-        )
-        .replace(
-            "<script src=\"leaflet/leaflet.js\"></script>",
-            "<script>$js</script>",
-        )
 }
 
 @Composable

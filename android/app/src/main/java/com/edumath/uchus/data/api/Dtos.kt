@@ -1726,7 +1726,7 @@ data class MapSettingsDto(
     @SerializedName("max_zoom") val maxZoom: Int = 19,
     @SerializedName("center_lat") val centerLat: Double = 53.9023,
     @SerializedName("center_lon") val centerLon: Double = 27.5619,
-    @SerializedName("zoom") val zoom: Int = 11,
+    @SerializedName("zoom") val zoom: Int = 16,
     @SerializedName("updated_at") val updatedAt: String? = null,
 )
 
@@ -1761,7 +1761,7 @@ data class MapSettingsRequest(
 
 data class LocationSharingDto(
     @SerializedName("enabled") val enabled: Boolean = true,
-    @SerializedName("retention_days") val retentionDays: Int = 14,
+    @SerializedName("retention_days") val retentionDays: Int = 3,
     @SerializedName("updated_at") val updatedAt: String? = null,
     @SerializedName("last_point_at") val lastPointAt: String? = null,
     @SerializedName("force_pending") val forcePending: Boolean = false,
@@ -1791,7 +1791,7 @@ data class LocationStatusDto(
     @SerializedName("force_requested_at") val forceRequestedAt: String? = null,
     @SerializedName("force_ack_at") val forceAckAt: String? = null,
     @SerializedName("last_point") val lastPoint: LocationPointDto? = null,
-    @SerializedName("retention_days") val retentionDays: Int = 14,
+    @SerializedName("retention_days") val retentionDays: Int = 3,
     @SerializedName("message") val message: String? = null,
 )
 
@@ -1862,7 +1862,7 @@ data class LocationTrackDto(
     @SerializedName("summary") val summary: LocationSummaryDto = LocationSummaryDto(),
     @SerializedName("latest") val latest: LocationPointDto? = null,
     @SerializedName("map") val map: MapSettingsDto? = null,
-    @SerializedName("retention_days") val retentionDays: Int = 14,
+    @SerializedName("retention_days") val retentionDays: Int = 3,
 )
 
 data class ParentLocationChildDto(
@@ -1878,7 +1878,7 @@ data class ParentLocationsDto(
     @SerializedName("children") val children: List<ParentLocationChildDto> = emptyList(),
     @SerializedName("date") val date: String? = null,
     @SerializedName("map") val map: MapSettingsDto? = null,
-    @SerializedName("retention_days") val retentionDays: Int = 14,
+    @SerializedName("retention_days") val retentionDays: Int = 3,
 )
 
 data class LocationMessageDto(
