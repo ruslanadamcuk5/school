@@ -199,6 +199,13 @@ fun ParentMapScreen(
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.primary,
                                 )
+                                Text(
+                                    "На телефоне ребёнка нужно открыть «Школьник» и разрешить " +
+                                        "доступ к «Местоположению». Лучше обновить приложение " +
+                                        "до последней версии.",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                             }
                             Spacer(Modifier.height(6.dp))
                             OutlinedButton(
@@ -242,7 +249,11 @@ fun ParentMapScreen(
 
                 item {
                     if (track != null && track!!.points.isEmpty()) {
-                        InfoBox("За ${prettyDate(date)} точек нет.")
+                        InfoBox(
+                            "За ${prettyDate(date)} точек нет. Проверьте, что на телефоне " +
+                                "ребёнка установлено обновление приложения и разрешён доступ " +
+                                "к «Местоположению»."
+                        )
                     }
                 }
 
@@ -289,7 +300,7 @@ fun ParentMapScreen(
 }
 
 @Composable
-private fun MapWebView(
+internal fun MapWebView(
     track: LocationTrackDto?,
     overview: ParentLocationsDto?,
     mapSettings: com.edumath.uchus.data.api.MapSettingsDto?,

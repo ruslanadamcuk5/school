@@ -1,6 +1,9 @@
 package com.edumath.uchus.ui.location
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -15,8 +18,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -28,6 +33,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.edumath.uchus.core.AppContainer
 import com.edumath.uchus.data.api.apiCall
 import com.edumath.uchus.data.location.LocationTrackingService
@@ -105,6 +113,25 @@ fun ChildLocationScreen(
         }
     }
 
+    fun openSystemSettings() {
+        val intent = Intent(
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            Uri.fromParts("package", context.packageName, null),
+        )
+        runCatching { context.startActivity(intent) }
+        message = "Включите «Местоположение» для приложения «Школьник», затем вернитесь сюда."
+    }
+
+    // Возврат из настроек Android — сразу проверяем разрешение и статус.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) tick++
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     // Статус и команда родителя проверяются сами, без кнопок «подтвердить».
     LaunchedEffect(Unit) {
         while (true) {
@@ -119,6 +146,7 @@ fun ChildLocationScreen(
             block = { container.api.locationStatus(tzMinutes) },
         ) { data, refresh ->
             forcePending = data.forcePending || data.settings?.forcePending == true
+            val granted = LocationTrackingService.hasPermission(context)
             LaunchedEffect(data.forcePending, data.lastPoint?.recordedAt, tick) {
                 if (LocationTrackingService.hasPermission(context)) {
                     startTracking(forcePending)
@@ -154,7 +182,21 @@ fun ChildLocationScreen(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            KeyValue("Статус", "включена")
+                            KeyValue(
+                                "Статус",
+                                when {
+                                    !granted -> "нужно разрешение"
+                                    LocationTrackingService.isRunning -> "включена, передача идёт"
+                                    else -> "разрешение есть, запускаем службу"
+                                },
+                            )
+                            if (!granted) {
+                                Text(
+                                    "Разрешите «Местоположение» — без этого родитель не увидит точку.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
                             KeyValue(
                                 "Последняя точка",
                                 formatLocal(data.lastPoint?.recordedAt) ?: "ещё нет",
@@ -169,9 +211,9 @@ fun ChildLocationScreen(
                 if (forcePending) {
                     item {
                         InfoBox(
-                            "📍 Геолокация включена родителем. Передача запускается " +
-                                "автоматически; если Android ещё не дал доступ к " +
-                                "местоположению, разрешите его один раз."
+                            "📍 Родитель включил геолокацию. Разрешите доступ к " +
+                                "местоположению — передача запустится сама, подтверждать " +
+                                "ничего не нужно."
                         )
                     }
                 }
@@ -190,6 +232,15 @@ fun ChildLocationScreen(
                                 else -> "📍 Разрешить геолокацию"
                             }
                         )
+                    }
+                }
+
+                if (!granted) {
+                    item {
+                        OutlinedButton(
+                            onClick = { openSystemSettings() },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text("⚙️ Открыть настройки Android") }
                     }
                 }
 

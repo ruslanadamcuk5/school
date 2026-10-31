@@ -78,8 +78,12 @@ class LocationTrackingService : Service() {
             0
         }
         ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(), serviceType)
-        if (started) return START_STICKY
+        if (started) {
+            isRunning = true
+            return START_STICKY
+        }
         started = true
+        isRunning = true
 
         val container = (application as? UchusApp)?.container
         if (container == null) {
@@ -105,6 +109,7 @@ class LocationTrackingService : Service() {
     }
 
     override fun onDestroy() {
+        isRunning = false
         flushJob?.cancel()
         runCatching { listener?.let { manager?.removeUpdates(it) } }
         listener = null
@@ -253,6 +258,11 @@ class LocationTrackingService : Service() {
     }
 
     companion object {
+        /** true, пока служба передачи местоположения реально работает. */
+        @Volatile
+        var isRunning: Boolean = false
+            private set
+
         private const val CHANNEL_ID = "child_location"
         private const val NOTIFICATION_ID = 4242
         private const val MIN_TIME_MS = 15_000L

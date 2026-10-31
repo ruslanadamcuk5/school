@@ -174,6 +174,13 @@
       if (data.sharing && data.sharing.force_pending) {
         addText(summaryBox, "p", "Включаем GPS на телефоне ребёнка…", "small muted");
       }
+      addText(
+        summaryBox,
+        "p",
+        "Проверьте: на телефоне ребёнка открыто приложение «Школьник» последней версии " +
+          "и разрешён доступ к «Местоположению».",
+        "small muted"
+      );
       return;
     }
 
