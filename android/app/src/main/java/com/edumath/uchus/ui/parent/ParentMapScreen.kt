@@ -58,7 +58,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Карта детей для родителя: последние точки всех детей и трек за выбранный день.
- * Карта — локальный Leaflet в WebView, тайлы OpenStreetMap (без API-ключа).
+ * Карта — локальный Leaflet в WebView, тайлы берутся из настроек админки
+ * (OpenStreetMap, Яндекс или свои тайлы).
  */
 @Composable
 fun ParentMapScreen(
@@ -152,6 +153,7 @@ fun ParentMapScreen(
                             MapWebView(
                                 track = track,
                                 overview = overview,
+                                mapSettings = overview?.map ?: track?.map,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(360.dp),
@@ -176,31 +178,36 @@ fun ParentMapScreen(
                             )
                             Text(
                                 when {
-                                    sharing?.enabled != true -> "Передача геолокации выключена"
                                     last == null -> "Точек пока нет"
                                     else -> "Последняя точка: ${formatLocal(last.recordedAt)}"
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            if (sharing?.enabled != true) {
-                                Spacer(Modifier.height(6.dp))
-                                OutlinedButton(
-                                    onClick = {
-                                        if (busy) return@OutlinedButton
-                                        busy = true
-                                        scope.launch {
-                                            runCatching {
-                                                apiCall { container.api.requestChildLocation(selectedId) }
-                                            }.onSuccess {
-                                                message = it.message ?: "Просьба отправлена"
-                                            }.onFailure { message = it.message }
-                                            busy = false
-                                        }
-                                    },
-                                    enabled = !busy,
-                                ) { Text("🔔 Попросить включить геолокацию") }
+                            if (sharing?.forcePending == true) {
+                                Text(
+                                    "Команда включения отправлена на телефон ребёнка",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
                             }
+                            Spacer(Modifier.height(6.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    if (busy) return@OutlinedButton
+                                    busy = true
+                                    scope.launch {
+                                        runCatching {
+                                            apiCall { container.api.forceChildLocation(selectedId) }
+                                        }.onSuccess {
+                                            message = it.message ?: "Команда отправлена"
+                                            tick++
+                                        }.onFailure { message = it.message }
+                                        busy = false
+                                    }
+                                },
+                                enabled = !busy,
+                            ) { Text("📍 Включить геолокацию на телефоне ребёнка") }
                         }
                     }
                 }
@@ -226,14 +233,7 @@ fun ParentMapScreen(
 
                 item {
                     if (track != null && track!!.points.isEmpty()) {
-                        val sharing = track!!.sharing
-                        InfoBox(
-                            if (sharing?.enabled != true) {
-                                "Ребёнок выключил передачу геолокации."
-                            } else {
-                                "За ${prettyDate(date)} точек нет."
-                            }
-                        )
+                        InfoBox("За ${prettyDate(date)} точек нет.")
                     }
                 }
 
@@ -283,6 +283,7 @@ fun ParentMapScreen(
 private fun MapWebView(
     track: LocationTrackDto?,
     overview: ParentLocationsDto?,
+    mapSettings: com.edumath.uchus.data.api.MapSettingsDto?,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -292,6 +293,9 @@ private fun MapWebView(
     }
     val overviewJson = remember(overview) {
         if (overview == null) "null" else ApiJson.gson.toJson(overview)
+    }
+    val settingsJson = remember(mapSettings) {
+        if (mapSettings == null) "null" else ApiJson.gson.toJson(mapSettings)
     }
     val webView = remember {
         @SuppressLint("SetJavaScriptEnabled")
@@ -313,8 +317,9 @@ private fun MapWebView(
         }
     }
 
-    LaunchedEffect(ready, trackJson, overviewJson) {
+    LaunchedEffect(ready, trackJson, overviewJson, settingsJson) {
         if (!ready) return@LaunchedEffect
+        webView.evaluateJavascript("window.configureMap($settingsJson);", null)
         webView.evaluateJavascript("window.showOverview($overviewJson);", null)
         webView.evaluateJavascript("window.showTrack($trackJson);", null)
     }

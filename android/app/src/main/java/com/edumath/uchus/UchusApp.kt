@@ -2,6 +2,7 @@ package com.edumath.uchus
 
 import android.app.Application
 import com.edumath.uchus.core.AppContainer
+import com.edumath.uchus.data.worker.LocationSyncWorker
 import com.edumath.uchus.data.worker.NotificationWorker
 
 class UchusApp : Application() {
@@ -14,5 +15,7 @@ class UchusApp : Application() {
         container = AppContainer(this)
         // Периодический опрос уведомлений (каждые 15 минут).
         NotificationWorker.enqueue(this)
+        // Проверка команды родителя включить геолокацию.
+        LocationSyncWorker.enqueue(this)
     }
 }

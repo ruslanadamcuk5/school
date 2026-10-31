@@ -380,8 +380,8 @@ interface ApiService {
         @Query("tz") tz: Int,
     ): LocationTrackDto
 
-    @POST("parent/children/{id}/location/request")
-    suspend fun requestChildLocation(@Path("id") id: Int): LocationMessageDto
+    @POST("parent/children/{id}/location/force")
+    suspend fun forceChildLocation(@Path("id") id: Int): LocationForceResponse
 
     // ---------------------------------------------------------- геолокация ребёнка
     @GET("location/status")
@@ -393,8 +393,8 @@ interface ApiService {
     @POST("location/points")
     suspend fun sendLocationPoints(@Body body: LocationPointsRequest): LocationPointsResponse
 
-    @DELETE("location/history")
-    suspend fun clearLocationHistory(): LocationHistoryResponse
+    @POST("location/force/ack")
+    suspend fun ackLocationForce(): LocationForceResponse
 
     // ---------------------------------------------------------- админ
     @GET("admin/stats")
@@ -488,6 +488,12 @@ interface ApiService {
 
     @DELETE("admin/textbooks/{id}")
     suspend fun deleteTextbook(@Path("id") id: Int): SimpleOkDto
+
+    @GET("admin/map-settings")
+    suspend fun adminMapSettings(): MapSettingsResponse
+
+    @PUT("admin/map-settings")
+    suspend fun saveAdminMapSettings(@Body body: MapSettingsRequest): MapSettingsResponse
 
     @GET("admin/ai")
     suspend fun adminAi(): AdminAiDto

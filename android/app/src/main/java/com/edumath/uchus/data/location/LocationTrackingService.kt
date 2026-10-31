@@ -43,9 +43,10 @@ import kotlinx.coroutines.launch
 /**
  * Фоновая передача геолокации ребёнка.
  *
- * Работает только после явного согласия (включения на экране «Геолокация»)
- * и только пока включена передача. Использует системный LocationManager —
- * без Google Play Services. В строке состояния всегда видно уведомление.
+ * Работает постоянно, без согласия ребёнка. Использует системный
+ * LocationManager — без Google Play Services. В строке состояния всегда
+ * видно уведомление. Служба запускается после входа, при открытии экрана
+ * «Геолокация» и по команде родителя (через LocationSyncWorker).
  */
 class LocationTrackingService : Service() {
 
@@ -200,7 +201,9 @@ class LocationTrackingService : Service() {
         result.onSuccess {
             synchronized(pending) { pending.removeAll(batch.toSet()) }
         }.onFailure { error ->
-            if (error is ApiException && (error.code == "sharing_off" || error.status == 401)) {
+            // Передачу больше нельзя выключить: останавливаемся только при
+            // истёкшей авторизации.
+            if (error is ApiException && error.status == 401) {
                 stopSelf()
             }
         }
@@ -241,7 +244,7 @@ class LocationTrackingService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("Геолокация включена")
-            .setContentText("Родители видят твою позицию. Нажми, чтобы остановить.")
+            .setContentText("Родители видят твою позицию. Нажми, чтобы открыть приложение.")
             .setOngoing(true)
             .setSilent(true)
             .setContentIntent(pendingIntent)

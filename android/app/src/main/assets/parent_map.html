@@ -20,13 +20,51 @@
 <script>
 (function () {
   "use strict";
-  var map = L.map("map", { zoomControl: true }).setView([53.9023, 27.5619], 11);
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap'
-  }).addTo(map);
-  var overviewLayer = L.layerGroup().addTo(map);
-  var trackLayer = L.layerGroup().addTo(map);
+  var DEFAULTS = {
+    tile_url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: "© OpenStreetMap",
+    crs: "mercator",
+    min_zoom: 1,
+    max_zoom: 19,
+    center_lat: 53.9023,
+    center_lon: 27.5619,
+    zoom: 11
+  };
+  var YANDEX_CRS = L.extend({}, L.CRS.EPSG3857, {
+    code: "EPSG:3395",
+    projection: L.Projection.Mercator,
+    transformation: new L.Transformation(0.5 / Math.PI, 0.5, -0.5 / Math.PI, 0.5)
+  });
+
+  var map = null;
+  var overviewLayer = null;
+  var trackLayer = null;
+  var currentKey = "";
+  var lastOverview = null;
+  var lastTrack = null;
+
+  function createMap(settings) {
+    if (map) {
+      map.remove();
+      map = null;
+    }
+    var options = { zoomControl: true };
+    if (settings.crs === "yandex") options.crs = YANDEX_CRS;
+    map = L.map("map", options).setView(
+      [Number(settings.center_lat || DEFAULTS.center_lat),
+       Number(settings.center_lon || DEFAULTS.center_lon)],
+      Math.max(Number(settings.min_zoom || 1),
+        Math.min(Number(settings.max_zoom || 19), Number(settings.zoom || 11)))
+    );
+    L.tileLayer(settings.tile_url || DEFAULTS.tile_url, {
+      minZoom: Number(settings.min_zoom || 1),
+      maxZoom: Number(settings.max_zoom || 19),
+      tms: settings.crs === "yandex",
+      attribution: settings.attribution || DEFAULTS.attribution
+    }).addTo(map);
+    overviewLayer = L.layerGroup().addTo(map);
+    trackLayer = L.layerGroup().addTo(map);
+  }
 
   function timeOf(value) {
     if (!value) return "";
@@ -42,7 +80,8 @@
     return d.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
   }
 
-  window.showOverview = function (data) {
+  function drawOverview(data) {
+    if (!map) return;
     overviewLayer.clearLayers();
     if (!data || !data.children) return;
     data.children.forEach(function (child) {
@@ -62,9 +101,10 @@
         (last.accuracy != null ? "±" + Math.round(last.accuracy) + " м" : "")
       );
     });
-  };
+  }
 
-  window.showTrack = function (data) {
+  function drawTrack(data) {
+    if (!map) return;
     trackLayer.clearLayers();
     if (!data || !data.points || !data.points.length) return;
     var points = data.points;
@@ -90,7 +130,41 @@
       }
     });
     map.fitBounds(L.latLngBounds(latlngs), { padding: [26, 26], maxZoom: 17 });
+  }
+
+  window.configureMap = function (settings) {
+    if (!settings) {
+      if (!map) createMap(DEFAULTS);
+      return;
+    }
+    var key = [
+      settings.tile_url, settings.crs, settings.min_zoom, settings.max_zoom,
+      settings.center_lat, settings.center_lon, settings.zoom
+    ].join("|");
+    if (map && key === currentKey) return;
+    createMap(settings);
+    currentKey = key;
+    if (lastOverview) drawOverview(lastOverview);
+    if (lastTrack) drawTrack(lastTrack);
   };
+
+  window.showOverview = function (data) {
+    lastOverview = data;
+    if (!map) createMap(DEFAULTS);
+    drawOverview(data);
+  };
+
+  window.showTrack = function (data) {
+    lastTrack = data;
+    if (!map) createMap(DEFAULTS);
+    drawTrack(data);
+  };
+
+  createMap(DEFAULTS);
+  currentKey = [
+    DEFAULTS.tile_url, DEFAULTS.crs, DEFAULTS.min_zoom, DEFAULTS.max_zoom,
+    DEFAULTS.center_lat, DEFAULTS.center_lon, DEFAULTS.zoom
+  ].join("|");
 })();
 </script>
 </body>

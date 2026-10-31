@@ -21,6 +21,7 @@
     <a href="{{ url_for('admin.courses') }}" class="{% if request.endpoint in ('admin.courses', 'admin.course_topics') %}is-active{% endif %}">📚 Курсы</a>
     <a href="{{ url_for('admin.textbooks_page') }}" class="{% if request.endpoint in ('admin.textbooks_page', 'admin.textbook_detail') %}is-active{% endif %}">📖 Пособия (PDF)</a>
     <a href="{{ url_for('admin.padruchnik_page') }}" class="{% if request.endpoint == 'admin.padruchnik_page' %}is-active{% endif %}">🌐 e-padruchnik</a>
+    <a href="{{ url_for('admin.map_settings') }}" class="{% if request.endpoint == 'admin.map_settings' %}is-active{% endif %}">🗺 Карты</a>
     <a href="{{ url_for('admin.ai_settings') }}" class="{% if request.endpoint == 'admin.ai_settings' %}is-active{% endif %}">🤖 ИИ</a>
     <a href="{{ url_for('admin.audit') }}" class="{% if request.endpoint == 'admin.audit' %}is-active{% endif %}">🧾 Журнал</a>
     <a href="{{ url_for('auth.account') }}">⚙️ Профиль</a>

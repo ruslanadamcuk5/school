@@ -1,4 +1,4 @@
-"""Веб-геолокация ребёнка: согласие и передача точек из браузера."""
+"""Веб-геолокация ребёнка: постоянная передача точек из браузера."""
 from __future__ import annotations
 
 from flask import Blueprint, jsonify, redirect, render_template, request, url_for
@@ -25,8 +25,11 @@ def _status_payload(learner_id: int) -> dict:
     latest = locations_service.latest_point(learner_id, _tz())
     return {
         "ok": True,
-        "enabled": info["enabled"],
+        "enabled": True,
         "settings": info,
+        "force_pending": info["force_pending"],
+        "force_requested_at": info["force_requested_at"],
+        "force_ack_at": info["force_ack_at"],
         "last_point": latest,
         "retention_days": locations_service.RETENTION_DAYS,
     }
@@ -55,22 +58,13 @@ def status():
 
 @bp.route("/location/status", methods=["POST"])
 def set_status():
+    """Совместимость со старыми сборками: передачу нельзя выключить."""
     profile = _learner()
     if profile is None:
         return jsonify({"ok": False, "error": "unauthorized"}), 401
-    data = request.get_json(silent=True) or request.form
-    if "enabled" not in data:
-        return jsonify(
-            {"ok": False, "error": "enabled_required", "message": "Укажите enabled"}
-        ), 400
-    enabled = str(data.get("enabled")).lower() in ("1", "true", "yes", "on")
-    locations_service.set_sharing(int(profile["id"]), enabled)
+    locations_service.set_sharing(int(profile["id"]), True)
     payload = _status_payload(int(profile["id"]))
-    payload["message"] = (
-        "Геолокация включена — родители видят, где ты находишься"
-        if enabled
-        else "Передача геолокации остановлена"
-    )
+    payload["message"] = "Геолокация включена — родители видят, где ты находишься"
     return jsonify(payload)
 
 
@@ -92,17 +86,17 @@ def points():
     return jsonify({"ok": True, **result})
 
 
-@bp.route("/location/history", methods=["DELETE"])
-def clear_history():
+@bp.route("/location/force/ack", methods=["POST"])
+def ack_force():
     profile = _learner()
     if profile is None:
         return jsonify({"ok": False, "error": "unauthorized"}), 401
-    removed = locations_service.clear_history(int(profile["id"]))
+    info = locations_service.ack_force(int(profile["id"]))
     return jsonify(
         {
             "ok": True,
-            "removed": removed,
-            "message": "История геолокации удалена",
-            "settings": locations_service.settings(int(profile["id"])),
+            "settings": info,
+            "force_pending": False,
+            "message": "Команда включения геолокации выполнена",
         }
     )

@@ -1,9 +1,12 @@
 """Геолокация детей: точки GPS, трек за день и доступ родителей.
 
-Передача местоположения включается **самим ребёнком** (кнопка в приложении
-или на сайте). По умолчанию она выключена: без явного согласия точки не
-принимаются. История хранится ограниченное время и доступна только родителям
-этого ребёнка, администратору и самому ребёнку.
+Передача местоположения работает всегда: родитель видит последнюю точку и
+историю перемещений ребёнка на карте, настроенной администратором. Родитель
+может отправить команду принудительного включения геолокации на устройстве
+ребёнка (``force_requested_at``); приложение ребёнка подтверждает её, когда
+служба геолокации запущена (``force_ack_at``). История хранится ограниченное
+время и доступна только родителям этого ребёнка, администратору и самому
+ребёнку.
 """
 from __future__ import annotations
 
@@ -109,10 +112,10 @@ def _parse_recorded(value, fallback: datetime | None = None) -> datetime:
     return _utc(parsed).replace(microsecond=0)
 
 
-# ------------------------------------------------------------------ согласие
+# ------------------------------------------------------------------ состояние
 def ensure_settings(learner_id: int) -> None:
     execute(
-        "INSERT OR IGNORE INTO location_sharing (learner_id, enabled) VALUES (?, 0)",
+        "INSERT OR IGNORE INTO location_sharing (learner_id, enabled) VALUES (?, 1)",
         (int(learner_id),),
     )
 
@@ -120,28 +123,103 @@ def ensure_settings(learner_id: int) -> None:
 def settings(learner_id: int) -> dict:
     ensure_settings(learner_id)
     row = query_one("SELECT * FROM location_sharing WHERE learner_id = ?", (int(learner_id),))
+    force_requested_at = row["force_requested_at"] if row else None
+    force_ack_at = row["force_ack_at"] if row else None
+    force_pending = bool(force_requested_at and not force_ack_at)
     return {
-        "enabled": bool(row and row["enabled"]),
+        # Передача больше не выключается ребёнком: значение всегда true.
+        "enabled": True,
         "updated_at": _iso(row["updated_at"]) if row else None,
         "last_point_at": _iso(row["last_point_at"]) if row else None,
         "retention_days": RETENTION_DAYS,
+        "force_pending": force_pending,
+        "force_requested_at": _iso(force_requested_at),
+        "force_requested_by": row["force_requested_by"] if row else None,
+        "force_ack_at": _iso(force_ack_at),
     }
 
 
 def sharing_enabled(learner_id: int) -> bool:
-    row = query_one("SELECT enabled FROM location_sharing WHERE learner_id = ?", (int(learner_id),))
-    return bool(row and row["enabled"])
+    """Совместимость со старым кодом: передача включена всегда."""
+    return True
 
 
-def set_sharing(learner_id: int, enabled: bool, by_user_id: int | None = None) -> dict:
+def set_sharing(learner_id: int, enabled: bool = True,
+                by_user_id: int | None = None) -> dict:
+    """Оставить передачу включённой (старый клиент мог прислать enabled=false)."""
     ensure_settings(learner_id)
     execute(
         """UPDATE location_sharing
-              SET enabled = ?, updated_by = ?, updated_at = datetime('now')
+              SET enabled = 1, updated_by = ?, updated_at = datetime('now')
             WHERE learner_id = ?""",
-        (1 if enabled else 0, by_user_id, int(learner_id)),
+        (by_user_id, int(learner_id)),
     )
     return settings(learner_id)
+
+
+def force_request(learner_id: int, sender_id: int = 0) -> dict:
+    """Принудительно включить геолокацию на устройстве ребёнка."""
+    ensure_settings(learner_id)
+    execute(
+        """UPDATE location_sharing
+              SET enabled = 1, force_requested_at = datetime('now'),
+                  force_requested_by = ?, force_ack_at = NULL,
+                  updated_at = datetime('now')
+            WHERE learner_id = ?""",
+        (int(sender_id or 0), int(learner_id)),
+    )
+    _notify_force(learner_id, sender_id)
+    if sender_id:
+        execute(
+            "INSERT INTO audit_log (user_id, action, entity, entity_id, details) "
+            "VALUES (?, 'location_force', 'learner', ?, '')",
+            (int(sender_id), str(int(learner_id))),
+        )
+    return settings(learner_id)
+
+
+def ack_force(learner_id: int) -> dict:
+    """Подтвердить, что устройство ребёнка получило команду включения."""
+    ensure_settings(learner_id)
+    execute(
+        """UPDATE location_sharing
+              SET force_ack_at = datetime('now'), updated_at = datetime('now')
+            WHERE learner_id = ?""",
+        (int(learner_id),),
+    )
+    return settings(learner_id)
+
+
+def _notify_force(learner_id: int, sender_id: int) -> None:
+    from services import notifications as notifications_service
+
+    title = "📍 Родитель включил геолокацию"
+    body = (
+        "Родитель просит включить передачу местоположения. "
+        "Открой приложение или страницу «Геолокация» и разреши доступ к GPS."
+    )
+    dedup_key = (
+        "location_force:" + str(int(learner_id)) + ":"
+        + datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
+    )
+    linked = query_one(
+        "SELECT user_id FROM learner_accounts WHERE learner_id = ?", (int(learner_id),)
+    )
+    try:
+        notifications_service.push(
+            int(linked["user_id"]) if linked and linked["user_id"] else 0,
+            "location_force", title, body,
+            learner_id=int(learner_id), sender_id=int(sender_id or 0),
+            link="/location/",
+            dedup_key=dedup_key,
+        )
+    except Exception:  # pragma: no cover - уведомление не должно ломать запрос
+        pass
+
+
+def request_sharing(learner_id: int, sender_id: int = 0) -> dict:
+    """Старое имя команды: теперь это принудительное включение геолокации."""
+    return force_request(learner_id, sender_id)
 
 
 # ------------------------------------------------------------------ точки
@@ -199,12 +277,7 @@ def _normalize_point(raw: dict, now: datetime) -> tuple | None:
 
 def record_points(learner_id: int, points, battery: int | None = None) -> dict:
     """Принять пачку точек. Возвращает число сохранённых и последнюю точку."""
-    if not sharing_enabled(learner_id):
-        raise LocationError(
-            "sharing_off",
-            "Передача геолокации выключена на устройстве ребёнка",
-            409,
-        )
+    ensure_settings(learner_id)
     if not isinstance(points, list) or not points:
         raise LocationError("no_points", "Нет точек для сохранения")
     if len(points) > MAX_POINTS_PER_BATCH:
@@ -236,7 +309,7 @@ def record_points(learner_id: int, points, battery: int | None = None) -> dict:
         last = max(row[-1] for row in rows)
         conn.execute(
             """UPDATE location_sharing
-                  SET last_point_at = ?, updated_at = datetime('now')
+                  SET enabled = 1, last_point_at = ?, updated_at = datetime('now')
                 WHERE learner_id = ?""",
             (last, int(learner_id)),
         )
@@ -384,20 +457,6 @@ def overview(learners, tz_minutes: int = 0) -> list[dict]:
             }
         )
     return result
-
-
-def clear_history(learner_id: int) -> int:
-    row = query_one(
-        "SELECT COUNT(*) AS c FROM learner_locations WHERE learner_id = ?",
-        (int(learner_id),),
-    )
-    execute("DELETE FROM learner_locations WHERE learner_id = ?", (int(learner_id),))
-    execute(
-        "UPDATE location_sharing SET last_point_at = NULL, updated_at = datetime('now') "
-        "WHERE learner_id = ?",
-        (int(learner_id),),
-    )
-    return int(row["c"] or 0) if row else 0
 
 
 def can_parent_see(parent_id: int, learner_id: int) -> bool:

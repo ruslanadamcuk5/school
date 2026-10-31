@@ -1,6 +1,9 @@
 package com.edumath.uchus.ui.nav
 
+import android.Manifest
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -23,7 +26,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import com.edumath.uchus.core.AppContainer
+import com.edumath.uchus.data.location.LocationTrackingService
 import com.edumath.uchus.core.appViewModelFactory
 import com.edumath.uchus.data.api.ApiJson
 import com.edumath.uchus.data.api.MetaDto
@@ -130,9 +135,34 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
     val nav = rememberNavController()
     val scope = rememberCoroutineScope()
     var meta by remember(stored.sessionJson) { mutableStateOf<MetaDto?>(null) }
+    val context = LocalContext.current
+    var permissionAsked by remember(stored.sessionJson) { mutableStateOf(false) }
+    val isLearner = session?.learner != null || session?.user?.role == "student"
+    val locationPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants ->
+        val granted = grants[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            grants[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (granted && isLearner) {
+            LocationTrackingService.start(context)
+        }
+    }
 
     LaunchedEffect(stored.sessionJson) {
         meta = runCatching { apiCall { container.api.meta() } }.getOrNull()
+        if (isLearner) {
+            if (LocationTrackingService.hasPermission(context)) {
+                LocationTrackingService.start(context)
+            } else if (!permissionAsked) {
+                permissionAsked = true
+                locationPermission.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                    )
+                )
+            }
+        }
     }
 
     val logout: () -> Unit = {

@@ -1,18 +1,19 @@
 """API: геолокация ребёнка и карта для родителей.
 
-Ребёнок сам включает передачу точек (``PUT /location/status``), устройство
-присылает пачки точек в ``POST /location/points``. Родитель видит последние
-точки и трек за выбранный день.
+Передача местоположения всегда включена: устройство присылает пачки точек в
+``POST /location/points``. Родитель видит последние точки и трек за выбранный
+день, а также может принудительно включить геолокацию на телефоне ребёнка.
 """
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date
 
 from flask import jsonify, request
 
-from database import execute, query_one
+from database import query_one
 from services import learners as learners_service
 from services import locations as locations_service
+from services import map_settings as map_settings_service
 
 from . import bp
 from .deps import (
@@ -22,7 +23,6 @@ from .deps import (
     learner,
     require_learner,
     require_user,
-    row_dict,
 )
 
 MAX_TZ = 840
@@ -49,8 +49,11 @@ def _status_payload(learner_id: int, tz_minutes: int = 0) -> dict:
     latest = locations_service.latest_point(learner_id, tz_minutes)
     return {
         "ok": True,
-        "enabled": info["enabled"],
+        "enabled": True,
         "settings": info,
+        "force_pending": info["force_pending"],
+        "force_requested_at": info["force_requested_at"],
+        "force_ack_at": info["force_ack_at"],
         "last_point": latest,
         "retention_days": locations_service.RETENTION_DAYS,
     }
@@ -66,21 +69,15 @@ def location_status():
 @bp.put("/location/status")
 @require_learner
 def location_set_status():
+    """Совместимость со старыми сборками: передачу нельзя выключить."""
     profile = learner()
-    data = json_body()
-    if "enabled" not in data:
-        fail(400, "enabled_required", "Укажите enabled: true или false")
-    enabled = bool(data.get("enabled"))
+    json_body()
     locations_service.set_sharing(
-        int(profile["id"]), enabled,
+        int(profile["id"]), True,
         by_user_id=int(current_user()["id"]) if current_user() else None,
     )
     payload = _status_payload(int(profile["id"]), _tz())
-    payload["message"] = (
-        "Геолокация включена — родители видят, где ты находишься"
-        if enabled
-        else "Передача геолокации остановлена"
-    )
+    payload["message"] = "Геолокация включена — родители видят, где ты находишься"
     return jsonify(payload)
 
 
@@ -101,17 +98,17 @@ def location_add_points():
     return jsonify({"ok": True, **result})
 
 
-@bp.delete("/location/history")
+@bp.post("/location/force/ack")
 @require_learner
-def location_clear_history():
+def location_ack_force():
     profile = learner()
-    removed = locations_service.clear_history(int(profile["id"]))
+    info = locations_service.ack_force(int(profile["id"]))
     return jsonify(
         {
             "ok": True,
-            "removed": removed,
-            "message": "История геолокации удалена",
-            "settings": locations_service.settings(int(profile["id"])),
+            "settings": info,
+            "force_pending": False,
+            "message": "Команда включения геолокации выполнена",
         }
     )
 
@@ -141,6 +138,7 @@ def parent_locations():
             "children": children,
             "date": locations_service.today_for_tz(tz_minutes).isoformat(),
             "retention_days": locations_service.RETENTION_DAYS,
+            "map": map_settings_service.public_settings(),
         }
     )
 
@@ -191,7 +189,27 @@ def parent_child_location(learner_id: int):
                 "grade": int(profile["grade"] or 1),
             },
             **data,
+            "map": map_settings_service.public_settings(),
             "retention_days": locations_service.RETENTION_DAYS,
+        }
+    )
+
+
+@bp.post("/parent/children/<int:learner_id>/location/force")
+@require_user("parent")
+def parent_force_location(learner_id: int):
+    profile = _parent_learner(learner_id)
+    user = current_user()
+    info = locations_service.force_request(learner_id, int(user["id"]))
+    return jsonify(
+        {
+            "ok": True,
+            "message": (
+                f"Команда включения отправлена: {profile['name']} получит запрос "
+                "и разрешит геолокацию на телефоне"
+            ),
+            "settings": info,
+            "force_pending": info["force_pending"],
         }
     )
 
@@ -199,12 +217,5 @@ def parent_child_location(learner_id: int):
 @bp.post("/parent/children/<int:learner_id>/location/request")
 @require_user("parent")
 def parent_request_location(learner_id: int):
-    profile = _parent_learner(learner_id)
-    user = current_user()
-    locations_service.request_sharing(learner_id, int(user["id"]))
-    return jsonify(
-        {
-            "ok": True,
-            "message": f"Просьба отправлена: {profile['name']} увидит уведомление",
-        }
-    )
+    """Совместимость со старыми сборками: просьба теперь принудительная."""
+    return parent_force_location(learner_id)

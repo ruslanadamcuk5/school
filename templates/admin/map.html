@@ -1,0 +1,232 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_title %}Карты · GPS{% endblock %}
+{% block head %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/leaflet/leaflet.css') }}">
+  <style>
+    #map-preview { height:420px; border-radius:14px; overflow:hidden; background:#e8eef8; }
+    .map-preset-note { min-height:18px; }
+  </style>
+{% endblock %}
+
+{% block admin_content %}
+<div class="page-head">
+  <div>
+    <h1>🗺 Карты для GPS</h1>
+    <p>Выберите карту, на которой родители видят местоположение детей и историю
+      перемещений. Настройка применяется на сайте и в Android-приложении.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="row" style="gap:10px; flex-wrap:wrap; align-items:center;">
+    <span class="chip chip--blue">Сейчас: {{ settings.provider }}</span>
+    <span class="chip chip--gray">{{ settings.crs }}</span>
+    <span class="chip chip--gray">масштаб {{ settings.min_zoom }}–{{ settings.max_zoom }}</span>
+    {% if settings.updated_at %}
+      <span class="muted small">обновлено {{ settings.updated_at }}</span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid-2 mt-3">
+  <form method="post" class="card" id="map-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h2>Провайдер и тайлы</h2>
+
+    <div class="field mt-2">
+      <label for="provider">Карта</label>
+      <select id="provider" name="provider">
+        {% for preset in presets %}
+          <option value="{{ preset.id }}" {% if settings.provider == preset.id %}selected{% endif %}>{{ preset.name }}</option>
+        {% endfor %}
+      </select>
+      <p class="muted small map-preset-note" id="provider-note"></p>
+    </div>
+
+    <div class="field">
+      <label for="tile_url">Адрес тайлов</label>
+      <input id="tile_url" name="tile_url" value="{{ settings.tile_url }}" spellcheck="false">
+      <p class="muted small">Обязательны подстановки <code>{x}</code>, <code>{y}</code> и <code>{z}</code>.</p>
+    </div>
+
+    <div class="field">
+      <label for="attribution">Подпись источника</label>
+      <input id="attribution" name="attribution" value="{{ settings.attribution }}" maxlength="200">
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="crs">Проекция</label>
+        <select id="crs" name="crs">
+          <option value="mercator" {% if settings.crs == 'mercator' %}selected{% endif %}>Web Mercator (OSM, Google)</option>
+          <option value="yandex" {% if settings.crs == 'yandex' %}selected{% endif %}>Яндекс (EPSG:3395)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="zoom">Начальный масштаб</label>
+        <input id="zoom" name="zoom" type="number" min="0" max="22" value="{{ settings.zoom }}">
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="min_zoom">Минимальный масштаб</label>
+        <input id="min_zoom" name="min_zoom" type="number" min="0" max="22" value="{{ settings.min_zoom }}">
+      </div>
+      <div class="field">
+        <label for="max_zoom">Максимальный масштаб</label>
+        <input id="max_zoom" name="max_zoom" type="number" min="1" max="22" value="{{ settings.max_zoom }}">
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="center_lat">Широта центра</label>
+        <input id="center_lat" name="center_lat" type="number" step="0.000001" min="-90" max="90" value="{{ settings.center_lat }}">
+      </div>
+      <div class="field">
+        <label for="center_lon">Долгота центра</label>
+        <input id="center_lon" name="center_lon" type="number" step="0.000001" min="-180" max="180" value="{{ settings.center_lon }}">
+      </div>
+    </div>
+
+    <button class="btn btn--success mt-2" type="submit">💾 Сохранить карту</button>
+  </form>
+
+  <div>
+    <div class="card">
+      <div class="row row--between" style="align-items:center;">
+        <h2 style="margin:0;">Предпросмотр</h2>
+        <button class="btn btn--ghost btn--small" id="preview-refresh" type="button">Обновить</button>
+      </div>
+      <p class="muted small">Карта обновляется по текущим полям формы, сохранять для проверки не нужно.</p>
+      <div id="map-preview" class="mt-2"></div>
+    </div>
+
+    <div class="card mt-3">
+      <h2>Подсказки</h2>
+      <p class="muted small">
+        <b>Яндекс Карты</b> — подробная карта Беларуси и России, ключ не требуется.
+        При выборе провайдера адрес и проекция заполняются автоматически.
+      </p>
+      <p class="muted small">
+        <b>Свои тайлы</b> — адрес вида
+        <code>https://example.com/tiles/{z}/{x}/{y}.png</code>.
+        Сервер должен отдавать изображения без авторизации.
+      </p>
+      <p class="muted small">
+        Если карта не отображается, проверьте адрес тайлов: сервер платформы
+        разрешает загрузку изображений только с настроенного источника.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  window.MAP_PRESETS = {{ presets|tojson }};
+  window.MAP_SETTINGS = {{ settings|tojson }};
+</script>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='vendor/leaflet/leaflet.js') }}"></script>
+<script>
+  (function () {
+    "use strict";
+    var presets = window.MAP_PRESETS || [];
+    var form = document.getElementById("map-form");
+    var provider = document.getElementById("provider");
+    var tileUrl = document.getElementById("tile_url");
+    var attribution = document.getElementById("attribution");
+    var crsSelect = document.getElementById("crs");
+    var minZoom = document.getElementById("min_zoom");
+    var maxZoom = document.getElementById("max_zoom");
+    var zoom = document.getElementById("zoom");
+    var centerLat = document.getElementById("center_lat");
+    var centerLon = document.getElementById("center_lon");
+    var note = document.getElementById("provider-note");
+    var box = document.getElementById("map-preview");
+    var refresh = document.getElementById("preview-refresh");
+    var map = null;
+    var currentKey = "";
+
+    var yandexCrs = L.extend({}, L.CRS.EPSG3857, {
+      code: "EPSG:3395",
+      projection: L.Projection.Mercator,
+      transformation: new L.Transformation(0.5 / Math.PI, 0.5, -0.5 / Math.PI, 0.5)
+    });
+
+    function presetFor(id) {
+      return presets.find(function (item) { return item.id === id; });
+    }
+
+    function applyPreset(id) {
+      var preset = presetFor(id);
+      if (note) note.textContent = preset ? (preset.note || "") : "";
+      if (!preset) return;
+      if (preset.tile_url) tileUrl.value = preset.tile_url;
+      if (preset.attribution) attribution.value = preset.attribution;
+      if (preset.crs) crsSelect.value = preset.crs;
+      if (preset.max_zoom) maxZoom.value = preset.max_zoom;
+      render();
+    }
+
+    function readSettings() {
+      return {
+        provider: provider.value,
+        tile_url: tileUrl.value.trim(),
+        attribution: attribution.value.trim(),
+        crs: crsSelect.value,
+        min_zoom: Number(minZoom.value || 1),
+        max_zoom: Number(maxZoom.value || 19),
+        zoom: Number(zoom.value || 11),
+        center_lat: Number(centerLat.value || 53.9023),
+        center_lon: Number(centerLon.value || 27.5619)
+      };
+    }
+
+    function render() {
+      var settings = readSettings();
+      if (!settings.tile_url || settings.tile_url.indexOf("{") === -1) return;
+      var key = [settings.tile_url, settings.crs, settings.min_zoom, settings.max_zoom].join("|");
+      if (key === currentKey && map) return;
+      currentKey = key;
+      if (map) {
+        map.remove();
+        map = null;
+      }
+      try {
+        var options = { zoomControl: true };
+        if (settings.crs === "yandex") options.crs = yandexCrs;
+        map = L.map(box, options).setView(
+          [settings.center_lat, settings.center_lon],
+          Math.max(settings.min_zoom, Math.min(settings.max_zoom, settings.zoom))
+        );
+        L.tileLayer(settings.tile_url, {
+          minZoom: settings.min_zoom,
+          maxZoom: settings.max_zoom,
+          tms: settings.crs === "yandex",
+          attribution: settings.attribution || ""
+        }).addTo(map);
+      } catch (error) {
+        box.innerHTML = '<div style="padding:24px;text-align:center;color:#64748b;">' +
+          "Не удалось показать карту: проверьте адрес тайлов.</div>";
+        map = null;
+        currentKey = "";
+      }
+    }
+
+    provider.addEventListener("change", function () { applyPreset(provider.value); });
+    [tileUrl, attribution, crsSelect, minZoom, maxZoom, zoom, centerLat, centerLon].forEach(function (el) {
+      el.addEventListener("change", render);
+    });
+    refresh.addEventListener("click", function () { currentKey = ""; render(); });
+    form.addEventListener("submit", function () { /* сервер проверит поля */ });
+
+    applyPreset(provider.value);
+    render();
+  })();
+</script>
+{% endblock %}

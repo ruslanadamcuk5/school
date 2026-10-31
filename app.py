@@ -385,9 +385,16 @@ def _register_security(app: Flask) -> None:
         resp.headers.setdefault("X-Content-Type-Options", "nosniff")
         resp.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
         resp.headers.setdefault("Referrer-Policy", "same-origin")
+        try:
+            from services import map_settings as map_settings_service
+
+            tile_origins = " ".join(map_settings_service.csp_origins())
+        except Exception:  # pragma: no cover - настройки карты не должны ломать ответ
+            tile_origins = "https://tile.openstreetmap.org"
         resp.headers.setdefault(
             "Content-Security-Policy",
-            "default-src 'self'; img-src 'self' data: https://tile.openstreetmap.org; style-src 'self' 'unsafe-inline'; "
+            "default-src 'self'; img-src 'self' data: " + tile_origins + "; "
+            "style-src 'self' 'unsafe-inline'; "
             "script-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self'; "
             "base-uri 'self'; form-action 'self'; frame-ancestors 'self'",
         )

@@ -61,7 +61,7 @@
       <input id="geo-date" type="date">
     </div>
     <button class="btn btn--small" id="geo-refresh" type="button">Показать</button>
-    <button class="btn btn--ghost btn--small" id="geo-request" type="button">🔔 Попросить включить геолокацию</button>
+    <button class="btn btn--small" id="geo-force" type="button">📍 Включить геолокацию на телефоне ребёнка</button>
   </div>
   <div id="geo-flash" class="muted small mt-2" style="min-height:18px;"></div>
   <div class="geo-legend">
@@ -94,7 +94,8 @@
   window.PARENT_MAP = {
     dataUrl: {{ url_for('parent.map_data')|tojson }},
     overviewUrl: {{ url_for('parent.map_overview')|tojson }},
-    requestBase: {{ (url_for('parent.map_request_location', learner_id=0))[:-1]|tojson }}
+    forceBase: {{ (url_for('parent.map_force_location', learner_id=0))[:-1]|tojson }},
+    settings: {{ map_settings|tojson }}
   };
 </script>
 {% endif %}

@@ -756,14 +756,19 @@ CREATE TABLE IF NOT EXISTS shop_gifts (
 CREATE INDEX IF NOT EXISTS idx_shop_gifts_learner
     ON shop_gifts(learner_id, status, created_at);
 
--- Геолокация: ребёнок сам включает передачу, родитель видит точку и трек.
--- По умолчанию выключено. История хранится ограниченное время (RETENTION_DAYS).
+-- Геолокация: передача включена всегда, родитель видит точку и трек.
+-- force_* — команда родителя «включить геолокацию на телефоне ребёнка»;
+-- ребёнок подтверждает её, когда служба геолокации действительно запущена.
+-- История хранится ограниченное время (RETENTION_DAYS).
 CREATE TABLE IF NOT EXISTS location_sharing (
-    learner_id   INTEGER PRIMARY KEY,
-    enabled      INTEGER NOT NULL DEFAULT 0,
-    updated_by   INTEGER,
-    updated_at   TEXT    NOT NULL DEFAULT (datetime('now')),
-    last_point_at TEXT,
+    learner_id        INTEGER PRIMARY KEY,
+    enabled           INTEGER NOT NULL DEFAULT 1,
+    updated_by        INTEGER,
+    updated_at        TEXT    NOT NULL DEFAULT (datetime('now')),
+    last_point_at     TEXT,
+    force_requested_at TEXT,
+    force_requested_by INTEGER,
+    force_ack_at      TEXT,
     FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
 );
 

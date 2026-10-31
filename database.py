@@ -118,6 +118,11 @@ MIGRATIONS: list[tuple[str, str, str]] = [
     # библиотека: назначение рекомендации (класс или ученик)
     ("library_recommendations", "target_kind", "TEXT NOT NULL DEFAULT 'student'"),
     ("library_recommendations", "class_id", "INTEGER"),
+    # геолокация: передача больше не требует согласия ребёнка, а родитель
+    # может прислать команду включения геолокации на устройстве.
+    ("location_sharing", "force_requested_at", "TEXT"),
+    ("location_sharing", "force_requested_by", "INTEGER"),
+    ("location_sharing", "force_ack_at", "TEXT"),
 ]
 
 
@@ -233,6 +238,13 @@ def migrate(path: str | None = None) -> None:
             names = {row[1] for row in rows}
             if column not in names:
                 conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+        # Передача геолокации теперь всегда включена: старые записи с
+        # enabled=0 обновляем, чтобы прежние сборки приложения не остановили
+        # службу после обновления сервера.
+        try:
+            conn.execute("UPDATE location_sharing SET enabled = 1 WHERE enabled = 0")
+        except sqlite3.OperationalError:
+            pass
         _backfill_topic_subjects(conn)
         # Старым заданиям проставляем автора по роли создателя (учитель/родитель).
         try:

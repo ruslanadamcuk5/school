@@ -23,6 +23,7 @@ from content.achievements import ACHIEVEMENTS
 from database import execute, get_meta, query_all, query_one, set_meta
 from services import assignments as assignments_service
 from services import learners as learners_service
+from services import map_settings as map_settings_service
 from services import orgs
 from services import progress as progress_service
 from services import rewards as rewards_service
@@ -755,6 +756,7 @@ def map_page():
         learners=learners,
         selected=selected,
         retention_days=14,
+        map_settings=map_settings_service.public_settings(),
     )
 
 
@@ -787,6 +789,7 @@ def map_data():
             **data,
             "today": locations_service.today_for_tz(tz_minutes).isoformat(),
             "retention_days": locations_service.RETENTION_DAYS,
+            "map": map_settings_service.public_settings(),
         }
     )
 
@@ -808,12 +811,13 @@ def map_overview():
             "children": locations_service.overview(learners, tz_minutes),
             "date": locations_service.today_for_tz(tz_minutes).isoformat(),
             "retention_days": locations_service.RETENTION_DAYS,
+            "map": map_settings_service.public_settings(),
         }
     )
 
 
-@bp.route("/parent/map/request/<int:learner_id>", methods=["POST"])
-def map_request_location(learner_id: int):
+@bp.route("/parent/map/force/<int:learner_id>", methods=["POST"])
+def map_force_location(learner_id: int):
     guard = _require_unlock()
     if guard:
         return guard
@@ -825,12 +829,23 @@ def map_request_location(learner_id: int):
     from services import auth as auth_service
 
     user = auth_service.current_user()
-    locations_service.request_sharing(
+    info = locations_service.force_request(
         int(profile["id"]), int(user["id"]) if user else 0
     )
     return jsonify(
         {
             "ok": True,
-            "message": f"Просьба отправлена: {profile['name']} увидит уведомление",
+            "message": (
+                f"Команда отправлена: {profile['name']} получит запрос "
+                "и включит геолокацию на телефоне"
+            ),
+            "force_pending": info["force_pending"],
+            "settings": info,
         }
     )
+
+
+@bp.route("/parent/map/request/<int:learner_id>", methods=["POST"])
+def map_request_location(learner_id: int):
+    """Совместимость со старыми страницами: просьба теперь принудительная."""
+    return map_force_location(learner_id)

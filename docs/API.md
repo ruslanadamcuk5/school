@@ -461,9 +461,11 @@ POST /api/v1/daily/start   {"generator": "add.within20"}
 
 ## Геолокация
 
-Ребёнок сам решает, делиться ли местоположением. По умолчанию передача **выключена**,
-и без явного согласия точки не принимаются. История хранится **14 дней**, её можно
-удалить в любой момент. Родитель видит только привязанных детей.
+Передача местоположения работает **постоянно**: ребёнок не может её выключить, а
+согласие больше не запрашивается. Устройство (приложение или браузер) присылает
+точки GPS, родитель видит последнюю позицию и историю перемещений за день на карте,
+которую выбрал администратор. История хранится **14 дней**. Родитель видит только
+привязанных детей.
 
 Все методы требуют Bearer-токен. Параметр `tz` — смещение часового пояса в минутах
 (`180` для Минска), по нему считаются границы дня и локальные метки времени.
@@ -472,20 +474,19 @@ POST /api/v1/daily/start   {"generator": "add.within20"}
 
 | Метод | Путь | Описание |
 |---|---|---|
-| GET | `/location/status?tz=180` | согласие, последняя точка, срок хранения |
-| PUT | `/location/status` | `{"enabled": true}` — включить или остановить передачу |
+| GET | `/location/status?tz=180` | статус передачи, последняя точка, команда родителя |
+| PUT | `/location/status` | совместимость: всегда включает передачу |
 | POST | `/location/points` | пачка точек (до 300 за запрос) |
-| DELETE | `/location/history` | удалить всю историю ребёнка |
+| POST | `/location/force/ack` | подтвердить команду «включить геолокацию» |
 
-Включение передачи:
+`GET /location/status` возвращает `enabled` (всегда `true`), `settings`
+(`updated_at`, `last_point_at`, `retention_days`, `force_*`), `force_pending`,
+`force_requested_at`, `force_ack_at`, `last_point` и `retention_days`.
+`force_pending = true` означает, что родитель принудительно включил геолокацию и
+устройство ещё не подтвердило запуск службы.
 
-```http
-PUT /api/v1/location/status
-{"enabled": true}
-```
-
-Ответ содержит `enabled`, `settings` (`updated_at`, `last_point_at`,
-`retention_days`), `last_point` и `message`.
+Старый клиент может вызвать `PUT /location/status` с `{"enabled": false}` — сервер
+проигнорирует выключение и оставит передачу включённой.
 
 Отправка точек:
 
@@ -514,14 +515,14 @@ PUT /api/v1/location/status
 
 | Код | HTTP | Когда |
 |---|---|---|
-| `sharing_off` | 409 | передача выключена ребёнком |
 | `no_points` | 400 | пустой список или все точки старше 14 дней |
 | `too_many_points` | 400 | больше 300 точек за запрос |
 | `bad_lat` / `bad_lon` | 400 | координаты не числа или вне диапазона |
 | `bad_time` | 400 | не удалось разобрать `recorded_at` |
 | `future_point` | 400 | время точки больше чем на 10 минут в будущем |
 
-`DELETE /location/history` возвращает `removed` — сколько точек удалено.
+`POST /location/force/ack` вызывается приложением, когда служба геолокации
+запущена по команде родителя. Ответ: `{"ok": true, "force_pending": false, ...}`.
 
 ### Родитель
 
@@ -529,11 +530,13 @@ PUT /api/v1/location/status
 |---|---|---|
 | GET | `/parent/locations?tz=180` | последняя точка и статус каждого ребёнка |
 | GET | `/parent/children/{learner_id}/location?date=2026-10-28&tz=180` | трек за день |
-| POST | `/parent/children/{learner_id}/location/request` | попросить ребёнка включить передачу |
+| POST | `/parent/children/{learner_id}/location/force` | включить геолокацию на телефоне ребёнка |
+| POST | `/parent/children/{learner_id}/location/request` | совместимость: то же, что `force` |
 
 `GET /parent/locations` возвращает массив `children`: для каждого ребёнка —
 `learner` (`id`, `name`, `avatar`, `grade`), `sharing`, `last_point`,
-`points_today` и `stale` (`true`, если точки нет дольше 30 минут).
+`points_today` и `stale` (`true`, если точки нет дольше 30 минут). В ответе также
+есть `map` — настройки карты (провайдер, тайлы, проекция, центр и масштаб).
 
 Трек за день:
 
@@ -542,13 +545,14 @@ PUT /api/v1/location/status
   "ok": true,
   "learner": {"id": 12, "name": "Миша", "avatar": "🚀", "grade": 3},
   "day": "2026-10-28",
-  "sharing": {"enabled": true, "last_point_at": "2026-10-28T06:20:00Z", "retention_days": 14},
+  "sharing": {"enabled": true, "last_point_at": "2026-10-28T06:20:00Z", "retention_days": 14, "force_pending": false},
   "points": [
     {"id": 1, "lat": 53.9006, "lon": 27.559, "accuracy": 12, "speed": 1.2, "battery": 76, "source": "gps", "recorded_at": "2026-10-28T06:15:00Z", "time": "09:15"},
     {"id": 2, "lat": 53.9021, "lon": 27.5612, "accuracy": 18, "speed": null, "battery": null, "source": "gps", "recorded_at": "2026-10-28T06:20:00Z", "time": "09:20"}
   ],
   "summary": {"points": 2, "distance_m": 214, "duration_min": 5, "first_at": "2026-10-28T06:15:00Z", "last_at": "2026-10-28T06:20:00Z", "max_speed": 1.2, "accuracy": 15},
   "latest": {"id": 2, "lat": 53.9021, "lon": 27.5612, "recorded_at": "2026-10-28T06:20:00Z", "time": "09:20"},
+  "map": {"provider": "osm", "tile_url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png", "crs": "mercator", "min_zoom": 3, "max_zoom": 19, "center_lat": 53.9023, "center_lon": 27.5619, "zoom": 11},
   "retention_days": 14
 }
 ```
@@ -557,10 +561,26 @@ PUT /api/v1/location/status
 `ЧЧ:ММ` для подписей на карте. `summary.distance_m` не учитывает «телепорты»
 длиннее 5 км (обычно это плохая точка). Доступ к чужому ребёнку даёт `404`.
 
-Запрос геолокации создаёт уведомление ребёнку (не чаще раза в день на профиль).
+`POST .../location/force` ставит флаг `force_requested_at`, создаёт уведомление
+ребёнку и возвращает `force_pending`. Приложение ребёнка при следующей проверке
+(при запуске, при открытии экрана и раз в 15 минут через WorkManager) запускает
+службу геолокации и вызывает `/location/force/ack`. Сайт ребёнка делает то же
+самое при открытии `/location`.
 
-Веб-версия использует те же данные: `/location` — страница согласия ребёнка,
-`/parent/map` — карта с выбором ребёнка и даты (Leaflet + OpenStreetMap).
+Веб-версия: `/location` — постоянная передача из браузера, `/parent/map` — карта с
+выбором ребёнка и даты. Обе страницы используют карту из админки.
+
+### Настройки карты (админ)
+
+| Метод | Путь | Описание |
+|---|---|---|
+| GET | `/admin/map-settings` | текущие настройки и пресеты |
+| PUT | `/admin/map-settings` | сохранить настройки (`provider`, `tile_url`, `attribution`, `crs`, `min_zoom`, `max_zoom`, `center_lat`, `center_lon`, `zoom`) |
+
+Провайдеры: `osm` (OpenStreetMap), `yandex` (Яндекс Карты, проекция `EPSG:3395`)
+и `custom` (свои тайлы, нужны подстановки `{x}`, `{y}`, `{z}`). Настройки хранятся
+в `app_meta` и применяются на сайте и в Android-приложении одновременно. CSP
+автоматически разрешает источник тайлов.
 
 ---
 

@@ -19,6 +19,7 @@ from database import execute, query_all, query_one
 from services import ai as ai_service
 from services import assignments as assignments_service
 from services import auth, learners as learners_service, orgs, padruchnik, pdf_topics, textbooks
+from services import map_settings as map_settings_service
 from services import shop as shop_service
 from services import shop_insights
 from services import topics as topics_service
@@ -920,6 +921,41 @@ def audit():
             ORDER BY a.id DESC LIMIT 200"""
     )
     return render_template("admin/audit.html", rows=rows)
+
+
+# -------------------------------------------------------------------- карты
+@bp.route("/map", methods=["GET", "POST"])
+@auth.admin_required
+def map_settings():
+    if request.method == "POST":
+        data = {
+            "provider": request.form.get("provider"),
+            "tile_url": request.form.get("tile_url"),
+            "attribution": request.form.get("attribution"),
+            "crs": request.form.get("crs"),
+            "min_zoom": request.form.get("min_zoom"),
+            "max_zoom": request.form.get("max_zoom"),
+            "center_lat": request.form.get("center_lat"),
+            "center_lon": request.form.get("center_lon"),
+            "zoom": request.form.get("zoom"),
+        }
+        try:
+            saved = map_settings_service.save_settings(data)
+        except map_settings_service.MapSettingsError as exc:
+            flash(str(exc), "error")
+        else:
+            _log(
+                "map_settings", "map", "",
+                f"provider={saved['provider']} crs={saved['crs']}",
+            )
+            flash("Настройки карты сохранены", "success")
+        return redirect(url_for("admin.map_settings"))
+
+    return render_template(
+        "admin/map.html",
+        settings=map_settings_service.get_settings(),
+        presets=map_settings_service.presets(),
+    )
 
 
 # ----------------------------------------------------------------------- ИИ

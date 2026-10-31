@@ -49,6 +49,8 @@ import com.edumath.uchus.data.api.CreateClassRequest
 import com.edumath.uchus.data.api.CreateSchoolRequest
 import com.edumath.uchus.data.api.CreateUserRequest
 import com.edumath.uchus.data.api.CityDto
+import com.edumath.uchus.data.api.MapSettingsDto
+import com.edumath.uchus.data.api.MapSettingsRequest
 import com.edumath.uchus.data.api.SchoolDto
 import com.edumath.uchus.data.api.TeacherUserDto
 import com.edumath.uchus.data.api.UserDto
@@ -72,6 +74,7 @@ private val adminTabs = listOf(
     "Темы",
     "Пособия",
     "ИИ",
+    "Карты",
     "Журнал",
     "Магазин",
 )
@@ -111,7 +114,8 @@ fun AdminScreen(
                 3 -> AdminTopicsTab(container)
                 4 -> AdminTextbooksTab(container)
                 5 -> AdminAiTab(container)
-                6 -> AdminAuditTab(container)
+                6 -> AdminMapsTab(container)
+                7 -> AdminAuditTab(container)
                 else -> AdminShopTab(container)
             }
         }
@@ -885,6 +889,219 @@ private fun SimpleTextDialog(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Отмена") } },
     )
+}
+
+@Composable
+internal fun AdminMapsTab(container: AppContainer) {
+    val scope = rememberCoroutineScope()
+    var tick by remember { mutableIntStateOf(0) }
+    var message by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
+
+    Load(key = "admin-map:$tick", block = { container.api.adminMapSettings() }) { data, _ ->
+        val initial: MapSettingsDto = data.settings ?: MapSettingsDto()
+        var provider by remember(initial) { mutableStateOf(initial.provider) }
+        var tileUrl by remember(initial) { mutableStateOf(initial.tileUrl ?: "") }
+        var attribution by remember(initial) { mutableStateOf(initial.attribution ?: "") }
+        var crs by remember(initial) { mutableStateOf(initial.crs) }
+        var minZoom by remember(initial) { mutableStateOf(initial.minZoom.toString()) }
+        var maxZoom by remember(initial) { mutableStateOf(initial.maxZoom.toString()) }
+        var zoom by remember(initial) { mutableStateOf(initial.zoom.toString()) }
+        var centerLat by remember(initial) { mutableStateOf(initial.centerLat.toString()) }
+        var centerLon by remember(initial) { mutableStateOf(initial.centerLon.toString()) }
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            item {
+                Text(
+                    "Карта для GPS-контроля",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    "Родители видят местоположение и историю детей на выбранной карте. " +
+                        "Настройка общая для сайта и приложения.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            item {
+                Card(Modifier.fillMaxWidth()) {
+                    Column(
+                        Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text("Провайдер", fontWeight = FontWeight.SemiBold)
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            items(data.presets) { preset ->
+                                FilterChip(
+                                    selected = provider == preset.id,
+                                    onClick = {
+                                        provider = preset.id
+                                        val url = preset.tileUrl
+                                        val attr = preset.attribution
+                                        if (!url.isNullOrBlank()) tileUrl = url
+                                        if (!attr.isNullOrBlank()) attribution = attr
+                                        crs = preset.crs
+                                        if (preset.maxZoom > 0) maxZoom = preset.maxZoom.toString()
+                                    },
+                                    label = { Text(preset.name.ifBlank { preset.id }) },
+                                )
+                            }
+                        }
+                        data.presets.firstOrNull { it.id == provider }?.note?.let {
+                            Text(
+                                it,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+
+            item {
+                Card(Modifier.fillMaxWidth()) {
+                    Column(
+                        Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        OutlinedTextField(
+                            value = tileUrl,
+                            onValueChange = { tileUrl = it },
+                            label = { Text("Адрес тайлов") },
+                            supportingText = { Text("Нужны подстановки {x}, {y}, {z}") },
+                            singleLine = false,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        OutlinedTextField(
+                            value = attribution,
+                            onValueChange = { attribution = it },
+                            label = { Text("Подпись источника") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Text("Проекция", fontWeight = FontWeight.SemiBold)
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            FilterChip(
+                                selected = crs == "mercator",
+                                onClick = { crs = "mercator" },
+                                label = { Text("Web Mercator") },
+                            )
+                            FilterChip(
+                                selected = crs == "yandex",
+                                onClick = { crs = "yandex" },
+                                label = { Text("Яндекс") },
+                            )
+                        }
+                    }
+                }
+            }
+
+            item {
+                Card(Modifier.fillMaxWidth()) {
+                    Column(
+                        Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = minZoom,
+                                onValueChange = { minZoom = it },
+                                label = { Text("Мин. масштаб") },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f),
+                            )
+                            OutlinedTextField(
+                                value = maxZoom,
+                                onValueChange = { maxZoom = it },
+                                label = { Text("Макс. масштаб") },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f),
+                            )
+                            OutlinedTextField(
+                                value = zoom,
+                                onValueChange = { zoom = it },
+                                label = { Text("Старт") },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = centerLat,
+                                onValueChange = { centerLat = it },
+                                label = { Text("Широта центра") },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f),
+                            )
+                            OutlinedTextField(
+                                value = centerLon,
+                                onValueChange = { centerLon = it },
+                                label = { Text("Долгота центра") },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (message != null) {
+                item { InfoBox(message!!) }
+            }
+
+            item {
+                Button(
+                    onClick = {
+                        if (!busy) {
+                            busy = true
+                            scope.launch {
+                                runCatching {
+                                    apiCall {
+                                        container.api.saveAdminMapSettings(
+                                            MapSettingsRequest(
+                                                provider = provider,
+                                                tileUrl = tileUrl.trim(),
+                                                attribution = attribution.trim(),
+                                                crs = crs,
+                                                minZoom = minZoom.toIntOrNull() ?: 1,
+                                                maxZoom = maxZoom.toIntOrNull() ?: 19,
+                                                centerLat = centerLat.toDoubleOrNull() ?: 53.9023,
+                                                centerLon = centerLon.toDoubleOrNull() ?: 27.5619,
+                                                zoom = zoom.toIntOrNull() ?: 11,
+                                            )
+                                        )
+                                    }
+                                }
+                                    .onSuccess {
+                                        message = it.message ?: "Настройки карты сохранены"
+                                        tick++
+                                    }
+                                    .onFailure { message = it.message }
+                                busy = false
+                            }
+                        }
+                    },
+                    enabled = !busy,
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(if (busy) "Сохраняем…" else "💾 Сохранить карту") }
+            }
+
+            item {
+                InfoBox(
+                    "Для Яндекс Карт выберите провайдера «Яндекс» — адрес тайлов и " +
+                        "проекция заполнятся автоматически. Свои тайлы должны быть " +
+                        "доступны по HTTPS без авторизации."
+                )
+            }
+            item { Spacer(Modifier.height(16.dp)) }
+        }
+    }
 }
 
 fun roleLabel(role: String?): String = when (role) {

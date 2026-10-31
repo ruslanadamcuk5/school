@@ -10,6 +10,7 @@
     .geo-state__dot { width:8px; height:8px; border-radius:50%; background:currentColor; }
     .geo-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
     .geo-note { border-left:3px solid var(--brand); padding:10px 14px; background:#f8faff; border-radius:0 10px 10px 0; }
+    .geo-note--force { border-left-color:#f59e0b; background:#fffbeb; }
     .geo-points { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin-top:14px; }
     .geo-points .stat-box { text-align:left; }
   </style>
@@ -25,28 +26,33 @@
   <div class="geo-share-hero">
     <div class="geo-share-icon">🛰️</div>
     <div style="flex:1; min-width:220px;">
-      <h2 style="margin:0;">Передача местоположения родителям</h2>
+      <h2 style="margin:0;">Родители видят, где ты находишься</h2>
       <p class="muted small" style="margin:6px 0 0;">
-        Если включить, родители увидят твою последнюю точку на карте и смогут посмотреть,
-        как ты двигался(лась) за день. История хранится {{ retention_days }} дней.
+        Передача местоположения работает постоянно. Родитель видит твою последнюю точку
+        на карте и историю перемещений за день. История хранится {{ retention_days }} дней.
       </p>
     </div>
     <span class="geo-state geo-state--{{ 'on' if settings.enabled else 'off' }}" id="loc-state">
       <span class="geo-state__dot"></span>
-      <span id="loc-state-text">{{ 'Включена' if settings.enabled else 'Выключена' }}</span>
+      <span id="loc-state-text">{{ 'Включена' if settings.enabled else 'Ожидает разрешения' }}</span>
     </span>
   </div>
 
+  {% if settings.force_pending %}
+    <div class="geo-note geo-note--force mt-3" id="loc-force-note">
+      <b>Родитель включил геолокацию на этом устройстве.</b>
+      Разреши доступ к местоположению — и родитель сразу увидит, где ты.
+    </div>
+  {% endif %}
+
   <div class="geo-note mt-3">
-    <b>Это только по твоему согласию.</b>
-    Без нажатия «Делиться» точки не отправляются. Ты можешь в любой момент
-    остановить передачу или удалить всю историю.
+    <b>Нужно разрешение браузера.</b>
+    Нажми «Разрешить геолокацию» и выбери «Разрешить». Передача не выключается
+    ребёнком: так родитель всегда знает, что с тобой всё в порядке.
   </div>
 
   <div class="geo-actions">
-    <button class="btn" id="loc-start" type="button">📍 Делиться геопозицией</button>
-    <button class="btn btn--ghost" id="loc-stop" type="button">⏹ Остановить</button>
-    <button class="btn btn--warn" id="loc-clear" type="button">🗑 Удалить историю</button>
+    <button class="btn" id="loc-start" type="button">📍 Разрешить геолокацию</button>
   </div>
 
   <div id="loc-flash" class="muted small mt-2" style="min-height:20px;"></div>
@@ -67,17 +73,17 @@
   </div>
 
   <p class="muted small mt-3">
-    Совет: для лучшей точности включи GPS и оставь эту страницу открытой.
-    На телефоне можно пользоваться приложением — оно передаёт точки в фоне.
+    Для точной геолокации включи GPS и оставь страницу открытой. На телефоне удобнее
+    приложение: оно передаёт точки в фоне и просыпается после команды родителя.
   </p>
 </section>
 
 <script>
   window.CHILD_LOCATION = {
     statusUrl: {{ url_for('location.status')|tojson }},
-    setStatusUrl: {{ url_for('location.set_status')|tojson }},
     pointsUrl: {{ url_for('location.points')|tojson }},
-    historyUrl: {{ url_for('location.clear_history')|tojson }}
+    ackUrl: {{ url_for('location.ack_force')|tojson }},
+    forcePending: {{ settings.force_pending|tojson }}
   };
 </script>
 {% endblock %}

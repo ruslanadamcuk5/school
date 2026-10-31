@@ -1,4 +1,4 @@
-/* Карта детей: последние точки и трек за день (Leaflet + OpenStreetMap). */
+/* Карта детей: последние точки и трек за день (Leaflet + карта из админки). */
 (function () {
   "use strict";
 
@@ -8,7 +8,7 @@
   var learnerSelect = document.getElementById("geo-learner");
   var dateInput = document.getElementById("geo-date");
   var refreshBtn = document.getElementById("geo-refresh");
-  var requestBtn = document.getElementById("geo-request");
+  var forceBtn = document.getElementById("geo-force");
   var flashBox = document.getElementById("geo-flash");
   var overviewBox = document.getElementById("geo-overview");
   var summaryBox = document.getElementById("geo-summary");
@@ -36,11 +36,27 @@
   var overviewLayer = null;
   var trackBounds = null;
 
+  function yandexCrs() {
+    return L.extend({}, L.CRS.EPSG3857, {
+      code: "EPSG:3395",
+      projection: L.Projection.Mercator,
+      transformation: new L.Transformation(0.5 / Math.PI, 0.5, -0.5 / Math.PI, 0.5)
+    });
+  }
+
   if (window.L) {
-    map = L.map(mapBox, { zoomControl: true }).setView([53.9023, 27.5619], 11);
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+    var settings = root.settings || {};
+    var mapOptions = { zoomControl: true };
+    if (settings.crs === "yandex") mapOptions.crs = yandexCrs();
+    map = L.map(mapBox, mapOptions).setView(
+      [Number(settings.center_lat || 53.9023), Number(settings.center_lon || 27.5619)],
+      Number(settings.zoom || 11)
+    );
+    L.tileLayer(settings.tile_url || "https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      minZoom: Number(settings.min_zoom || 1),
+      maxZoom: Number(settings.max_zoom || 19),
+      tms: settings.crs === "yandex",
+      attribution: settings.attribution || "&copy; OpenStreetMap"
     }).addTo(map);
     trackLayer = L.layerGroup().addTo(map);
     overviewLayer = L.layerGroup().addTo(map);
@@ -147,12 +163,12 @@
     clear(timeline);
     var summary = data.summary || {};
     if (!data.points || !data.points.length) {
-      var reason = data.sharing && !data.sharing.enabled
-        ? "Передача геолокации у ребёнка выключена."
-        : "За этот день точек нет.";
-      addText(summaryBox, "p", reason, "muted");
+      addText(summaryBox, "p", "За этот день точек нет.", "muted");
       if (data.sharing && data.sharing.last_point_at) {
         addText(summaryBox, "p", "Последняя точка: " + dateTimeOfIso(data.sharing.last_point_at), "small muted");
+      }
+      if (data.sharing && data.sharing.force_pending) {
+        addText(summaryBox, "p", "Команда включения отправлена на телефон ребёнка.", "small muted");
       }
       return;
     }
@@ -215,14 +231,13 @@
       body.className = "geo-child__body";
       addText(body, "span", (info.name || "Ребёнок") + " · " + (info.grade || "") + " класс", "geo-child__title");
       var meta;
-      if (!sharing.enabled) {
-        meta = "передача выключена";
-      } else if (last) {
+      if (last) {
         meta = (child.stale ? "давно: " : "был(а) ") + dateTimeOfIso(last.recorded_at);
         if (last.battery != null) meta += " · 🔋" + last.battery + "%";
       } else {
         meta = "точек пока нет";
       }
+      if (sharing.force_pending) meta += " · ждёт включения GPS";
       addText(body, "span", meta, "geo-child__meta");
       row.appendChild(body);
       overviewBox.appendChild(row);
@@ -290,18 +305,18 @@
     }
   }
 
-  async function requestLocation() {
+  async function forceLocation() {
     if (!learnerSelect.value) return;
-    setFlash("Отправляем просьбу…", false);
+    setFlash("Отправляем команду на телефон ребёнка…", false);
     try {
-      var response = await fetch(root.requestBase + learnerSelect.value, {
+      var response = await fetch(root.forceBase + learnerSelect.value, {
         method: "POST",
         credentials: "same-origin",
         headers: { "Accept": "application/json", "X-CSRFToken": csrfToken }
       });
       var data = await response.json().catch(function () { return {}; });
-      if (!response.ok || !data.ok) throw new Error(data.message || "Не удалось отправить просьбу");
-      setFlash(data.message || "Просьба отправлена", false);
+      if (!response.ok || !data.ok) throw new Error(data.message || "Не удалось отправить команду");
+      setFlash(data.message || "Команда отправлена", false);
       loadOverview();
     } catch (error) {
       setFlash(error.message || "Ошибка отправки", true);
@@ -311,7 +326,7 @@
   refreshBtn.addEventListener("click", loadTrack);
   learnerSelect.addEventListener("change", loadTrack);
   dateInput.addEventListener("change", loadTrack);
-  requestBtn.addEventListener("click", requestLocation);
+  if (forceBtn) forceBtn.addEventListener("click", forceLocation);
 
   var initialDate = new URL(window.location.href).searchParams.get("date");
   if (initialDate) dateInput.value = initialDate;

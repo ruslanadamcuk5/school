@@ -6,20 +6,17 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,24 +30,23 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.edumath.uchus.core.AppContainer
-import com.edumath.uchus.data.api.LocationSharingRequest
 import com.edumath.uchus.data.api.apiCall
 import com.edumath.uchus.data.location.LocationTrackingService
 import com.edumath.uchus.ui.common.InfoBox
 import com.edumath.uchus.ui.common.KeyValue
 import com.edumath.uchus.ui.common.Load
 import com.edumath.uchus.ui.common.ScreenScaffold
-import com.edumath.uchus.ui.common.SectionTitle
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
 import kotlinx.coroutines.launch
 
 /**
- * Согласие ребёнка на передачу геолокации.
+ * Геолокация ребёнка.
  *
- * По умолчанию передача выключена. Включение — только осознанным нажатием,
- * после системного разрешения на доступ к местоположению.
+ * Согласие больше не запрашивается: передача включена всегда. Экран показывает
+ * статус, помогает выдать системное разрешение и принимает команду родителя
+ * «включить геолокацию» на этом телефоне.
  */
 @Composable
 fun ChildLocationScreen(
@@ -62,30 +58,23 @@ fun ChildLocationScreen(
     var tick by remember { mutableIntStateOf(0) }
     var message by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
-    var confirmClear by remember { mutableStateOf(false) }
+    var forcePending by remember { mutableStateOf(false) }
+    var autoAsked by remember { mutableStateOf(false) }
     val tzMinutes = remember {
         TimeZone.getDefault().getOffset(System.currentTimeMillis()) / 60000
     }
 
-    fun startTracking() {
-        if (LocationTrackingService.hasPermission(context)) {
-            LocationTrackingService.start(context)
+    fun acknowledge() {
+        scope.launch {
+            runCatching { apiCall { container.api.ackLocationForce() } }
+                .onSuccess { forcePending = false }
         }
     }
 
-    fun enableNow() {
-        if (busy) return
-        busy = true
-        scope.launch {
-            runCatching {
-                apiCall { container.api.setLocationSharing(LocationSharingRequest(true)) }
-            }.onSuccess {
-                startTracking()
-                message = "Геолокация включена. Точки передаются родителям, пока идёт служба."
-                tick++
-            }.onFailure { message = it.message }
-            busy = false
-        }
+    fun startTracking(ackForce: Boolean) {
+        if (!LocationTrackingService.hasPermission(context)) return
+        LocationTrackingService.start(context)
+        if (ackForce) acknowledge()
     }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -94,15 +83,18 @@ fun ChildLocationScreen(
         val granted = grants[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
             grants[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         if (granted) {
-            enableNow()
+            message = "Доступ к геолокации разрешён — родитель видит твою позицию."
+            startTracking(forcePending)
         } else {
-            message = "Без разрешения на геолокацию передача невозможна."
+            message = "Без разрешения «Местоположение» передача не запустится. " +
+                "Разрешите его в настройках Android."
         }
     }
 
-    fun requestEnable() {
+    fun requestPermissionOrStart() {
         if (LocationTrackingService.hasPermission(context)) {
-            enableNow()
+            startTracking(forcePending)
+            message = "Служба геолокации запущена."
         } else {
             permissionLauncher.launch(
                 arrayOf(
@@ -113,33 +105,26 @@ fun ChildLocationScreen(
         }
     }
 
-    fun disable() {
-        if (busy) return
-        busy = true
-        scope.launch {
-            runCatching {
-                apiCall { container.api.setLocationSharing(LocationSharingRequest(false)) }
-            }.onSuccess {
-                LocationTrackingService.stop(context)
-                message = "Передача остановлена. Новые точки родителям не отправляются."
-                tick++
-            }.onFailure { message = it.message }
-            busy = false
-        }
-    }
-
     ScreenScaffold(title = "Геолокация", onBack = onBack) { padding ->
         Load(
             key = "child-location:$tick",
             block = { container.api.locationStatus(tzMinutes) },
         ) { data, refresh ->
-            LaunchedEffect(data.enabled, tick) {
-                if (data.enabled && LocationTrackingService.hasPermission(context)) {
-                    LocationTrackingService.start(context)
-                } else if (!data.enabled) {
-                    LocationTrackingService.stop(context)
+            forcePending = data.forcePending || data.settings?.forcePending == true
+            LaunchedEffect(data.forcePending, data.lastPoint?.recordedAt, tick) {
+                if (LocationTrackingService.hasPermission(context)) {
+                    startTracking(forcePending)
+                } else if (!autoAsked) {
+                    autoAsked = true
+                    permissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
+                        )
+                    )
                 }
             }
+
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -153,15 +138,15 @@ fun ChildLocationScreen(
                             Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
-                            Text("🛰️ Передача местоположения родителям", fontWeight = FontWeight.Bold)
+                            Text("🛰️ Родитель видит, где ты находишься", fontWeight = FontWeight.Bold)
                             Text(
-                                "Если включить, родители увидят твою последнюю точку на карте " +
-                                    "и трек за день. История хранится ${data.retentionDays} дней. " +
-                                    "Это работает только по твоему согласию.",
+                                "Передача местоположения работает постоянно. Родитель видит " +
+                                    "последнюю точку на карте и историю за день. История хранится " +
+                                    "${data.retentionDays} дней.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            KeyValue("Сейчас", if (data.enabled) "включена" else "выключена")
+                            KeyValue("Статус", "включена")
                             KeyValue(
                                 "Последняя точка",
                                 formatLocal(data.lastPoint?.recordedAt) ?: "ещё нет",
@@ -173,19 +158,29 @@ fun ChildLocationScreen(
                     }
                 }
 
+                if (forcePending) {
+                    item {
+                        InfoBox(
+                            "📍 Родитель включил геолокацию на этом телефоне. " +
+                                "Разрешите доступ к местоположению, чтобы он увидел, где ты."
+                        )
+                    }
+                }
+
                 item {
-                    if (data.enabled) {
-                        OutlinedButton(
-                            onClick = { disable() },
-                            enabled = !busy,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) { Text(if (busy) "Останавливаем…" else "⏹ Остановить передачу") }
-                    } else {
-                        Button(
-                            onClick = { requestEnable() },
-                            enabled = !busy,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) { Text(if (busy) "Включаем…" else "📍 Делиться геопозицией") }
+                    Button(
+                        onClick = { requestPermissionOrStart() },
+                        enabled = !busy,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            when {
+                                busy -> "Запускаем…"
+                                LocationTrackingService.hasPermission(context) ->
+                                    "📍 Обновить геолокацию"
+                                else -> "📍 Разрешить геолокацию"
+                            }
+                        )
                     }
                 }
 
@@ -195,44 +190,20 @@ fun ChildLocationScreen(
 
                 item {
                     InfoBox(
-                        "Без разрешения «Местоположение» в настройках Android передача " +
-                            "не запустится. Для фоновой работы оставь уведомление службы включённым."
+                        "Для фоновой работы оставь уведомление службы включённым. " +
+                            "Если геолокация выключена в настройках Android, приложение " +
+                            "напомнит включить её после команды родителя."
                     )
                 }
 
-                item { SectionTitle("История") }
                 item {
                     OutlinedButton(
-                        onClick = { confirmClear = true },
+                        onClick = { tick++ },
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text("🗑 Удалить историю геолокации") }
+                    ) { Text("🔄 Проверить команду родителя") }
                 }
 
                 item { Spacer(Modifier.height(16.dp)) }
-            }
-
-            if (confirmClear) {
-                AlertDialog(
-                    onDismissRequest = { confirmClear = false },
-                    title = { Text("Удалить историю?") },
-                    text = { Text("Родитель не сможет посмотреть старые точки. Это действие необратимо.") },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            confirmClear = false
-                            scope.launch {
-                                runCatching { apiCall { container.api.clearLocationHistory() } }
-                                    .onSuccess {
-                                        message = "История геолокации удалена"
-                                        refresh()
-                                    }
-                                    .onFailure { message = it.message }
-                            }
-                        }) { Text("Удалить") }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { confirmClear = false }) { Text("Отмена") }
-                    },
-                )
             }
         }
     }

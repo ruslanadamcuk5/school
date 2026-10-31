@@ -7,6 +7,7 @@ from database import execute, query_all, query_one
 from services import ai as ai_service
 from services import auth as auth_service
 from services import learners as learners_service
+from services import map_settings as map_settings_service
 from services import orgs
 from services import textbooks as textbooks_service
 from services import topics as topics_service
@@ -596,6 +597,41 @@ def ai_save():
                 "model": settings.get("model"),
                 "has_key": bool((settings.get("api_key") or "").strip()),
             },
+        }
+    )
+
+
+# ------------------------------------------------------------------- карты
+@bp.get("/admin/map-settings")
+@require_user("admin")
+def map_settings_get():
+    return jsonify(
+        {
+            "ok": True,
+            "settings": map_settings_service.get_settings(),
+            "presets": map_settings_service.presets(),
+        }
+    )
+
+
+@bp.put("/admin/map-settings")
+@require_user("admin")
+def map_settings_save():
+    data = json_body()
+    try:
+        saved = map_settings_service.save_settings(data)
+    except map_settings_service.MapSettingsError as exc:
+        fail(400, "bad_map_settings", str(exc))
+    _log(
+        "map_settings", "map", "",
+        f"provider={saved['provider']} crs={saved['crs']}",
+    )
+    return jsonify(
+        {
+            "ok": True,
+            "settings": saved,
+            "presets": map_settings_service.presets(),
+            "message": "Настройки карты сохранены",
         }
     )
 

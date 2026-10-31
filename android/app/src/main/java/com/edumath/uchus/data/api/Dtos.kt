@@ -1717,11 +1717,57 @@ data class AdminShopGiftRequest(
 )
 
 // ------------------------------------------------------------------ геолокация
+data class MapSettingsDto(
+    @SerializedName("provider") val provider: String = "osm",
+    @SerializedName("tile_url") val tileUrl: String? = null,
+    @SerializedName("attribution") val attribution: String? = null,
+    @SerializedName("crs") val crs: String = "mercator",
+    @SerializedName("min_zoom") val minZoom: Int = 1,
+    @SerializedName("max_zoom") val maxZoom: Int = 19,
+    @SerializedName("center_lat") val centerLat: Double = 53.9023,
+    @SerializedName("center_lon") val centerLon: Double = 27.5619,
+    @SerializedName("zoom") val zoom: Int = 11,
+    @SerializedName("updated_at") val updatedAt: String? = null,
+)
+
+data class MapSettingsPresetDto(
+    @SerializedName("id") val id: String = "",
+    @SerializedName("name") val name: String = "",
+    @SerializedName("note") val note: String? = null,
+    @SerializedName("tile_url") val tileUrl: String? = null,
+    @SerializedName("attribution") val attribution: String? = null,
+    @SerializedName("crs") val crs: String = "mercator",
+    @SerializedName("max_zoom") val maxZoom: Int = 19,
+)
+
+data class MapSettingsResponse(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("settings") val settings: MapSettingsDto? = null,
+    @SerializedName("presets") val presets: List<MapSettingsPresetDto> = emptyList(),
+    @SerializedName("message") val message: String? = null,
+)
+
+data class MapSettingsRequest(
+    @SerializedName("provider") val provider: String,
+    @SerializedName("tile_url") val tileUrl: String,
+    @SerializedName("attribution") val attribution: String,
+    @SerializedName("crs") val crs: String,
+    @SerializedName("min_zoom") val minZoom: Int,
+    @SerializedName("max_zoom") val maxZoom: Int,
+    @SerializedName("center_lat") val centerLat: Double,
+    @SerializedName("center_lon") val centerLon: Double,
+    @SerializedName("zoom") val zoom: Int,
+)
+
 data class LocationSharingDto(
-    @SerializedName("enabled") val enabled: Boolean = false,
+    @SerializedName("enabled") val enabled: Boolean = true,
     @SerializedName("retention_days") val retentionDays: Int = 14,
     @SerializedName("updated_at") val updatedAt: String? = null,
     @SerializedName("last_point_at") val lastPointAt: String? = null,
+    @SerializedName("force_pending") val forcePending: Boolean = false,
+    @SerializedName("force_requested_at") val forceRequestedAt: String? = null,
+    @SerializedName("force_requested_by") val forceRequestedBy: Int? = null,
+    @SerializedName("force_ack_at") val forceAckAt: String? = null,
 )
 
 data class LocationPointDto(
@@ -1739,8 +1785,11 @@ data class LocationPointDto(
 
 data class LocationStatusDto(
     @SerializedName("ok") val ok: Boolean = false,
-    @SerializedName("enabled") val enabled: Boolean = false,
+    @SerializedName("enabled") val enabled: Boolean = true,
     @SerializedName("settings") val settings: LocationSharingDto? = null,
+    @SerializedName("force_pending") val forcePending: Boolean = false,
+    @SerializedName("force_requested_at") val forceRequestedAt: String? = null,
+    @SerializedName("force_ack_at") val forceAckAt: String? = null,
     @SerializedName("last_point") val lastPoint: LocationPointDto? = null,
     @SerializedName("retention_days") val retentionDays: Int = 14,
     @SerializedName("message") val message: String? = null,
@@ -1748,6 +1797,13 @@ data class LocationStatusDto(
 
 data class LocationSharingRequest(
     @SerializedName("enabled") val enabled: Boolean,
+)
+
+data class LocationForceResponse(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("settings") val settings: LocationSharingDto? = null,
+    @SerializedName("force_pending") val forcePending: Boolean = false,
 )
 
 data class LocationPointPayload(
@@ -1805,6 +1861,7 @@ data class LocationTrackDto(
     @SerializedName("points") val points: List<LocationPointDto> = emptyList(),
     @SerializedName("summary") val summary: LocationSummaryDto = LocationSummaryDto(),
     @SerializedName("latest") val latest: LocationPointDto? = null,
+    @SerializedName("map") val map: MapSettingsDto? = null,
     @SerializedName("retention_days") val retentionDays: Int = 14,
 )
 
@@ -1820,6 +1877,7 @@ data class ParentLocationsDto(
     @SerializedName("ok") val ok: Boolean = false,
     @SerializedName("children") val children: List<ParentLocationChildDto> = emptyList(),
     @SerializedName("date") val date: String? = null,
+    @SerializedName("map") val map: MapSettingsDto? = null,
     @SerializedName("retention_days") val retentionDays: Int = 14,
 )
 
