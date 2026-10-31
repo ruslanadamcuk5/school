@@ -579,6 +579,68 @@ CREATE TABLE IF NOT EXISTS ai_requests (
 CREATE INDEX IF NOT EXISTS idx_ai_requests_created ON ai_requests(created_at);
 
 -- ============================================================
+--  YouTube: подключение и обучающие видео к темам
+-- ============================================================
+
+-- Единственная строка с настройками YouTube Data API v3. Ключ хранится
+-- только на сервере и никогда не отдаётся в браузер или мобильное приложение.
+CREATE TABLE IF NOT EXISTS youtube_settings (
+    id                 INTEGER PRIMARY KEY CHECK (id = 1),
+    enabled            INTEGER NOT NULL DEFAULT 0,
+    api_key            TEXT,
+    region_code        TEXT    NOT NULL DEFAULT 'BY',
+    relevance_language TEXT    NOT NULL DEFAULT 'ru',
+    max_per_topic      INTEGER NOT NULL DEFAULT 3,
+    min_duration       INTEGER NOT NULL DEFAULT 60,
+    max_duration       INTEGER NOT NULL DEFAULT 3600,
+    cache_days         INTEGER NOT NULL DEFAULT 14,
+    ai_ranking         INTEGER NOT NULL DEFAULT 1,
+    updated_at         TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+INSERT OR IGNORE INTO youtube_settings (id) VALUES (1);
+
+-- Видео темы: ручные ссылки администратора (source='manual') и
+-- автоматически подобранные ролики (source='auto'). Ручные показываются первыми.
+CREATE TABLE IF NOT EXISTS topic_videos (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    topic_slug  TEXT    NOT NULL,
+    video_id    TEXT    NOT NULL,
+    title       TEXT    NOT NULL DEFAULT '',
+    channel     TEXT    NOT NULL DEFAULT '',
+    description TEXT    NOT NULL DEFAULT '',
+    thumbnail   TEXT    NOT NULL DEFAULT '',
+    duration    INTEGER NOT NULL DEFAULT 0,
+    source      TEXT    NOT NULL DEFAULT 'auto',   -- manual | auto
+    position    INTEGER NOT NULL DEFAULT 0,
+    blocked     INTEGER NOT NULL DEFAULT 0,
+    query       TEXT    NOT NULL DEFAULT '',
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+    updated_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (topic_slug, video_id),
+    FOREIGN KEY (topic_slug) REFERENCES topics(slug) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_topic_videos_slug
+    ON topic_videos(topic_slug, blocked, source, position);
+
+-- Состояние кэша по теме: когда искали, чем закончилось, когда повторять.
+CREATE TABLE IF NOT EXISTS topic_video_cache (
+    topic_slug  TEXT    PRIMARY KEY,
+    query       TEXT    NOT NULL DEFAULT '',
+    status      TEXT    NOT NULL DEFAULT 'ok',   -- ok | empty | error
+    error       TEXT    NOT NULL DEFAULT '',
+    found       INTEGER NOT NULL DEFAULT 0,
+    selected    INTEGER NOT NULL DEFAULT 0,
+    checked_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+    expires_at  TEXT,
+    FOREIGN KEY (topic_slug) REFERENCES topics(slug) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_topic_video_cache_expires
+    ON topic_video_cache(expires_at);
+
+-- ============================================================
 --  Мобильный API: долгоживущие токены (Bearer) вместо cookie-сессий
 -- ============================================================
 

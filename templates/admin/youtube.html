@@ -1,0 +1,295 @@
+{% extends "admin/base_admin.html" %}
+{% block admin_title %}YouTube · видео по темам{% endblock %}
+
+{% block admin_content %}
+<div class="page-head">
+  <div>
+    <h1>▶ YouTube</h1>
+    <p>Подключите YouTube Data API v3 — и к каждой теме автоматически подберутся
+      обучающие видео с объяснением именно этой темы. Видео показываются прямо
+      на сайте и в Android-приложении, без перехода на сторонние сайты.</p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="row" style="gap:10px; flex-wrap:wrap; align-items:center;">
+    {% if status.enabled %}
+      <span class="chip chip--green">✅ YouTube подключён</span>
+      <span class="chip chip--blue">{{ status.region_code }}</span>
+      <span class="chip chip--gray">язык: {{ status.relevance_language }}</span>
+      <span class="chip chip--gray">до {{ status.max_per_topic }} видео на тему</span>
+      <span class="chip chip--gray">кэш {{ status.cache_days }} дн.</span>
+      {% if status.ai_ranking %}<span class="chip chip--purple">🤖 подбор с ИИ</span>{% endif %}
+    {% else %}
+      <span class="chip chip--gray">⛔ YouTube не подключён</span>
+      <span class="muted small">Видео на сайте и в приложении не показываются.</span>
+    {% endif %}
+    {% if status.updated_at %}<span class="muted small">обновлено {{ status.updated_at }}</span>{% endif %}
+  </div>
+</div>
+
+<div class="grid-2 mt-3">
+  <form method="post" class="card">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="save">
+    <h2>Подключение YouTube</h2>
+
+    <label class="chip chip--gray mt-2" style="cursor:pointer;">
+      <input type="checkbox" name="enabled" value="1" {% if settings.enabled %}checked{% endif %}>
+      Включить видео по темам
+    </label>
+
+    <div class="field mt-2">
+      <label for="api_key">Ключ YouTube Data API v3</label>
+      <input id="api_key" name="api_key" type="password" autocomplete="new-password"
+             placeholder="{% if status.has_key %}ключ сохранён — оставьте пустым, чтобы не менять{% else %}вставьте ключ API{% endif %}">
+      {% if status.has_key %}
+        <label class="muted small mt-1" style="display:block; cursor:pointer;">
+          <input type="checkbox" name="clear_key" value="1"> удалить сохранённый ключ
+        </label>
+      {% endif %}
+      <p class="muted small">Ключ хранится только в базе на сервере и не передаётся
+        в браузер или приложение.</p>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="region_code">Регион</label>
+        <input id="region_code" name="region_code" maxlength="2"
+               value="{{ settings.region_code }}" placeholder="BY">
+        <p class="muted small">Код страны для проверки доступности видео.</p>
+      </div>
+      <div class="field">
+        <label for="relevance_language">Язык поиска</label>
+        <select id="relevance_language" name="relevance_language">
+          <option value="ru" {% if settings.relevance_language == 'ru' %}selected{% endif %}>Русский</option>
+          <option value="be" {% if settings.relevance_language == 'be' %}selected{% endif %}>Белорусский</option>
+          <option value="en" {% if settings.relevance_language == 'en' %}selected{% endif %}>Английский</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="max_per_topic">Видео на тему</label>
+        <input id="max_per_topic" name="max_per_topic" type="number" min="1" max="6"
+               value="{{ settings.max_per_topic }}">
+      </div>
+      <div class="field">
+        <label for="cache_days">Хранить подбор, дней</label>
+        <input id="cache_days" name="cache_days" type="number" min="1" max="90"
+               value="{{ settings.cache_days }}">
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        <label for="min_duration">Минимум, секунд</label>
+        <input id="min_duration" name="min_duration" type="number" min="30" max="600"
+               value="{{ settings.min_duration }}">
+      </div>
+      <div class="field">
+        <label for="max_duration">Максимум, секунд</label>
+        <input id="max_duration" name="max_duration" type="number" min="120" max="7200"
+               value="{{ settings.max_duration }}">
+      </div>
+    </div>
+
+    <label class="chip chip--gray mt-2" style="cursor:pointer;">
+      <input type="checkbox" name="ai_ranking" value="1" {% if settings.ai_ranking %}checked{% endif %}>
+      Использовать ИИ для выбора видео
+    </label>
+    <p class="muted small">ИИ уточняет поисковый запрос и выбирает ролики только
+      из реальной выдачи YouTube. Без ИИ работает встроенная эвристика.
+      {% if not ai_enabled %}<br><b>Сейчас ИИ не подключён</b> — подбор идёт без него.{% endif %}
+    </p>
+
+    <button class="btn btn--success mt-2" type="submit">💾 Сохранить настройки</button>
+  </form>
+
+  <div>
+    <div class="card">
+      <h2>🔌 Проверка связи</h2>
+      <p class="muted small">Проверяет ключ дешёвым запросом к YouTube API
+        (поиск видео при этом не расходуется).</p>
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="test">
+        <button class="btn mt-2" type="submit">Проверить подключение</button>
+      </form>
+    </div>
+
+    <div class="card mt-3">
+      <h2>📊 Статистика</h2>
+      <div class="stat-grid mt-2">
+        <div class="stat-box"><div class="stat-box__value">{{ stats.with_videos }}</div><div class="stat-box__label">тем с видео</div></div>
+        <div class="stat-box"><div class="stat-box__value">{{ stats.fresh }}</div><div class="stat-box__label">в кэше</div></div>
+        <div class="stat-box"><div class="stat-box__value">{{ stats.auto }}</div><div class="stat-box__label">авто-видео</div></div>
+        <div class="stat-box"><div class="stat-box__value">{{ stats.manual }}</div><div class="stat-box__label">ручных</div></div>
+      </div>
+      <p class="muted small mt-2">Всего тем: {{ stats.topics }} · ошибок: {{ stats.errors }}</p>
+      {% if stats.last_error %}
+        <p class="muted small mt-2">Последняя ошибка ({{ stats.last_error.checked_at }}):</p>
+        <p class="small" style="word-break:break-word;">{{ stats.last_error.error }}</p>
+      {% endif %}
+    </div>
+
+    <div class="card mt-3">
+      <h2>⏩ Подобрать видео заранее</h2>
+      <p class="muted small">YouTube даёт около 10 000 units в день, а один поиск
+        стоит примерно 100 units. Поэтому за запуск обрабатывается не больше
+        5 тем. Кэш обновляется автоматически при просмотре темы.</p>
+      <form method="post" class="row mt-2" style="gap:8px; align-items:flex-end;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="warm">
+        <div class="field" style="margin:0; max-width:130px;">
+          <label for="warm-limit">Тем за запуск</label>
+          <input id="warm-limit" name="limit" type="number" min="1" max="5" value="5">
+        </div>
+        <button class="btn" type="submit">Подобрать</button>
+      </form>
+      <form method="post" class="mt-2">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="action" value="clear_cache">
+        <button class="btn btn--ghost btn--small" type="submit">🗑 Очистить кэш видео</button>
+      </form>
+    </div>
+
+    <div class="card mt-3">
+      <h2>🔑 Как получить ключ</h2>
+      <ol class="muted small mt-1" style="line-height:1.6;">
+        <li>Откройте <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com"
+              target="_blank" rel="noopener">Google Cloud Console → YouTube Data API v3</a>
+          и нажмите «Enable».</li>
+        <li>В разделе «Credentials» создайте <b>API key</b>.</li>
+        <li>Ограничьте ключ: API — YouTube Data API v3, при желании — по IP сервера.</li>
+        <li>Вставьте ключ в поле выше и сохраните настройки.</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="row row--between" style="gap:12px; flex-wrap:wrap; align-items:flex-end;">
+    <div>
+      <h2 style="margin:0;">🎬 Ручные видео</h2>
+      <p class="muted small">Ручная ссылка всегда показывается первой и не удаляется
+        при обновлении кэша. Можно указать ссылку youtube.com, youtu.be или shorts.</p>
+    </div>
+    <form method="get" class="row" style="gap:8px; align-items:flex-end;">
+      <div class="field" style="margin:0;">
+        <label for="topic-search">Поиск темы</label>
+        <input id="topic-search" name="search" value="{{ search }}" placeholder="Название темы">
+      </div>
+      <button class="btn btn--ghost" type="submit">Найти</button>
+    </form>
+  </div>
+
+  <form method="post" class="mt-3">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="action" value="add_manual">
+    <div class="grid-2">
+      <div class="field">
+        <label for="manual-topic">Тема</label>
+        <select id="manual-topic" name="topic_slug" required>
+          {% for topic in topics %}
+            <option value="{{ topic.slug }}">{{ topic.grade }} класс · {{ topic.title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="video_url">Ссылка на YouTube</label>
+        <input id="video_url" name="video_url" required placeholder="https://www.youtube.com/watch?v=…">
+      </div>
+    </div>
+    <button class="btn mt-2" type="submit">＋ Добавить видео</button>
+  </form>
+
+  {% if manual %}
+    <div class="data-table-wrap mt-3">
+      <table class="table">
+        <thead><tr><th>Тема</th><th>Видео</th><th>Канал</th><th></th></tr></thead>
+        <tbody>
+          {% for video in manual %}
+            <tr>
+              <td>{{ video.topic_title or video.topic_slug }}</td>
+              <td>
+                <a href="{{ video.watch_url }}" target="_blank" rel="noopener">{{ video.title or video.video_id }}</a>
+              </td>
+              <td class="muted small">{{ video.channel }}</td>
+              <td>
+                <form method="post" style="margin:0;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="action" value="block_video">
+                  <input type="hidden" name="video_row_id" value="{{ video.id }}">
+                  <button class="btn btn--ghost btn--small" type="submit">Удалить</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted small mt-3">Ручных видео пока нет.</p>
+  {% endif %}
+</div>
+
+<div class="card mt-3">
+  <div class="row row--between">
+    <h2 style="margin:0;">📚 Темы и подобранные видео</h2>
+    <span class="muted small">Показано {{ topics|length }} тем</span>
+  </div>
+  <div class="data-table-wrap mt-2">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Класс</th><th>Тема</th><th>Предмет</th><th>Видео</th>
+          <th>Кэш</th><th>Проверено</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for topic in topics %}
+          <tr>
+            <td>{{ topic.grade }}</td>
+            <td>
+              {{ topic.title }}
+              {% if topic.manual %}<span class="chip chip--green small">ручных: {{ topic.manual }}</span>{% endif %}
+            </td>
+            <td class="muted small">{{ topic.subject_name or '—' }}</td>
+            <td>
+              {% if topic.videos %}
+                <span class="chip chip--blue small">{{ topic.videos }}</span>
+              {% else %}
+                <span class="muted small">нет</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if topic.status == 'error' %}
+                <span class="chip chip--gray small" title="{{ topic.error }}">ошибка</span>
+              {% elif topic.fresh %}
+                <span class="chip chip--green small">свежий</span>
+              {% elif topic.status == 'empty' %}
+                <span class="chip chip--gray small">не найдено</span>
+              {% else %}
+                <span class="muted small">—</span>
+              {% endif %}
+            </td>
+            <td class="muted small">{{ topic.checked_at or '—' }}</td>
+            <td>
+              <form method="post" style="margin:0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="refresh_topic">
+                <input type="hidden" name="topic_slug" value="{{ topic.slug }}">
+                <button class="btn btn--ghost btn--small" type="submit">Подобрать</button>
+              </form>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7" class="muted small">Тем пока нет.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

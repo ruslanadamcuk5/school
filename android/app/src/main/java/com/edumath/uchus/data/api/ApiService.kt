@@ -78,6 +78,9 @@ interface ApiService {
     @GET("topics/{slug}")
     suspend fun topic(@Path("slug") slug: String): TopicDetailDto
 
+    @GET("topics/{slug}/videos")
+    suspend fun topicVideos(@Path("slug") slug: String): TopicVideosDto
+
     @GET("topics/{slug}/text")
     suspend fun topicText(@Path("slug") slug: String): TopicTextDto
 

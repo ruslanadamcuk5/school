@@ -246,8 +246,9 @@ Android-приложение сравнивает `version_code` со своим
 | Метод | Путь | Описание |
 |---|---|---|
 | GET | `/map?grade=&subject=` | карта тем, ежедневные задания, статистика |
-| GET | `/topics/{slug}` | тема, способы решения, пособия, соседние темы |
+| GET | `/topics/{slug}` | тема, способы решения, пособия, видео, соседние темы |
 | GET | `/topics/{slug}/text` | текст страниц пособия для чтения |
+| GET | `/topics/{slug}/videos` | видео с объяснением темы (кэш + подбор) |
 | GET | `/topics/{slug}/quiz` | тест по теме (вопросы без ответов) |
 | POST | `/topics/{slug}/quiz` | `{"quiz_id": 1, "answers": ["…"]}` |
 | POST | `/topics/{slug}/read` | отметить тему прочитанной |
@@ -264,6 +265,10 @@ Android-приложение сравнивает `version_code` со своим
 `page` клиент открывает `GET /books/{id}/page/{page}.png` — так работает кнопка
 «Открыть страницы учебника» в Android-приложении. Текст страниц кэшируется
 клиентом для чтения без сети.
+
+`/topics/{slug}` дополнительно отдаёт `youtube_enabled`, `videos` (готовые видео
+из кэша) и `videos_stale` — если `true`, клиент запрашивает
+`GET /topics/{slug}/videos` после отрисовки темы.
 
 `/map` для ученика берёт класс из его профиля. Ответ:
 
@@ -700,6 +705,53 @@ POST /api/v1/daily/start   {"generator": "add.within20"}
 
 `keep_key: true` сохраняет ранее записанный ключ, если `api_key` не передан.
 Ключ хранится на сервере; клиент получает только `has_key: true/false`.
+
+---
+
+## YouTube: видео по темам (необязательно)
+
+Интеграция включается администратором на сайте в разделе **`/admin/youtube`**:
+ключ YouTube Data API v3, регион, язык поиска, число видео на тему, границы
+длительности и срок кэширования. Ключ хранится только на сервере и в API не
+передаётся. Пока YouTube не подключён, `youtube_enabled` равно `false`, а
+`videos` — пустой список; приложение просто не показывает блок видео.
+
+| Метод | Путь | Описание |
+|---|---|---|
+| GET | `/topics/{slug}/videos` | видео с объяснением темы |
+
+Ответ:
+
+```json
+{
+  "ok": true,
+  "youtube_enabled": true,
+  "videos": [
+    {
+      "id": 7,
+      "video_id": "dQw4w9WgXcQ",
+      "title": "Обыкновенные дроби — объяснение",
+      "channel": "Школа",
+      "duration_seconds": 600,
+      "duration_label": "10:00",
+      "source": "auto",
+      "embed_url": "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?rel=0&…",
+      "watch_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+    }
+  ],
+  "stale": false,
+  "cached": true,
+  "error": null,
+  "cache": {"status": "ok", "checked_at": "…", "found": 8, "selected": 2}
+}
+```
+
+`videos` уже отфильтрованы: только публичные ролики, разрешённые к встраиванию
+и доступные в регионе. Ручные ссылки администратора идут первыми, затем
+автоматически подобранные. Если кэш устарел, сервер обновляет подборку при
+запросе (это может занять несколько секунд из-за обращений к YouTube API).
+Клиент встраивает `embed_url` в `iframe`/`WebView`; домены
+`www.youtube.com` и `www.youtube-nocookie.com` разрешены в CSP.
 
 ---
 

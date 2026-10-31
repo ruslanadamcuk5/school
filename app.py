@@ -393,9 +393,11 @@ def _register_security(app: Flask) -> None:
             tile_origins = "https://tile.openstreetmap.org"
         resp.headers.setdefault(
             "Content-Security-Policy",
-            "default-src 'self'; img-src 'self' data: " + tile_origins + "; "
+            "default-src 'self'; img-src 'self' data: https://i.ytimg.com "
+            + "https://img.youtube.com " + tile_origins + "; "
             "style-src 'self' 'unsafe-inline'; "
             "script-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self'; "
+            "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; "
             "base-uri 'self'; form-action 'self'; frame-ancestors 'self'",
         )
         return resp

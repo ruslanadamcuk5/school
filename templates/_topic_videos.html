@@ -1,0 +1,121 @@
+{% if youtube_enabled %}
+<div class="card mt-3" id="topic-videos-card">
+  <div class="row row--between" style="gap:10px; flex-wrap:wrap; align-items:center;">
+    <div>
+      <h2 style="margin:0;">🎬 Видео по теме</h2>
+      <p class="muted small video-note" style="margin:0;">
+        Короткие объяснения именно этой темы. Видео открываются прямо здесь —
+        можно смотреть и сразу возвращаться к уроку.
+      </p>
+    </div>
+    <span class="chip chip--gray">YouTube</span>
+  </div>
+
+  <div id="topic-videos"
+       data-url="{{ url_for('main.topic_videos', slug=topic.slug) }}"
+       data-stale="{{ '1' if youtube_stale else '0' }}">
+    {% if youtube_videos %}
+      <div class="video-grid">
+        {% for video in youtube_videos %}
+          <article class="video-card">
+            <div class="video-card__frame">
+              <iframe src="{{ video.embed_url }}"
+                      title="{{ video.title }}"
+                      loading="lazy"
+                      referrerpolicy="strict-origin-when-cross-origin"
+                      allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowfullscreen></iframe>
+            </div>
+            <div class="video-card__body">
+              <div class="video-card__title">{{ video.title }}</div>
+              <div class="video-card__meta">
+                {{ video.channel }}{% if video.duration_label %} · {{ video.duration_label }}{% endif %}
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+  <p class="muted small" id="topic-videos-status" style="margin:10px 0 0;"></p>
+</div>
+
+<script>
+(function () {
+  var root = document.getElementById("topic-videos");
+  if (!root) return;
+  var status = document.getElementById("topic-videos-status");
+  var url = root.getAttribute("data-url");
+  var stale = root.getAttribute("data-stale") === "1";
+  var hasCards = !!root.querySelector(".video-card");
+  if (!url || (!stale && hasCards)) return;
+
+  function card(video) {
+    var article = document.createElement("article");
+    article.className = "video-card";
+
+    var frame = document.createElement("div");
+    frame.className = "video-card__frame";
+    var iframe = document.createElement("iframe");
+    iframe.src = video.embed_url || "";
+    iframe.title = video.title || "Видео по теме";
+    iframe.loading = "lazy";
+    iframe.referrerPolicy = "strict-origin-when-cross-origin";
+    iframe.allow = "accelerometer; encrypted-media; gyroscope; picture-in-picture; web-share";
+    iframe.allowFullscreen = true;
+    frame.appendChild(iframe);
+
+    var body = document.createElement("div");
+    body.className = "video-card__body";
+    var title = document.createElement("div");
+    title.className = "video-card__title";
+    title.textContent = video.title || "Видео";
+    var meta = document.createElement("div");
+    meta.className = "video-card__meta";
+    meta.textContent = (video.channel || "") + (video.duration_label ? " · " + video.duration_label : "");
+    body.appendChild(title);
+    body.appendChild(meta);
+    article.appendChild(frame);
+    article.appendChild(body);
+    return article;
+  }
+
+  function render(videos) {
+    root.textContent = "";
+    if (!videos || !videos.length) return;
+    var grid = document.createElement("div");
+    grid.className = "video-grid";
+    videos.forEach(function (video) { grid.appendChild(card(video)); });
+    root.appendChild(grid);
+  }
+
+  if (status && stale) status.textContent = "Обновляем подборку видео…";
+  fetch(url, { headers: { "Accept": "application/json" }, credentials: "same-origin" })
+    .then(function (response) { return response.json(); })
+    .then(function (data) {
+      if (!data || !data.ok) {
+        if (status) status.textContent = (data && data.error) || "Не удалось загрузить видео.";
+        return;
+      }
+      if (!data.youtube_enabled) {
+        var cardBox = document.getElementById("topic-videos-card");
+        if (cardBox) cardBox.hidden = true;
+        return;
+      }
+      if (data.videos && data.videos.length) {
+        render(data.videos);
+        if (status) status.textContent = "";
+      } else {
+        if (status) {
+          status.textContent = data.error
+            ? "Не удалось обновить видео: " + data.error
+            : "Видео по этой теме пока не найдены.";
+        }
+      }
+    })
+    .catch(function () {
+      if (status) status.textContent = "Не удалось загрузить видео. Попробуйте позже.";
+    });
+})();
+</script>
+{% endif %}

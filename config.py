@@ -63,6 +63,10 @@ class Config:
     AI_TIMEOUT = _int("AI_TIMEOUT", 45)
     AI_MAX_PER_HOUR = _int("AI_MAX_PER_HOUR", 60)
 
+    # YouTube Data API v3: таймауты запросов и вызовов ИИ при подборе видео.
+    YOUTUBE_TIMEOUT = _int("YOUTUBE_TIMEOUT", 15)
+    YOUTUBE_AI_TIMEOUT = _int("YOUTUBE_AI_TIMEOUT", 25)
+
     LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 
     # Доверять X-Forwarded-* от reverse-proxy (Alwaysdata, nginx, Caddy).

@@ -9,6 +9,7 @@ from flask import (
     Blueprint,
     abort,
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -29,6 +30,7 @@ from services import rewards as rewards_service
 from services import rounds as rounds_service
 from services import textbooks as textbooks_service
 from services import topics as topics_service
+from services import youtube as youtube_service
 
 bp = Blueprint("main", __name__)
 
@@ -353,7 +355,29 @@ def topic_page(slug: str):
         attempts=(row["attempts"] if row else 0) or 0,
         correct=(row["correct"] if row else 0) or 0,
         boss_cleared=bool(row and row["boss_cleared"]),
+        **youtube_service.page_payload(slug),
     )
+
+
+@bp.route("/topic/<slug>/videos")
+def topic_videos(slug: str):
+    """Ленивая подгрузка видео темы: сначала показывается кэш, затем этот запрос."""
+    learner = learners_service.current_learner()
+    if not learner:
+        return jsonify({"ok": False, "error": "Требуется вход"}), 401
+    curriculum = topic_by_slug(slug)
+    reading = None if curriculum else topics_service.get_topic(slug)
+    if not curriculum and not reading:
+        return jsonify({"ok": False, "error": "Тема не найдена"}), 404
+    grade = curriculum["grade"] if curriculum else reading["grade"]
+    if int(grade) != int(learner["grade"]):
+        return jsonify({"ok": False, "error": "Тема другого класса"}), 403
+    payload = youtube_service.videos_for_topic(
+        slug,
+        allow_fetch=True,
+        user_id=int(learner["user_id"]) if learner["user_id"] else None,
+    )
+    return jsonify(payload)
 
 
 def _reading_topic_page(learner, topic):
@@ -388,6 +412,7 @@ def _reading_topic_page(learner, topic):
         stars=(progress_row["stars"] if progress_row else 0) or 0,
         previous_topic=previous_topic,
         next_topic=next_topic,
+        **youtube_service.page_payload(topic["slug"]),
     )
 
 

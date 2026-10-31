@@ -23,6 +23,7 @@ from services import map_settings as map_settings_service
 from services import shop as shop_service
 from services import shop_insights
 from services import topics as topics_service
+from services import youtube as youtube_service
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -1023,4 +1024,133 @@ def ai_settings():
         providers=ai_service.PROVIDERS,
         status=ai_service.status(),
         stats=ai_service.stats(),
+    )
+
+
+# ----------------------------------------------------------------- YouTube
+@bp.route("/youtube", methods=["GET", "POST"])
+@auth.admin_required
+def youtube_settings():
+    user = auth.current_user()
+    user_id = int(user["id"]) if user else None
+
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "test":
+            ok, message = youtube_service.test_connection()
+            _log("youtube_test", "youtube", "", message)
+            flash(
+                ("YouTube API работает ✅ " + message) if ok
+                else ("Не удалось подключиться к YouTube: " + message),
+                "success" if ok else "error",
+            )
+        elif action == "clear_cache":
+            removed = youtube_service.clear_cache()
+            _log(
+                "youtube_clear_cache", "youtube", "",
+                f"видео: {removed['videos']}, тем: {removed['topics']}",
+            )
+            flash(
+                f"Кэш очищен: удалено автоматических видео — {removed['videos']}, "
+                f"записей по темам — {removed['topics']}. Ручные ссылки сохранены.",
+                "info",
+            )
+        elif action == "warm":
+            try:
+                limit = int(request.form.get("limit") or 5)
+            except (TypeError, ValueError):
+                limit = 5
+            result = youtube_service.warm_topics(limit, user_id=user_id)
+            _log(
+                "youtube_warm", "youtube", "",
+                f"обработано {result['processed']}",
+            )
+            lines = [f"Обработано тем: {result['processed']}."]
+            for item in result["results"]:
+                if item["error"]:
+                    lines.append(f"• {item['slug']}: ошибка — {item['error']}")
+                else:
+                    lines.append(f"• {item['slug']}: подобрано {item['count']}")
+            if result.get("stopped"):
+                lines.append("Остановлено: " + result["stopped"])
+            flash(
+                " ".join(lines),
+                "error" if result.get("stopped") else "success",
+            )
+        elif action == "refresh_topic":
+            slug = (request.form.get("topic_slug") or "").strip()
+            count, error = youtube_service.refresh_all_topic_cache(slug, user_id=user_id)
+            _log("youtube_refresh_topic", "topic", slug, error or f"видео: {count}")
+            flash(
+                f"Тема «{slug}»: подобрано видео — {count}." if not error
+                else f"Не удалось обновить «{slug}»: {error}",
+                "error" if error else "success",
+            )
+        elif action == "add_manual":
+            slug = (request.form.get("topic_slug") or "").strip()
+            value = (request.form.get("video_url") or "").strip()
+            video, error = youtube_service.add_manual_video(slug, value)
+            _log(
+                "youtube_manual_add", "topic", slug,
+                error or (video or {}).get("video_id", ""),
+            )
+            flash(
+                f"Видео добавлено: {(video or {}).get('title', '')}" if not error
+                else f"Не удалось добавить видео: {error}",
+                "error" if error else "success",
+            )
+        elif action in ("block_video", "unblock_video"):
+            try:
+                video_id = int(request.form.get("video_row_id") or 0)
+            except (TypeError, ValueError):
+                video_id = 0
+            if action == "block_video":
+                ok, message = youtube_service.block_video(video_id)
+            else:
+                ok, message = youtube_service.unblock_video(video_id)
+            _log("youtube_" + action, "video", str(video_id), message)
+            flash(message, "success" if ok else "error")
+        else:
+            current = youtube_service.get_settings()
+            raw_key = (request.form.get("api_key") or "").strip()
+            clear_key = request.form.get("clear_key") == "1"
+            keep_key = (
+                not raw_key
+                and bool((current.get("api_key") or "").strip())
+                and not clear_key
+            )
+            data = {
+                "enabled": request.form.get("enabled") == "1",
+                "api_key": raw_key,
+                "region_code": request.form.get("region_code"),
+                "relevance_language": request.form.get("relevance_language"),
+                "max_per_topic": request.form.get("max_per_topic"),
+                "min_duration": request.form.get("min_duration"),
+                "max_duration": request.form.get("max_duration"),
+                "cache_days": request.form.get("cache_days"),
+                "ai_ranking": request.form.get("ai_ranking") == "1",
+            }
+            saved = youtube_service.save_settings(data, keep_key=keep_key)
+            _log(
+                "youtube_save", "youtube", "",
+                f"enabled={saved['enabled']} region={saved['region_code']}",
+            )
+            if saved["enabled"] and not youtube_service.is_enabled():
+                flash(
+                    "Сохранено, но YouTube ещё не готов: укажите ключ API.",
+                    "error",
+                )
+            else:
+                flash("Настройки YouTube сохранены", "success")
+        return redirect(url_for("admin.youtube_settings"))
+
+    search = (request.args.get("search") or "").strip()
+    return render_template(
+        "admin/youtube.html",
+        settings=youtube_service.get_settings(),
+        status=youtube_service.status(),
+        stats=youtube_service.stats(),
+        topics=youtube_service.topic_rows(limit=300, search=search),
+        manual=youtube_service.manual_rows(limit=100),
+        search=search,
     )

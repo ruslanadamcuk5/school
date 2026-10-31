@@ -18,6 +18,7 @@ from services import rewards as rewards_service
 from services import rounds as rounds_service
 from services import textbooks as textbooks_service
 from services import topics as topics_service
+from services import youtube as youtube_service
 
 from . import bp
 from .deps import (
@@ -308,6 +309,7 @@ def topic_detail(slug: str):
                 }
             )
         books = textbooks_service.textbooks_for_topic(slug, grade=curriculum["grade"])
+        video_payload = youtube_service.page_payload(slug)
         return jsonify(
             {
                 "ok": True,
@@ -326,6 +328,9 @@ def topic_detail(slug: str):
                 },
                 "methods": methods,
                 "books": [_book_link(book) for book in books],
+                "youtube_enabled": video_payload["youtube_enabled"],
+                "videos": video_payload["youtube_videos"],
+                "videos_stale": video_payload["youtube_stale"],
                 "can_play": True,
                 "can_quiz": False,
             }
@@ -360,6 +365,7 @@ def topic_detail(slug: str):
         if index is not None and index + 1 < len(siblings)
         else None
     )
+    video_payload = youtube_service.page_payload(slug)
     return jsonify(
         {
             "ok": True,
@@ -372,11 +378,34 @@ def topic_detail(slug: str):
             "books": [_book_link(book) for book in books],
             "previous": row_dict(previous_topic),
             "next": row_dict(next_topic),
+            "youtube_enabled": video_payload["youtube_enabled"],
+            "videos": video_payload["youtube_videos"],
+            "videos_stale": video_payload["youtube_stale"],
             "can_play": False,
             "can_quiz": True,
             "can_read": True,
         }
     )
+
+
+@bp.get("/topics/<slug>/videos")
+@require_learner
+def topic_videos(slug: str):
+    """Видео темы для Android: кэш сразу, недостающие — отдельным запросом."""
+    profile = learner()
+    curriculum = topic_by_slug(slug)
+    row = None if curriculum else topics_service.get_topic(slug)
+    if not curriculum and not row:
+        fail(404, "not_found", "Тема не найдена")
+    grade = curriculum["grade"] if curriculum else row["grade"]
+    if int(grade) != int(profile["grade"]):
+        fail(403, "grade_mismatch", "Тема другого класса")
+    payload = youtube_service.videos_for_topic(
+        slug,
+        allow_fetch=True,
+        user_id=int(profile["user_id"]) if profile["user_id"] else None,
+    )
+    return jsonify(payload)
 
 
 def _book_link(book) -> dict:

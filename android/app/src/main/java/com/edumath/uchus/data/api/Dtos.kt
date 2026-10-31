@@ -307,9 +307,36 @@ data class TopicDetailDto(
     @SerializedName("books") val books: List<BookLinkDto> = emptyList(),
     @SerializedName("previous") val previous: TopicCardDto? = null,
     @SerializedName("next") val next: TopicCardDto? = null,
+    @SerializedName("youtube_enabled") val youtubeEnabled: Boolean = false,
+    @SerializedName("videos") val videos: List<TopicVideoDto> = emptyList(),
+    @SerializedName("videos_stale") val videosStale: Boolean = false,
     @SerializedName("can_play") val canPlay: Boolean = false,
     @SerializedName("can_quiz") val canQuiz: Boolean = false,
     @SerializedName("can_read") val canRead: Boolean = false,
+)
+
+data class TopicVideoDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("video_id") val videoId: String = "",
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("channel") val channel: String? = null,
+    @SerializedName("description") val description: String? = null,
+    @SerializedName("thumbnail") val thumbnail: String? = null,
+    @SerializedName("duration_seconds") val durationSeconds: Int = 0,
+    @SerializedName("duration_label") val durationLabel: String? = null,
+    @SerializedName("source") val source: String? = null,
+    @SerializedName("embed_url") val embedUrl: String? = null,
+    @SerializedName("watch_url") val watchUrl: String? = null,
+)
+
+data class TopicVideosDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("youtube_enabled") val youtubeEnabled: Boolean = false,
+    @SerializedName("videos") val videos: List<TopicVideoDto> = emptyList(),
+    @SerializedName("stale") val stale: Boolean = false,
+    @SerializedName("cached") val cached: Boolean = false,
+    @SerializedName("error") val error: String? = null,
+    @SerializedName("message") val message: String? = null,
 )
 
 data class PageTextDto(
