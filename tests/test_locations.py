@@ -130,6 +130,21 @@ class TestLocationService(unittest.TestCase):
         self.assertFalse(acked["force_pending"])
         self.assertIsNotNone(acked["force_ack_at"])
 
+    def test_first_point_auto_acknowledges_force_command(self):
+        """Родитель не должен видеть «ожидание» после того, как точка пришла."""
+        sender_id = auth_service.create_user("autoack_parent", "secret123", "parent")
+        info = locations_service.force_request(self.learner_id, sender_id)
+        self.assertTrue(info["force_pending"])
+
+        locations_service.record_points(
+            self.learner_id,
+            [{"lat": 53.91, "lon": 27.57, "recorded_at": now_iso()}],
+        )
+
+        after = locations_service.settings(self.learner_id)
+        self.assertFalse(after["force_pending"])
+        self.assertIsNotNone(after["force_ack_at"])
+
     def test_parent_access_check(self):
         parent_id = auth_service.create_user("loc_parent", "secret123", "parent")
         other_id = auth_service.create_user("loc_other", "secret123", "parent")
