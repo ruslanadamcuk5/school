@@ -6,6 +6,7 @@ import android.net.Uri
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,12 +20,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -42,12 +49,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import coil.compose.AsyncImage
 import com.edumath.uchus.core.AppContainer
 import com.edumath.uchus.data.api.BookLinkDto
 import com.edumath.uchus.data.api.MethodDto
@@ -88,6 +97,7 @@ fun TopicScreen(
     var videosBusy by remember { mutableStateOf(false) }
     var videosError by remember { mutableStateOf<String?>(null) }
     var selectedVideoId by remember { mutableStateOf<String?>(null) }
+    var playingVideoId by remember { mutableStateOf<String?>(null) }
 
     DisposableEffect(Unit) {
         onDispose { speaker.shutdown() }
@@ -146,146 +156,193 @@ fun TopicScreen(
         }
     }
 
-    ScreenScaffold(title = "Тема", onBack = onBack) { padding ->
-        Load(
-            key = "topic:$slug",
-            block = { container.api.topic(slug) },
-        ) { data, refresh ->
-            LaunchedEffect(data) {
-                // Сразу показываем видео из ответа темы (кэш), не ожидая
-                // отдельного запроса. Если кэш устарел, он обновится ниже.
-                if (data.youtubeEnabled && videos.isEmpty()) {
-                    videosEnabled = true
-                    videos = data.videos
-                    selectedVideoId = data.videos.firstOrNull()?.videoId
+    Box(Modifier.fillMaxSize()) {
+        ScreenScaffold(title = "Тема", onBack = onBack) { padding ->
+            Load(
+                key = "topic:$slug",
+                block = { container.api.topic(slug) },
+            ) { data, refresh ->
+                LaunchedEffect(data) {
+                    // Сразу показываем видео из ответа темы (кэш), не ожидая
+                    // отдельного запроса. Если кэш устарел, он обновится ниже.
+                    if (data.youtubeEnabled && videos.isEmpty()) {
+                        videosEnabled = true
+                        videos = data.videos
+                        selectedVideoId = data.videos.firstOrNull()?.videoId
+                    }
+                }
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    item { TopicHeader(data) }
+
+                    if (message != null) {
+                        item { InfoBox(message!!) }
+                    }
+
+                    if (data.canPlay) {
+                        item {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(
+                                    onClick = { onPlay(slug, "practice") },
+                                    modifier = Modifier.weight(1f),
+                                ) { Text("Тренировка") }
+                                OutlinedButton(
+                                    onClick = { onPlay(slug, "boss") },
+                                    modifier = Modifier.weight(1f),
+                                ) { Text("Босс") }
+                            }
+                        }
+                    }
+
+                    if (data.canQuiz || data.canRead) {
+                        item {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                if (data.canQuiz) {
+                                    Button(
+                                        onClick = { onQuiz(slug) },
+                                        modifier = Modifier.weight(1f),
+                                    ) { Text("Тест по теме") }
+                                }
+                                if (data.canRead) {
+                                    OutlinedButton(
+                                        onClick = { onRead(slug) },
+                                        modifier = Modifier.weight(1f),
+                                    ) { Text("Читать") }
+                                }
+                            }
+                        }
+                    }
+
+                    if (aiEnabled) {
+                        item {
+                            AiExplainCard(
+                                explanation = explanation,
+                                busy = aiBusy,
+                                error = aiError,
+                                speaking = speaker.speaking,
+                                speechError = speaker.error,
+                                onExplain = { explain(false) },
+                                onRefresh = { explain(true) },
+                                onSpeak = { explanation?.let { speaker.speak(it) } },
+                                onStop = { speaker.stop() },
+                            )
+                        }
+                    }
+
+                    if (videosEnabled && (videos.isNotEmpty() || videosBusy || videosError != null)) {
+                        item {
+                            TopicVideosCard(
+                                videos = videos,
+                                selectedId = selectedVideoId,
+                                busy = videosBusy,
+                                error = videosError,
+                                serverBaseUrl = container.session.baseUrl,
+                                onSelect = { selectedVideoId = it },
+                                onWatch = { playingVideoId = it },
+                            )
+                        }
+                    }
+
+                    if (data.canRead) {
+                        item {
+                            Button(
+                                onClick = {
+                                    scope.launch {
+                                        runCatching { apiCall { container.api.markRead(slug) } }
+                                            .onSuccess {
+                                                message = "Тема отмечена как прочитанная."
+                                                refresh()
+                                            }
+                                            .onFailure { message = it.message }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) { Text("Отметить прочитанным") }
+                        }
+                    }
+
+                    if (data.methods.isNotEmpty()) {
+                        item { SectionTitle("Способы решения") }
+                        items(data.methods) { method -> MethodCard(method) }
+                    }
+
+                    if (data.books.isNotEmpty()) {
+                        item { SectionTitle("В учебнике") }
+                        items(data.books) { book ->
+                            BookRow(book) { onBook(book.id, book.page ?: 1) }
+                        }
+                    }
+
+                    if (data.previous != null || data.next != null) {
+                        item {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                data.previous?.let { previous ->
+                                    OutlinedButton(
+                                        onClick = { onTopic(previous.slug) },
+                                        modifier = Modifier.weight(1f),
+                                    ) { Text("← ${previous.displayTitle.take(14)}") }
+                                }
+                                data.next?.let { next ->
+                                    OutlinedButton(
+                                        onClick = { onTopic(next.slug) },
+                                        modifier = Modifier.weight(1f),
+                                    ) { Text("${next.displayTitle.take(14)} →") }
+                                }
+                            }
+                        }
+                    }
+
+                    item { Spacer(Modifier.height(16.dp)) }
                 }
             }
-            LazyColumn(
-                modifier = Modifier
+        }
+
+        playingVideoId?.let { id ->
+            BackHandler { playingVideoId = null }
+            var playerAttempt by remember(id) { mutableIntStateOf(0) }
+            Box(
+                Modifier
                     .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                    .background(Color.Black),
             ) {
-                item { TopicHeader(data) }
-
-                if (message != null) {
-                    item { InfoBox(message!!) }
+                key(id, playerAttempt) {
+                    YouTubePlayer(
+                        videoId = id,
+                        serverBaseUrl = container.session.baseUrl,
+                        modifier = Modifier.fillMaxSize(),
+                    )
                 }
-
-                if (data.canPlay) {
-                    item {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(
-                                onClick = { onPlay(slug, "practice") },
-                                modifier = Modifier.weight(1f),
-                            ) { Text("Тренировка") }
-                            OutlinedButton(
-                                onClick = { onPlay(slug, "boss") },
-                                modifier = Modifier.weight(1f),
-                            ) { Text("Босс") }
-                        }
-                    }
+                IconButton(
+                    onClick = { playerAttempt++ },
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .statusBarsPadding()
+                        .padding(8.dp),
+                ) {
+                    Icon(
+                        Icons.Default.Refresh,
+                        contentDescription = "Перезагрузить видео",
+                        tint = Color.White,
+                    )
                 }
-
-                if (data.canQuiz || data.canRead) {
-                    item {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            if (data.canQuiz) {
-                                Button(
-                                    onClick = { onQuiz(slug) },
-                                    modifier = Modifier.weight(1f),
-                                ) { Text("Тест по теме") }
-                            }
-                            if (data.canRead) {
-                                OutlinedButton(
-                                    onClick = { onRead(slug) },
-                                    modifier = Modifier.weight(1f),
-                                ) { Text("Читать") }
-                            }
-                        }
-                    }
+                IconButton(
+                    onClick = { playingVideoId = null },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .statusBarsPadding()
+                        .padding(8.dp),
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Закрыть",
+                        tint = Color.White,
+                    )
                 }
-
-                if (aiEnabled) {
-                    item {
-                        AiExplainCard(
-                            explanation = explanation,
-                            busy = aiBusy,
-                            error = aiError,
-                            speaking = speaker.speaking,
-                            speechError = speaker.error,
-                            onExplain = { explain(false) },
-                            onRefresh = { explain(true) },
-                            onSpeak = { explanation?.let { speaker.speak(it) } },
-                            onStop = { speaker.stop() },
-                        )
-                    }
-                }
-
-                if (videosEnabled && (videos.isNotEmpty() || videosBusy || videosError != null)) {
-                    item {
-                        TopicVideosCard(
-                            videos = videos,
-                            selectedId = selectedVideoId,
-                            busy = videosBusy,
-                            error = videosError,
-                            serverBaseUrl = container.session.baseUrl,
-                            onSelect = { selectedVideoId = it },
-                        )
-                    }
-                }
-
-                if (data.canRead) {
-                    item {
-                        Button(
-                            onClick = {
-                                scope.launch {
-                                    runCatching { apiCall { container.api.markRead(slug) } }
-                                        .onSuccess {
-                                            message = "Тема отмечена как прочитанная."
-                                            refresh()
-                                        }
-                                        .onFailure { message = it.message }
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) { Text("Отметить прочитанным") }
-                    }
-                }
-
-                if (data.methods.isNotEmpty()) {
-                    item { SectionTitle("Способы решения") }
-                    items(data.methods) { method -> MethodCard(method) }
-                }
-
-                if (data.books.isNotEmpty()) {
-                    item { SectionTitle("В учебнике") }
-                    items(data.books) { book ->
-                        BookRow(book) { onBook(book.id, book.page ?: 1) }
-                    }
-                }
-
-                if (data.previous != null || data.next != null) {
-                    item {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            data.previous?.let { previous ->
-                                OutlinedButton(
-                                    onClick = { onTopic(previous.slug) },
-                                    modifier = Modifier.weight(1f),
-                                ) { Text("← ${previous.displayTitle.take(14)}") }
-                            }
-                            data.next?.let { next ->
-                                OutlinedButton(
-                                    onClick = { onTopic(next.slug) },
-                                    modifier = Modifier.weight(1f),
-                                ) { Text("${next.displayTitle.take(14)} →") }
-                            }
-                        }
-                    }
-                }
-
-                item { Spacer(Modifier.height(16.dp)) }
             }
         }
     }
@@ -364,6 +421,7 @@ private fun TopicVideosCard(
     error: String?,
     serverBaseUrl: String,
     onSelect: (String) -> Unit,
+    onWatch: (String) -> Unit,
 ) {
     val selected = videos.firstOrNull { it.videoId == selectedId } ?: videos.firstOrNull()
     val context = LocalContext.current
@@ -383,15 +441,29 @@ private fun TopicVideosCard(
                 Tag("YouTube")
             }
             if (selected != null) {
-                key(selected.videoId) {
-                    YouTubePlayer(
-                        videoId = selected.videoId,
-                        serverBaseUrl = serverBaseUrl,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(16f / 9f)
-                            .clip(RoundedCornerShape(12.dp)),
+                // В списке показываем превью, а сам плеер открываем на весь
+                // экран: WebView с видео внутри прокручиваемого списка на
+                // части устройств отдаёт только звук, оставляя чёрный кадр.
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(16f / 9f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.Black),
+                ) {
+                    AsyncImage(
+                        model = "https://i.ytimg.com/vi/${selected.videoId}/hqdefault.jpg",
+                        contentDescription = selected.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
                     )
+                    Box(Modifier.fillMaxSize().background(Color(0x44000000)))
+                    Button(
+                        onClick = { onWatch(selected.videoId) },
+                        modifier = Modifier.align(Alignment.Center),
+                    ) {
+                        Text("▶ Смотреть")
+                    }
                 }
                 Text(
                     selected.title ?: "Видео",
@@ -579,11 +651,13 @@ private fun YouTubePlayer(
                     settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
                     settings.cacheMode = WebSettings.LOAD_DEFAULT
                     settings.setSupportMultipleWindows(false)
-                    // Метка «wv» выдаёт встроенный WebView. Убираем её, чтобы
-                    // YouTube не включал для такого клиента ограниченный плеер.
+                    // Метка «wv» выдаёт встроенный WebView. Убираем её вместе с
+                    // «Version/4.0», чтобы YouTube не включал для такого клиента
+                    // ограниченный плеер — из-за него видео остаётся чёрным,
+                    // хотя звук идёт.
                     settings.userAgentString = settings.userAgentString
-                        .replace("; wv", "")
-                        .replace("Version/4.0 ", "")
+                        .replace("; wv)", ")")
+                        .replace(" Version/4.0", "")
                     webChromeClient = android.webkit.WebChromeClient()
                     webViewClient = object : WebViewClient() {
                         override fun onPageFinished(view: WebView?, url: String?) {
