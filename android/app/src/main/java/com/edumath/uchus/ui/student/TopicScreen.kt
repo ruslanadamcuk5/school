@@ -3,10 +3,14 @@ package com.edumath.uchus.ui.student
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
+import android.webkit.CookieManager
+import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import androidx.activity.compose.BackHandler
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -56,6 +60,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
 import coil.compose.AsyncImage
 import com.edumath.uchus.core.AppContainer
 import com.edumath.uchus.data.api.BookLinkDto
@@ -330,18 +336,29 @@ fun TopicScreen(
                         tint = Color.White,
                     )
                 }
-                IconButton(
-                    onClick = { playingVideoId = null },
+                Row(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .statusBarsPadding()
                         .padding(8.dp),
                 ) {
-                    Icon(
-                        Icons.Default.Close,
-                        contentDescription = "Закрыть",
-                        tint = Color.White,
-                    )
+                    IconButton(
+                        onClick = {
+                            openInBrowser(
+                                context,
+                                "https://www.youtube.com/watch?v=$id",
+                            )
+                        },
+                    ) {
+                        Text("↗", color = Color.White, fontSize = 22.sp)
+                    }
+                    IconButton(onClick = { playingVideoId = null }) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Закрыть",
+                            tint = Color.White,
+                        )
+                    }
                 }
             }
         }
@@ -482,18 +499,14 @@ private fun TopicVideosCard(
                     )
                 }
                 Text(
-                    "Не запускается? Открыть на YouTube",
+                    "Нет изображения? Открыть в браузере",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.clickable {
-                        runCatching {
-                            context.startActivity(
-                                Intent(
-                                    Intent.ACTION_VIEW,
-                                    Uri.parse("https://www.youtube.com/watch?v=${selected.videoId}"),
-                                )
-                            )
-                        }
+                        openInBrowser(
+                            context,
+                            "https://www.youtube.com/watch?v=${selected.videoId}",
+                        )
                     },
                 )
             } else if (busy) {
@@ -559,6 +572,57 @@ private fun VideoRow(video: TopicVideoDto, onClick: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+/** Скрипт, который выполняется до загрузки плеера YouTube.
+ *
+ * На Android 15 у части устройств (особенно MediaTek Dimensity) ломается
+ * аппаратное декодирование HEVC/AV1: звук идёт, а кадр остаётся чёрным.
+ * Сообщаем плееру, что этих кодеков нет, — YouTube отдаёт H.264, который
+ * декодируется везде с Android 5.
+ */
+private val youtubeCodecScript = """
+    (function () {
+      try {
+        var blocked = /(hvc1|hev1|av01|vp09|vp9|vp08|vp8)/i;
+        var isVideo = function (type) { return /^video\//i.test(type); };
+        if (window.MediaSource && window.MediaSource.isTypeSupported) {
+          var original = window.MediaSource.isTypeSupported.bind(window.MediaSource);
+          window.MediaSource.isTypeSupported = function (type) {
+            type = String(type || '');
+            if (isVideo(type) && blocked.test(type)) { return false; }
+            return original(type);
+          };
+        }
+        var proto = window.HTMLMediaElement && window.HTMLMediaElement.prototype;
+        if (proto && proto.canPlayType) {
+          var canPlay = proto.canPlayType;
+          proto.canPlayType = function (type) {
+            type = String(type || '');
+            if (isVideo(type) && blocked.test(type)) { return ''; }
+            return canPlay.call(this, type);
+          };
+        }
+      } catch (e) {}
+    })();
+""".trimIndent()
+
+/** Открывает ролик во встроенном браузере (Chrome Custom Tabs).
+ *
+ * Запасной путь на случай, если WebView устройства не умеет показывать
+ * видео: Chrome на любом Android воспроизводит ролик штатно.
+ */
+private fun openInBrowser(context: android.content.Context, url: String) {
+    val opened = runCatching {
+        CustomTabsIntent.Builder()
+            .setShowTitle(true)
+            .build()
+            .launchUrl(context, Uri.parse(url))
+        true
+    }.getOrDefault(false)
+    if (!opened) {
+        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
     }
 }
 
@@ -637,10 +701,17 @@ private fun YouTubePlayer(
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
-                WebView(ctx).apply {
+                // WebView живёт внутри FrameLayout: сюда же YouTube кладёт
+                // «нативный» полноэкранный видеослой. Без этого вызова плеер
+                // уводит видео в невидимый custom view — остаётся только звук.
+                val frame = FrameLayout(ctx).apply {
+                    setBackgroundColor(android.graphics.Color.BLACK)
+                }
+                val view = WebView(ctx).apply {
                     setBackgroundColor(android.graphics.Color.BLACK)
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
+                    settings.javaScriptCanOpenWindowsAutomatically = true
                     settings.mediaPlaybackRequiresUserGesture = false
                     settings.allowFileAccess = false
                     settings.allowContentAccess = false
@@ -651,14 +722,71 @@ private fun YouTubePlayer(
                     settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
                     settings.cacheMode = WebSettings.LOAD_DEFAULT
                     settings.setSupportMultipleWindows(false)
+                    // YouTube использует сторонние cookie для выбора потока и
+                    // рекламных настроек. Без них плеер иногда отдаёт только звук.
+                    CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
                     // Метка «wv» выдаёт встроенный WebView. Убираем её вместе с
                     // «Version/4.0», чтобы YouTube не включал для такого клиента
-                    // ограниченный плеер — из-за него видео остаётся чёрным,
-                    // хотя звук идёт.
+                    // ограниченный плеер.
                     settings.userAgentString = settings.userAgentString
                         .replace("; wv)", ")")
                         .replace(" Version/4.0", "")
-                    webChromeClient = android.webkit.WebChromeClient()
+
+                    // До загрузки страницы сообщаем плееру, что HEVC/AV1/VP9
+                    // не поддерживаются: так YouTube выберет H.264.
+                    if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+                        runCatching {
+                            WebViewCompat.addDocumentStartJavaScript(
+                                this,
+                                youtubeCodecScript,
+                                setOf(
+                                    "https://www.youtube-nocookie.com",
+                                    "https://www.youtube.com",
+                                ),
+                            )
+                        }
+                    }
+
+                    webChromeClient = object : WebChromeClient() {
+                        private var customView: android.view.View? = null
+
+                        override fun onShowCustomView(
+                            view: android.view.View,
+                            callback: CustomViewCallback,
+                        ) {
+                            if (customView != null) {
+                                callback.onCustomViewHidden()
+                                return
+                            }
+                            customView = view
+                            frame.addView(
+                                view,
+                                FrameLayout.LayoutParams(
+                                    FrameLayout.LayoutParams.MATCH_PARENT,
+                                    FrameLayout.LayoutParams.MATCH_PARENT,
+                                ),
+                            )
+                            visibility = android.view.View.GONE
+                        }
+
+                        override fun onHideCustomView() {
+                            val current = customView ?: return
+                            frame.removeView(current)
+                            customView = null
+                            visibility = android.view.View.VISIBLE
+                        }
+
+                        override fun onConsoleMessage(
+                            message: android.webkit.ConsoleMessage,
+                        ): Boolean {
+                            android.util.Log.d(
+                                "YouTubePlayer",
+                                "${message.messageLevel()}: ${message.message()}",
+                            )
+                            return true
+                        }
+                    }
+
                     webViewClient = object : WebViewClient() {
                         override fun onPageFinished(view: WebView?, url: String?) {
                             super.onPageFinished(view, url)
@@ -684,15 +812,24 @@ private fun YouTubePlayer(
                             if (request?.isForMainFrame == true && code >= 400) failed = true
                         }
                     }
+
                     webView = this
-                    tag = safeId
                     loadUrl(embedUrl, mapOf("Referer" to referer))
                 }
+                frame.addView(
+                    view,
+                    FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                    ),
+                )
+                frame.tag = safeId
+                frame
             },
-            update = { view ->
-                if (view.tag != safeId) {
-                    view.tag = safeId
-                    view.loadUrl(embedUrl, mapOf("Referer" to referer))
+            update = { frame ->
+                if (frame.tag != safeId) {
+                    frame.tag = safeId
+                    webView?.loadUrl(embedUrl, mapOf("Referer" to referer))
                 }
             },
         )
@@ -718,15 +855,9 @@ private fun YouTubePlayer(
                         Text("Повторить", color = Color.White)
                     }
                     OutlinedButton(
-                        onClick = {
-                            runCatching {
-                                context.startActivity(
-                                    Intent(Intent.ACTION_VIEW, Uri.parse(watchUrl))
-                                )
-                            }
-                        },
+                        onClick = { openInBrowser(context, watchUrl) },
                     ) {
-                        Text("На YouTube", color = Color.White)
+                        Text("В браузере", color = Color.White)
                     }
                 }
             }

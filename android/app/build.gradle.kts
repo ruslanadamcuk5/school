@@ -12,8 +12,8 @@ android {
         applicationId = "com.edumath.uchus"
         minSdk = 24
         targetSdk = 35
-        versionCode = 34
-        versionName = "1.9.19"
+        versionCode = 35
+        versionName = "1.9.20"
 
         vectorDrawables { useSupportLibrary = true }
 
@@ -104,6 +104,7 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("com.google.code.gson:gson:2.11.0")
     implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("androidx.webkit:webkit:1.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 
     // Вход через Google: Credential Manager + Google ID token.
