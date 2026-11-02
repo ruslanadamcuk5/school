@@ -1,6 +1,14 @@
 package com.edumath.uchus.ui.student
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,12 +20,14 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -35,10 +45,19 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.edumath.uchus.core.AppContainer
 import com.edumath.uchus.data.api.ShopDto
 import com.edumath.uchus.data.api.ShopEquipRequest
@@ -46,6 +65,7 @@ import com.edumath.uchus.data.api.ShopGiftClaimRequest
 import com.edumath.uchus.data.api.ShopGiftDto
 import com.edumath.uchus.data.api.ShopItemDto
 import com.edumath.uchus.data.api.ShopKeyRequest
+import com.edumath.uchus.data.api.ShopPetDto
 import com.edumath.uchus.data.api.ShopResponseDto
 import com.edumath.uchus.data.api.ShopAvatarRequest
 import com.edumath.uchus.data.api.apiCall
@@ -54,6 +74,8 @@ import com.edumath.uchus.ui.common.InfoBox
 import com.edumath.uchus.ui.common.LoadingBox
 import com.edumath.uchus.ui.common.ScreenScaffold
 import com.edumath.uchus.ui.common.SectionTitle
+import com.edumath.uchus.ui.pet.AnimatedPet
+import com.edumath.uchus.ui.pet.PetProgressBar
 import kotlinx.coroutines.launch
 
 /**
@@ -75,6 +97,8 @@ fun ShopScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
+    var petBusy by remember { mutableStateOf(false) }
+    var party by remember { mutableStateOf<ShopItemDto?>(null) }
     var tick by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(tick) {
@@ -93,14 +117,37 @@ fun ShopScreen(
         }
     }
 
-    fun perform(block: suspend () -> ShopResponseDto) {
+    fun perform(
+        onSuccess: (ShopResponseDto) -> Unit = {},
+        block: suspend () -> ShopResponseDto,
+    ) {
         if (busy) return
         busy = true
         scope.launch {
             runCatching { apiCall { block() } }
-                .onSuccess { apply(it) }
+                .onSuccess {
+                    apply(it)
+                    onSuccess(it)
+                }
                 .onFailure { message = it.message ?: "Не получилось. Попробуй ещё раз." }
             busy = false
+        }
+    }
+
+    fun patPet() {
+        if (petBusy) return
+        petBusy = true
+        scope.launch {
+            runCatching { apiCall { container.api.petPat() } }
+                .onSuccess { state ->
+                    state.pet?.let { fresh -> shop = shop?.copy(pet = fresh) }
+                    state.message?.let { message = it }
+                    if (state.awarded > 0) {
+                        runCatching { onRefreshSession() }
+                    }
+                }
+                .onFailure { message = it.message ?: "Питомец не отвечает. Попробуй ещё раз." }
+            petBusy = false
         }
     }
 
@@ -121,7 +168,7 @@ fun ShopScreen(
                     contentPadding = PaddingValues(vertical = 14.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    item { BalanceCard(data) }
+                    item { BalanceCard(data, petBusy, ::patPet) }
 
                     if (!message.isNullOrBlank()) {
                         item { InfoBox(message!!) }
@@ -193,7 +240,11 @@ fun ShopScreen(
                                 ShopItemCard(
                                     item = featured,
                                     busy = busy,
-                                    onBuy = { perform { container.api.shopBuy(ShopKeyRequest(featured.key)) } },
+                                    onBuy = {
+                                        perform(
+                                            onSuccess = { if (featured.kind == "pet") party = featured },
+                                        ) { container.api.shopBuy(ShopKeyRequest(featured.key)) }
+                                    },
                                     onEquip = { perform { container.api.shopEquip(ShopEquipRequest(itemKey = featured.key)) } },
                                     onUnequip = { perform { container.api.shopEquip(ShopEquipRequest(slot = featured.slot)) } },
                                 )
@@ -226,7 +277,11 @@ fun ShopScreen(
                             ShopItemCard(
                                 item = item,
                                 busy = busy,
-                                onBuy = { perform { container.api.shopBuy(ShopKeyRequest(item.key)) } },
+                                onBuy = {
+                                    perform(
+                                        onSuccess = { if (item.kind == "pet") party = item },
+                                    ) { container.api.shopBuy(ShopKeyRequest(item.key)) }
+                                },
                                 onEquip = { perform { container.api.shopEquip(ShopEquipRequest(itemKey = item.key)) } },
                                 onUnequip = { perform { container.api.shopEquip(ShopEquipRequest(slot = item.slot)) } },
                             )
@@ -273,12 +328,19 @@ fun ShopScreen(
                     item { Spacer(Modifier.height(12.dp)) }
                 }
             }
+            party?.let { bought ->
+                PetPartyDialog(bought) { party = null }
+            }
         }
     }
 }
 
 @Composable
-private fun BalanceCard(shop: ShopDto) {
+private fun BalanceCard(
+    shop: ShopDto,
+    petBusy: Boolean,
+    onPat: () -> Unit,
+) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -315,22 +377,62 @@ private fun BalanceCard(shop: ShopDto) {
             }
             val pet = shop.pet
             if (pet != null) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(pet.icon ?: "🐾", fontSize = 26.sp)
-                    Spacer(Modifier.width(8.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            "${pet.name ?: "Питомец"} · ${pet.stageName ?: "Малыш"}",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.SemiBold,
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        AnimatedPet(
+                            pet = pet,
+                            size = 46.dp,
+                            showBubble = false,
+                            enabled = false,
                         )
-                        Bar(pet.percent)
+                        Spacer(Modifier.width(8.dp))
+                        Column(Modifier.weight(1f)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                Text(
+                                    "${pet.name ?: "Питомец"} · ${pet.stageName ?: "Малыш"}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                                if (pet.grew == true) {
+                                    Text("🎉", fontSize = 14.sp)
+                                }
+                            }
+                            PetProgressBar(pet.percent ?: 0)
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            if (pet.max == true) "макс." else "${pet.progress}/${pet.nextAt ?: 0}",
+                            style = MaterialTheme.typography.labelSmall,
+                        )
                     }
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        if (pet.max) "макс." else "${pet.progress}/${pet.nextAt ?: 0}",
-                        style = MaterialTheme.typography.labelSmall,
-                    )
+                    pet.tip?.takeIf { it.isNotBlank() }?.let { tip ->
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                "💬 $tip",
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        }
+                    }
+                    if (pet.canPat == true) {
+                        Button(
+                            onClick = onPat,
+                            enabled = !petBusy,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                if (petBusy) "Обнимаемся…"
+                                else "🤗 Погладить · +${pet.xpReward ?: 0} XP"
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -409,7 +511,13 @@ private fun GiftCard(gift: ShopGiftDto, busy: Boolean, onOpen: () -> Unit) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(gift.icon ?: "🎁", fontSize = 40.sp)
+                AnimatedEmoji(
+                    icon = gift.icon ?: "🎁",
+                    seedKey = "gift-${gift.id}",
+                    fontSize = 40.sp,
+                    lively = true,
+                    glow = true,
+                )
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(
@@ -459,7 +567,13 @@ private fun ChestCard(
 ) {
     Card(Modifier.fillMaxWidth()) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(if (available) "🎁" else "📦", fontSize = 38.sp)
+            AnimatedEmoji(
+                icon = if (available) "🎁" else "📦",
+                seedKey = "chest",
+                fontSize = 38.sp,
+                lively = available,
+                glow = available,
+            )
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Text(
@@ -494,7 +608,7 @@ private fun ShopItemCard(
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.Top) {
-                Text(item.icon ?: "✨", fontSize = 32.sp)
+                AnimatedShopIcon(item)
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -655,5 +769,153 @@ private fun Bar(percent: Int) {
                 .clip(RoundedCornerShape(999.dp))
                 .background(MaterialTheme.colorScheme.primary),
         )
+    }
+}
+
+/** Анимированная иконка товара: у питомцев — танец, у усилителей — пульс. */
+@Composable
+private fun AnimatedShopIcon(item: ShopItemDto) {
+    val lively = item.kind == "pet" ||
+        item.kind == "perk" ||
+        item.kind?.startsWith("boost") == true
+    val rare = item.rarity == "epic" || item.rarity == "legendary"
+    AnimatedEmoji(
+        icon = item.icon ?: "✨",
+        seedKey = item.key,
+        fontSize = if (item.kind == "pet") 34.sp else 32.sp,
+        lively = lively,
+        glow = rare || item.owned,
+    )
+}
+
+@Composable
+private fun AnimatedEmoji(
+    icon: String,
+    seedKey: String,
+    fontSize: TextUnit,
+    modifier: Modifier = Modifier,
+    lively: Boolean = false,
+    glow: Boolean = false,
+) {
+    val duration = remember(seedKey) {
+        1700 + (seedKey.hashCode() and 0x7fffffff) % 900
+    }
+    val transition = rememberInfiniteTransition(label = "shop-$seedKey")
+    val bob by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(duration, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "shop-bob",
+    )
+    val sway by transition.animateFloat(
+        initialValue = -1f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(duration + 500, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "shop-sway",
+    )
+    Box(contentAlignment = Alignment.Center, modifier = modifier) {
+        if (glow) {
+            Box(
+                Modifier
+                    .size((fontSize.value * 1.55f).dp)
+                    .alpha(0.10f + 0.09f * bob)
+                    .background(
+                        brush = Brush.radialGradient(
+                            listOf(
+                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.55f),
+                                Color.Transparent,
+                            )
+                        ),
+                        shape = CircleShape,
+                    ),
+            )
+        }
+        Text(
+            text = icon,
+            fontSize = fontSize,
+            modifier = Modifier
+                .offset(y = (-3f * bob).dp)
+                .rotate(if (lively) 7f * sway else 2.5f * sway),
+        )
+    }
+}
+
+/** Полноэкранное празднование после покупки питомца. */
+@Composable
+private fun PetPartyDialog(item: ShopItemDto, onClose: () -> Unit) {
+    val stage = item.stage
+    val pet = remember(item.key) {
+        ShopPetDto(
+            key = item.key,
+            icon = item.icon,
+            name = item.name,
+            index = stage?.index ?: 1,
+            stageName = stage?.stageName ?: "Малыш",
+            stageIcon = stage?.stageIcon ?: "🐣",
+            progress = stage?.progress ?: 0,
+            nextAt = stage?.nextAt,
+            percent = stage?.percent ?: 0,
+            max = stage?.max == true,
+            tip = item.tagline,
+            canPat = true,
+            xpReward = 3,
+        )
+    }
+    Dialog(
+        onDismissRequest = onClose,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xB3000000))
+                .clickable(onClick = onClose)
+                .padding(24.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(28.dp),
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        "🎉 Новый друг!",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    AnimatedPet(
+                        pet = pet,
+                        size = 120.dp,
+                        showBubble = false,
+                        enabled = false,
+                    )
+                    Text(
+                        item.name ?: "Питомец",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        "Теперь он живёт на главном экране: танцует, подсказывает, " +
+                            "когда пора заниматься, и дарит опыт за обнимашки.",
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Button(onClick = onClose, modifier = Modifier.fillMaxWidth()) {
+                        Text("Ура!")
+                    }
+                }
+            }
+        }
     }
 }

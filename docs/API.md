@@ -919,6 +919,8 @@ JavaScript, DOM Storage и `mediaPlaybackRequiresUserGesture = false`.
 | POST | `/shop/avatar` | сменить аватар: `{"avatar": "🦊"}` |
 | POST | `/shop/chest` | открыть сундук дня |
 | POST | `/shop/gifts/claim` | открыть подарок: `{"gift_id": 12}`; без `gift_id` — все сразу |
+| GET | `/pet` | состояние надетого питомца: стадия, прогресс, подсказка, награда |
+| POST | `/pet/pat` | погладить питомца; опыт начисляется не чаще раза в день |
 
 Ответы покупок и подарков содержат `message`, обновлённый `shop` и баланс.
 В `GET /shop` есть:
@@ -929,7 +931,16 @@ JavaScript, DOM Storage и `mediaPlaybackRequiresUserGesture = false`.
 * `gifts` — непрочитанные подарки (`reason` — за что, `message`, `coins`, `xp`,
   `rarity`), `gift_history` — последние подарки;
 * `rarity` / `rarity_name` / `rarity_icon` у каждого товара;
-* `collection` — сколько постоянных предметов собрано.
+* `collection` — сколько постоянных предметов собрано;
+* `pet` — надетый питомец с полями `stage_name`, `stage_icon`, `progress`,
+  `next_at`, `percent`, `max`, а также `tip` (подсказка ребёнку), `can_pat`,
+  `xp_reward` и `grew` (питомец только что перешёл на новую стадию).
+
+`GET /pet` отдаёт `pet`, `tip`, `can_pat`, `xp_reward`, `grew` и `day`.
+`POST /pet/pat` возвращает `awarded` (сколько опыта начислено), `message`,
+обновлённый `pet` и `balance`; повторное поглаживание в тот же день даёт
+`awarded: 0`. Стадия питомца растёт от верных ответов, а `seen_stage` хранит
+последнюю показанную ребёнку стадию — новость «я подрос» показывается один раз.
 
 Подарки создаёт администратор в `/admin/shop`: выбирает ребёнка, предмет и/или
 бонусные монеты с опытом, указывает причину и личное сообщение. Ребёнок видит

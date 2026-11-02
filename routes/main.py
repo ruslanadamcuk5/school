@@ -29,6 +29,7 @@ from services import reading_quiz
 from services import release as release_service
 from services import rewards as rewards_service
 from services import rounds as rounds_service
+from services import shop as shop_service
 from services import textbooks as textbooks_service
 from services import topics as topics_service
 from services import youtube as youtube_service
@@ -189,8 +190,14 @@ def map_page():
             library_hint = library_service.unread_for_student(int(account["user_id"]))[:3]
         except Exception:  # pragma: no cover - подсказка не должна ломать карту
             library_hint = []
+    pet_state = None
+    try:
+        pet_state = shop_service.pet_state(int(learner["id"]))
+    except Exception:  # pragma: no cover - питомец не должен ломать карту
+        pet_state = None
     return render_template(
         "map.html",
+        pet_state=pet_state,
         library_hint=library_hint,
         learner=learner,
         stats=stats,

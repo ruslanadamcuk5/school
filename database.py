@@ -123,6 +123,9 @@ MIGRATIONS: list[tuple[str, str, str]] = [
     ("location_sharing", "force_requested_at", "TEXT"),
     ("location_sharing", "force_requested_by", "INTEGER"),
     ("location_sharing", "force_ack_at", "TEXT"),
+    # питомцы: ежедневное поглаживание с наградой и память о показанной стадии
+    ("learner_items", "last_pat_day", "TEXT NOT NULL DEFAULT ''"),
+    ("learner_items", "seen_stage", "INTEGER NOT NULL DEFAULT 0"),
 ]
 
 

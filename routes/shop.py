@@ -92,6 +92,22 @@ def claim_gift(gift_id: int):
     return redirect(url_for("shop.index") + "#gifts")
 
 
+@bp.post("/pet/pat")
+def pet_pat():
+    """Погладить питомца с сайта. Опыт начисляется не чаще раза в день."""
+    learner = _learner()
+    if learner is None:
+        return redirect(url_for("main.welcome"))
+    try:
+        result = shop_service.pat_pet(learner["id"])
+        flash(result["message"], "success")
+    except shop_service.ShopError as exc:
+        flash(exc.message, "info")
+    if (request.form.get("next") or "").strip() == "shop":
+        return redirect(url_for("shop.index") + "#shop-hero")
+    return redirect(url_for("main.map_page") + "#pet")
+
+
 @bp.post("/chest")
 def chest():
     learner = _learner()

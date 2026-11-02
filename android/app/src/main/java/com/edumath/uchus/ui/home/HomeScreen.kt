@@ -35,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.edumath.uchus.core.AppContainer
+import com.edumath.uchus.data.api.ApiJson
 import com.edumath.uchus.data.api.AssignmentDto
 import com.edumath.uchus.data.api.SessionDto
 import com.edumath.uchus.data.api.apiCall
@@ -51,6 +53,9 @@ import com.edumath.uchus.ui.common.InfoBox
 import com.edumath.uchus.ui.common.SectionTitle
 import com.edumath.uchus.ui.common.StatPill
 import com.edumath.uchus.ui.common.Tag
+import com.edumath.uchus.ui.pet.PetCompanionCard
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 data class HomeItem(
     val route: String,
@@ -82,6 +87,10 @@ fun HomeScreen(
     var assignments by remember(session) { mutableStateOf<List<AssignmentDto>>(emptyList()) }
     var unread by remember(session) { mutableIntStateOf(0) }
     var reloadTick by remember(session) { mutableIntStateOf(0) }
+    var pet by remember(session?.learner?.id) { mutableStateOf(session?.learner?.pet) }
+    var petMessage by remember { mutableStateOf<String?>(null) }
+    var petBusy by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(session, reloadTick) {
         if (session == null) return@LaunchedEffect
@@ -90,6 +99,37 @@ fun HomeScreen(
         if (isStudent) {
             runCatching { apiCall { container.api.studentAssignments() } }
                 .onSuccess { assignments = it.assignments.filter { a -> a.result == null } }
+            if (!isStrict) {
+                runCatching { apiCall { container.api.pet() } }
+                    .onSuccess { state -> state.pet?.let { pet = it } }
+            }
+        }
+    }
+
+    LaunchedEffect(petMessage) {
+        if (petMessage != null) {
+            delay(7000)
+            petMessage = null
+        }
+    }
+
+    val patPet: () -> Unit = {
+        if (!petBusy) {
+            petBusy = true
+            scope.launch {
+                runCatching { apiCall { container.api.petPat() } }
+                    .onSuccess { state ->
+                        state.pet?.let { pet = it }
+                        petMessage = state.message
+                        if (state.awarded > 0) {
+                            runCatching { apiCall { container.api.me() } }.onSuccess { fresh ->
+                                container.session.updateSnapshot(ApiJson.gson.toJson(fresh))
+                            }
+                        }
+                    }
+                    .onFailure { petMessage = it.message ?: "Питомец не отвечает. Попробуй ещё раз." }
+                petBusy = false
+            }
         }
     }
 
@@ -152,6 +192,18 @@ fun HomeScreen(
             item {
                 Spacer(Modifier.height(4.dp))
                 Greeting(session, isStrict)
+            }
+
+            val petCard = pet
+            if (isStudent && !isStrict && petCard != null) {
+                item {
+                    PetCompanionCard(
+                        pet = petCard,
+                        busy = petBusy,
+                        onPat = patPet,
+                        message = petMessage,
+                    )
+                }
             }
 
             val learner = session?.learner
@@ -282,13 +334,6 @@ private fun Greeting(session: SessionDto?, isStrict: Boolean) {
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold,
-                    )
-                }
-                learner?.pet?.let { pet ->
-                    Text(
-                        "${pet.icon ?: "🐾"} ${pet.name ?: "Питомец"} · ${pet.stageName ?: "Малыш"}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }

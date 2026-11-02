@@ -239,6 +239,68 @@ class TestShopService(ShopTestCase):
         self.assertEqual(pet["progress"], 20)
         self.assertEqual(pet["stage_name"], "Друг")
 
+    def test_pet_pat_gives_xp_once_per_day(self):
+        learner_id = make_learner(coins=5000, xp=5000)
+        shop_service.purchase(learner_id, "pet_cat")
+
+        state = shop_service.pet_state(learner_id, "2026-11-02")
+        self.assertIsNotNone(state["pet"])
+        self.assertTrue(state["can_pat"])
+        self.assertGreater(state["xp_reward"], 0)
+        self.assertTrue(state["tip"])
+        self.assertFalse(state["grew"])
+
+        xp_before = learner_row(learner_id)["xp"]
+        result = shop_service.pat_pet(learner_id, "2026-11-02")
+        self.assertEqual(result["awarded"], state["xp_reward"])
+        self.assertIn("XP", result["message"])
+        self.assertEqual(learner_row(learner_id)["xp"], xp_before + state["xp_reward"])
+        self.assertFalse(shop_service.pet_state(learner_id, "2026-11-02")["can_pat"])
+
+        # Повторное поглаживание в тот же день опыта не даёт.
+        again = shop_service.pat_pet(learner_id, "2026-11-02")
+        self.assertEqual(again["awarded"], 0)
+        self.assertEqual(learner_row(learner_id)["xp"], xp_before + state["xp_reward"])
+
+        # На следующий день питомец снова готов делиться опытом.
+        tomorrow = shop_service.pat_pet(learner_id, "2026-11-03")
+        self.assertEqual(tomorrow["awarded"], state["xp_reward"])
+
+    def test_pet_growth_is_announced_once(self):
+        learner_id = make_learner(coins=5000, xp=5000)
+        shop_service.purchase(learner_id, "pet_cat")
+        # Первый просмотр запоминает текущую стадию и не считает её ростом.
+        first = shop_service.pet_state(learner_id, "2026-11-02")
+        self.assertFalse(first["grew"])
+
+        for _ in range(20):
+            shop_service.bump_pet(learner_id)
+        grown = shop_service.pet_state(learner_id, "2026-11-03")
+        self.assertTrue(grown["grew"])
+        self.assertIn("Друг", grown["tip"])
+
+        # Новость показывается один раз, а не при каждом открытии экрана.
+        self.assertFalse(shop_service.pet_state(learner_id, "2026-11-03")["grew"])
+
+    def test_shop_state_shows_pet_tip_without_consuming_growth(self):
+        learner_id = make_learner(coins=5000, xp=5000)
+        shop_service.purchase(learner_id, "pet_cat")
+        shop_service.pet_state(learner_id, "2026-11-02")
+        for _ in range(20):
+            shop_service.bump_pet(learner_id)
+
+        state = shop_service.shop_state(learner_id, "2026-11-03")
+        self.assertTrue(state["pet"]["grew"])
+        self.assertTrue(state["pet"]["tip"])
+        # Магазин не «съедает» новость: главный экран ещё увидит рост.
+        self.assertTrue(shop_service.pet_state(learner_id, "2026-11-03")["grew"])
+
+    def test_pat_without_pet_is_rejected(self):
+        learner_id = make_learner(coins=5000, xp=5000)
+        with self.assertRaises(shop_service.ShopError) as ctx:
+            shop_service.pat_pet(learner_id)
+        self.assertEqual(ctx.exception.code, "no_pet")
+
     def test_minecraft_items_have_rarity_and_permanent_boosts(self):
         learner_id = make_learner(coins=5000, xp=700)
         mc_items = [item for item in shop_service.catalog_items()
@@ -405,6 +467,32 @@ class TestShopWeb(ShopTestCase):
             data={"name": "Маша", "avatar": "🦊", "grade": "3", "csrf_token": token},
         )
 
+    def test_map_shows_pet_and_pat_gives_xp(self):
+        self._make_learner()
+        learner = query_one("SELECT * FROM learners ORDER BY id DESC LIMIT 1")
+        execute(
+            "UPDATE learners SET coins = 1000, xp = 1000 WHERE id = ?",
+            (learner["id"],),
+        )
+        shop_service.purchase(learner["id"], "pet_cat")
+
+        page = self.client.get("/map")
+        self.assertEqual(page.status_code, 200)
+        html = page.get_data(as_text=True)
+        self.assertIn("pet-companion", html)
+        self.assertIn("Погладить", html)
+
+        token = self._csrf("/map")
+        xp_before = int(learner_row(learner["id"])["xp"])
+        response = self.client.post(
+            "/shop/pet/pat",
+            data={"csrf_token": token},
+            follow_redirects=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertGreater(int(learner_row(learner["id"])["xp"]), xp_before)
+        self.assertIn("Сегодня обнялись", response.get_data(as_text=True))
+
     def test_shop_page_and_purchase(self):
         self._make_learner()
         learner = query_one("SELECT * FROM learners ORDER BY id DESC LIMIT 1")
@@ -524,6 +612,41 @@ class TestShopApi(ShopTestCase):
             "UPDATE learners SET coins = 500, xp = 500 WHERE id = ?", (learner_id,)
         )
         return payload["token"], learner_id
+
+    def test_pet_api_reports_tip_and_daily_pat(self):
+        token, learner_id = self._family()
+        headers = {"Authorization": f"Bearer {token}"}
+
+        bought = self.client.post(
+            "/api/v1/shop/buy",
+            headers=headers,
+            json={"item_key": "pet_cat"},
+        )
+        self.assertEqual(bought.status_code, 200, bought.get_data(as_text=True))
+        # Питомец надевается автоматически, если слот свободен.
+        pet = shop_service.decorations(learner_id)["pet"]
+        self.assertIsNotNone(pet)
+
+        response = self.client.get("/api/v1/pet", headers=headers)
+        self.assertEqual(response.status_code, 200, response.get_data(as_text=True))
+        body = response.get_json()
+        self.assertTrue(body["ok"])
+        self.assertEqual(body["pet"]["key"], "pet_cat")
+        self.assertTrue(body["can_pat"])
+        self.assertGreater(body["xp_reward"], 0)
+        self.assertTrue(body["tip"])
+
+        xp_before = int(learner_row(learner_id)["xp"])
+        patted = self.client.post("/api/v1/pet/pat", headers=headers)
+        self.assertEqual(patted.status_code, 200, patted.get_data(as_text=True))
+        result = patted.get_json()
+        self.assertEqual(result["awarded"], body["xp_reward"])
+        self.assertFalse(result["can_pat"])
+        self.assertIn("XP", result["message"])
+        self.assertEqual(int(learner_row(learner_id)["xp"]), xp_before + body["xp_reward"])
+
+        again = self.client.post("/api/v1/pet/pat", headers=headers).get_json()
+        self.assertEqual(again["awarded"], 0)
 
     def test_shop_api_purchase_chest_and_equip(self):
         token, _ = self._family()

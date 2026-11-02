@@ -670,6 +670,242 @@ def pet_stage(progress: int) -> dict[str, Any]:
     }
 
 
+# ------------------------------------------------------------ живые питомцы
+# Питомец не только растёт от верных ответов, но и сам поддерживает ребёнка:
+# раз в день его можно погладить и получить немного опыта.
+PET_PAT_PHRASES = (
+    "{icon} {name} довольно жмурится и дарит тебе +{xp} XP!",
+    "{icon} {name} кружится от радости: +{xp} XP!",
+    "{icon} {name} благодарит за обнимашки: +{xp} XP!",
+)
+
+PET_GREW_PHRASES = (
+    "Ты молодец! Сегодня я немного подрос — теперь я «{stage}»!",
+    "Ура! Я вырос до стадии «{stage}». Это ты помог мне вырасти!",
+    "Смотри, какой я стал! «{stage}» — спасибо твоим верным ответам!",
+)
+
+PET_PAT_PROMPTS = (
+    "Погладь меня — я поделюсь с тобой опытом!",
+    "Я соскучился! Нажми на меня, и я дам тебе +{xp} XP.",
+    "Обними меня! Сегодня я могу подарить тебе +{xp} XP.",
+)
+
+PET_GROW_PROMPTS = (
+    "Ты сегодня молодец! Ещё немного — и я стану «{next}».",
+    "Каждый верный ответ делает меня сильнее. Осталось {need} — и я подрасту!",
+    "Я расту вместе с тобой. Реши ещё {need} — и покажу новую стадию.",
+)
+
+PET_MAX_PROMPTS = (
+    "Я уже Легенда! Но мне всё равно нравится с тобой заниматься.",
+    "Я вырос до Легенды — спасибо тебе! Теперь я охраняю твою серию.",
+    "Я самый счастливый питомец на свете. Продолжай учиться, я рядом!",
+)
+
+
+def _pick(texts: tuple[str, ...], seed: str) -> str:
+    """Стабильный выбор фразы: текст не прыгает при каждом обновлении."""
+    index = int(hashlib.md5(seed.encode("utf-8")).hexdigest(), 16) % len(texts)
+    return texts[index]
+
+
+def _pet_row(learner_id: int):
+    """Надетый питомец (в слоте ``pet`` может быть только один)."""
+    return query_one(
+        "SELECT * FROM learner_items "
+        "WHERE learner_id = ? AND slot = 'pet' AND equipped = 1 "
+        "ORDER BY id LIMIT 1",
+        (learner_id,),
+    )
+
+
+def _pet_value(row, column: str, default):
+    try:
+        value = row[column]
+    except (IndexError, KeyError):
+        return default
+    return default if value is None else value
+
+
+def pet_pat_xp(stage: dict[str, Any]) -> int:
+    """Награда за ежедневное объятие. Чем старше питомец, тем щедрее."""
+    return 2 + int(stage.get("index") or 1)
+
+
+def _pet_tip(
+    item: dict[str, Any],
+    stage: dict[str, Any],
+    *,
+    can_pat: bool,
+    grew: bool,
+    xp_reward: int,
+    learner_id: int,
+    day: str,
+) -> str:
+    icon = item.get("icon") or "🐾"
+    name = item.get("name") or "Питомец"
+    index = int(stage.get("index") or 1)
+    next_at = stage.get("next_at")
+    need = max(0, int(next_at) - int(stage.get("progress") or 0)) if next_at else 0
+    next_name = PET_STAGES[index][1] if index < len(PET_STAGES) else None
+    seed = (
+        f"{learner_id}:{item.get('key')}:{day}:"
+        f"{stage.get('progress')}:{int(can_pat)}:{int(grew)}"
+    )
+
+    if grew:
+        text = _pick(PET_GREW_PHRASES, seed + ":grew").format(
+            stage=stage.get("stage_name") or "новая стадия"
+        )
+        if can_pat:
+            text += " " + _pick(PET_PAT_PROMPTS, seed + ":pat").format(xp=xp_reward)
+        return text
+
+    if can_pat:
+        text = _pick(PET_PAT_PROMPTS, seed + ":pat").format(xp=xp_reward)
+        if next_at is None:
+            text += " Я уже Легенда, но обнимашки всё равно люблю."
+        elif need > 0 and next_name:
+            text += f" А чтобы я рос, реши ещё {need} — и стану «{next_name}»."
+        return text
+
+    if next_at is None:
+        return _pick(PET_MAX_PROMPTS, seed + ":max")
+    if need <= 0:
+        return _pick(PET_GREW_PHRASES, seed + ":near").format(
+            stage=stage.get("stage_name") or "новая стадия"
+        )
+    text = _pick(PET_GROW_PROMPTS, seed + ":grow").format(
+        next=next_name or "Легенда", need=need
+    )
+    return f"Я не расту без твоих занятий. {text}"
+
+
+def pet_state(
+    learner_id: int,
+    day: str | None = None,
+    *,
+    mark_seen: bool = True,
+) -> dict[str, Any]:
+    """Состояние надетого питомца: стадия, прогресс, подсказка и награда.
+
+    ``mark_seen=False`` используют витрины (магазин, профиль): они показывают
+    подсказку, но не «съедают» новость о росте до главного экрана ребёнка.
+    """
+    day = day_key(day)
+    row = _pet_row(learner_id)
+    empty = {
+        "pet": None,
+        "tip": "",
+        "can_pat": False,
+        "xp_reward": 0,
+        "grew": False,
+        "day": day,
+    }
+    if row is None:
+        return empty
+    item = get_item(row["item_key"])
+    if item is None or item.get("kind") != "pet":
+        return empty
+
+    progress = int(row["progress"] or 0)
+    stage = pet_stage(progress)
+    index = int(stage["index"])
+    seen = int(_pet_value(row, "seen_stage", 0) or 0)
+    grew = bool(seen and index > seen)
+    if mark_seen and seen != index:
+        execute(
+            "UPDATE learner_items SET seen_stage = ?, updated_at = datetime('now') "
+            "WHERE id = ?",
+            (index, row["id"]),
+        )
+
+    last_pat = str(_pet_value(row, "last_pat_day", "") or "").strip()
+    can_pat = last_pat != day
+    xp_reward = pet_pat_xp(stage)
+    tip = _pet_tip(
+        item,
+        stage,
+        can_pat=can_pat,
+        grew=grew,
+        xp_reward=xp_reward,
+        learner_id=learner_id,
+        day=day,
+    )
+    pet = {
+        "key": item["key"],
+        "icon": item["icon"],
+        "name": item["name"],
+        **stage,
+        "tip": tip,
+        "can_pat": can_pat,
+        "xp_reward": xp_reward,
+        "grew": grew,
+        "last_pat_day": last_pat,
+    }
+    return {
+        "pet": pet,
+        "tip": tip,
+        "can_pat": can_pat,
+        "xp_reward": xp_reward,
+        "grew": grew,
+        "day": day,
+    }
+
+
+def pat_pet(learner_id: int, day: str | None = None) -> dict[str, Any]:
+    """Погладить питомца. Раз в день он даёт ребёнку немного опыта."""
+    day = day_key(day)
+    row = _pet_row(learner_id)
+    if row is None:
+        raise ShopError("no_pet", "Сначала купи и надень питомца", 409)
+    item = get_item(row["item_key"])
+    if item is None:
+        raise ShopError("no_pet", "Питомец не найден", 404)
+
+    stage = pet_stage(int(row["progress"] or 0))
+    xp_reward = pet_pat_xp(stage)
+    last_pat = str(_pet_value(row, "last_pat_day", "") or "").strip()
+    if last_pat == day:
+        state = pet_state(learner_id, day, mark_seen=False)
+        return {
+            "awarded": 0,
+            "xp": 0,
+            "message": (
+                f"{item['icon']} {item['name']} уже обнимался с тобой сегодня. "
+                "Возвращайся завтра — я снова поделюсь опытом!"
+            ),
+            **state,
+        }
+
+    execute(
+        "UPDATE learners SET xp = xp + ? WHERE id = ?",
+        (xp_reward, learner_id),
+    )
+    execute(
+        "UPDATE learner_items SET last_pat_day = ?, updated_at = datetime('now') "
+        "WHERE id = ?",
+        (day, row["id"]),
+    )
+    state = pet_state(learner_id, day)
+    message = _pick(
+        PET_PAT_PHRASES,
+        f"{learner_id}:{item['key']}:{day}:pat",
+    ).format(icon=item["icon"], name=item["name"], xp=xp_reward)
+    learner = query_one("SELECT coins, xp FROM learners WHERE id = ?", (learner_id,))
+    return {
+        "awarded": xp_reward,
+        "xp": xp_reward,
+        "message": message,
+        "balance": {
+            "coins": int(learner["coins"] or 0) if learner else 0,
+            "xp": int(learner["xp"] or 0) if learner else 0,
+        },
+        **state,
+    }
+
+
 def decorations(learner_id: int) -> dict[str, Any]:
     """Надетые предметы для шапки сайта и профиля."""
     out: dict[str, Any] = {
@@ -1000,6 +1236,13 @@ def shop_state(learner_id: int, day: str | None = None) -> dict[str, Any]:
     permanent = [view for view in views if not view["repeatable"]]
     collected = len([view for view in permanent if view["owned"]])
     decor = decorations(learner_id)
+    # Витрина показывает тот же текст питомца, что и главный экран, но не
+    # помечает стадию просмотренной: новость «я подрос» дождётся ребёнка дома.
+    pet_view = decor.get("pet")
+    if pet_view:
+        live = pet_state(learner_id, day, mark_seen=False)
+        if live.get("pet"):
+            pet_view = {**pet_view, **live["pet"]}
     pending = pending_gifts(learner_id)
     return {
         "balance": {
@@ -1023,7 +1266,7 @@ def shop_state(learner_id: int, day: str | None = None) -> dict[str, Any]:
             "total": len(permanent),
             "percent": int(100 * collected / len(permanent)) if permanent else 0,
         },
-        "pet": decor.get("pet"),
+        "pet": pet_view,
         "event": event,
         "announcement": get_setting("announcement", ""),
         "gifts": pending,

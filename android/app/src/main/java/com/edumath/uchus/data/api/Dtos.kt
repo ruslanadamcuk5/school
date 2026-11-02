@@ -1407,6 +1407,25 @@ data class ShopPetDto(
     @SerializedName("next_at") val nextAt: Int? = null,
     @SerializedName("percent") val percent: Int = 0,
     @SerializedName("max") val max: Boolean = false,
+    // Живой питомец: подсказка, ежедневная награда и новость о росте.
+    @SerializedName("tip") val tip: String? = null,
+    @SerializedName("can_pat") val canPat: Boolean = false,
+    @SerializedName("xp_reward") val xpReward: Int = 0,
+    @SerializedName("grew") val grew: Boolean = false,
+    @SerializedName("last_pat_day") val lastPatDay: String? = null,
+)
+
+data class PetStateDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("pet") val pet: ShopPetDto? = null,
+    @SerializedName("tip") val tip: String? = null,
+    @SerializedName("can_pat") val canPat: Boolean = false,
+    @SerializedName("xp_reward") val xpReward: Int = 0,
+    @SerializedName("grew") val grew: Boolean = false,
+    @SerializedName("day") val day: String? = null,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("awarded") val awarded: Int = 0,
+    @SerializedName("xp") val xp: Int = 0,
 )
 
 data class ShopItemDto(

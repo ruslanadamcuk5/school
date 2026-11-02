@@ -37,6 +37,42 @@
   <div class="hero__art" aria-hidden="true">{{ learner.avatar }}</div>
 </section>
 
+{% if pet_state and pet_state.pet %}
+<section class="pet-companion mt-2" id="pet">
+  <div class="pet-sprite {% if pet_state.can_pat or pet_state.grew %}is-ready{% endif %}" aria-hidden="true">
+    {{ pet_state.pet.icon }}
+  </div>
+  <div class="pet-companion__body">
+    <div class="pet-companion__head">
+      <span class="pet-companion__name">{{ pet_state.pet.name }}</span>
+      <span class="pet-companion__stage">{{ pet_state.pet.stage_icon }} {{ pet_state.pet.stage_name }}</span>
+      {% if pet_state.grew %}<span class="chip chip--purple">🎉 Я подрос!</span>{% endif %}
+    </div>
+    <div class="pet-companion__bubble {% if pet_state.grew %}is-grown{% endif %}">
+      {{ pet_state.tip }}
+    </div>
+    <div class="pet-companion__progress">
+      <span class="small muted">
+        {% if pet_state.pet.max %}Максимальная стадия{% else %}{{ pet_state.pet.progress }} / {{ pet_state.pet.next_at }} верных{% endif %}
+      </span>
+      <span class="pet-companion__bar"><span style="width: {{ pet_state.pet.percent }}%"></span></span>
+    </div>
+  </div>
+  <div class="pet-companion__actions">
+    {% if pet_state.can_pat %}
+      <form method="post" action="{{ url_for('shop.pet_pat') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn--warn btn--small" type="submit">🤗 Погладить · +{{ pet_state.xp_reward }} XP</button>
+      </form>
+      <span class="pet-companion__hint">Раз в день питомец делится опытом</span>
+    {% else %}
+      <span class="chip chip--green">Сегодня обнялись ✓</span>
+      <span class="pet-companion__hint">Завтра снова +{{ pet_state.xp_reward }} XP</span>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
 <section class="card mt-2" style="background: linear-gradient(135deg,#fff7ed,#fff); border-left: 6px solid #f59e0b;">
   <div class="row row--between">
     <div>

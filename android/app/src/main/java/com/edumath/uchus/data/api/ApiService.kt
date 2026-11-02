@@ -143,6 +143,13 @@ interface ApiService {
     @POST("shop/chest")
     suspend fun shopChest(): ShopResponseDto
 
+    // ---------------------------------------------------------- живой питомец
+    @GET("pet")
+    suspend fun pet(): PetStateDto
+
+    @POST("pet/pat")
+    suspend fun petPat(): PetStateDto
+
     // ---------------------------------------------------------- работы: ученик
     @GET("assignments")
     suspend fun studentAssignments(): AssignmentsDto

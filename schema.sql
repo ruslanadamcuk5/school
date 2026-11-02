@@ -713,6 +713,11 @@ CREATE TABLE IF NOT EXISTS learner_items (
     item_key    TEXT    NOT NULL,
     quantity    INTEGER NOT NULL DEFAULT 1,
     progress    INTEGER NOT NULL DEFAULT 0,
+    -- День последнего «поглаживания»: питомец даёт опыт не чаще раза в сутки.
+    last_pat_day TEXT   NOT NULL DEFAULT '',
+    -- Стадия, которую ребёнок уже видел: нужна, чтобы один раз показать
+    -- «я подрос», а не повторять это при каждом открытии экрана.
+    seen_stage  INTEGER NOT NULL DEFAULT 0,
     equipped    INTEGER NOT NULL DEFAULT 0,
     slot        TEXT    NOT NULL DEFAULT '',
     acquired_at TEXT    NOT NULL DEFAULT (datetime('now')),

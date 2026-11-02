@@ -2,7 +2,7 @@
 {% block title %}Магазин — {{ learner.name }}{% endblock %}
 {% block content %}
 
-<section class="shop-hero">
+<section class="shop-hero" id="shop-hero">
   <div class="shop-hero__me">
     <span class="avatar avatar--xl {% if shop.decor.frame_css %}avatar--frame-{{ shop.decor.frame_css }}{% endif %}">{{ learner.avatar }}</span>
     <div>
@@ -13,13 +13,25 @@
       </p>
       {% if shop.pet %}
         <div class="shop-pet-line">
-          <span class="shop-pet-line__icon">{{ shop.pet.icon }}</span>
+          <span class="shop-pet-line__icon shop-pet-line__icon--live">{{ shop.pet.icon }}</span>
           <span><b>{{ shop.pet.name }}</b> · {{ shop.pet.stage_name }}</span>
           <span class="shop-pet-line__bar"><span style="width: {{ shop.pet.percent }}%"></span></span>
           <span class="muted small">
             {% if shop.pet.max %}максимум!{% else %}{{ shop.pet.progress }}/{{ shop.pet.next_at }} верных{% endif %}
           </span>
         </div>
+        {% if shop.pet.tip %}
+          <div class="shop-pet-tip">💬 {{ shop.pet.tip }}</div>
+        {% endif %}
+        {% if shop.pet.can_pat %}
+          <form method="post" action="{{ url_for('shop.pet_pat') }}" class="shop-pet-pat">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="next" value="shop">
+            <button class="btn btn--small btn--warn" type="submit">
+              🤗 Погладить · +{{ shop.pet.xp_reward }} XP
+            </button>
+          </form>
+        {% endif %}
       {% endif %}
     </div>
   </div>
