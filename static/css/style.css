@@ -1841,3 +1841,58 @@ body[data-shop-theme="minecraft"] .btn { border-radius: 4px; box-shadow: 3px 3px
   .pet-companion__actions { align-items: center; text-align: center; }
   .pet-companion__progress { width: 100%; }
 }
+
+/* ---------------------------------------------------- анимация товаров */
+@keyframes shop-idle {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg) scale(1); }
+  50% { transform: translateY(-4px) rotate(1.5deg) scale(1.03); }
+}
+@keyframes shop-pulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(245,158,11,0)); }
+  50% { transform: scale(1.08); filter: drop-shadow(0 6px 12px rgba(245,158,11,0.35)); }
+}
+@keyframes shop-pet-dance {
+  0%, 100% { transform: translateY(0) rotate(-5deg); }
+  25% { transform: translateY(-5px) rotate(4deg); }
+  50% { transform: translateY(0) rotate(5deg); }
+  75% { transform: translateY(-3px) rotate(-4deg); }
+}
+.shop-item__icon {
+  display: inline-block;
+  transform-origin: 50% 80%;
+  animation: shop-idle 3.6s ease-in-out infinite;
+}
+.shop-item:nth-child(2n) .shop-item__icon { animation-delay: .35s; animation-duration: 4.1s; }
+.shop-item:nth-child(3n) .shop-item__icon { animation-delay: .7s; animation-duration: 3.2s; }
+.shop-item[class*="rarity-epic"] .shop-item__icon,
+.shop-item[class*="rarity-legendary"] .shop-item__icon,
+.shop-item--equipped .shop-item__icon {
+  animation-name: shop-pulse;
+  animation-duration: 2.8s;
+}
+.shop-item[id^="pet_"] .shop-item__icon,
+.shop-item--pet .shop-item__icon {
+  animation-name: shop-pet-dance;
+  animation-duration: 2.1s;
+}
+.shop-item__pet-icon { display: inline-block; animation: shop-idle 2.6s ease-in-out infinite; }
+.shop-pet-line__icon--live { display: inline-block; animation: shop-pet-dance 2.2s ease-in-out infinite; }
+.shop-pet-tip {
+  margin: 6px 0 0;
+  padding: 7px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .72);
+  font-size: .82rem;
+  font-weight: 700;
+}
+.shop-pet-pat { display: inline-flex; margin-top: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .shop-item__icon,
+  .shop-item__pet-icon,
+  .shop-pet-line__icon--live,
+  .pet-sprite,
+  .pet-sprite.is-ready::after {
+    animation: none !important;
+  }
+}
