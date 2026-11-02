@@ -10,6 +10,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
         android:name=".UchusApp"
@@ -26,6 +27,20 @@
             android:name=".data.location.LocationTrackingService"
             android:exported="false"
             android:foregroundServiceType="location" />
+
+        <!-- Статус установки APK из PackageInstaller. -->
+        <receiver
+            android:name=".ui.update.UpdateInstallReceiver"
+            android:exported="false" />
+
+        <!-- После замены APK пробуем сразу открыть приложение и показать итог. -->
+        <receiver
+            android:name=".ui.update.UpdateRestartReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
 
         <activity
             android:name=".MainActivity"

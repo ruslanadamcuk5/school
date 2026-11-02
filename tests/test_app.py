@@ -1205,6 +1205,29 @@ class TestApiV1(unittest.TestCase):
             401,
         )
 
+    def test_student_session_includes_parent_code(self):
+        """Ученик видит свой код подключения родителя в приложении.
+
+        Код нужен ребёнку, чтобы продиктовать его родителю. При этом он
+        не должен попадать в чужие списки пользователей.
+        """
+        login, password = self._user("api_student_code", "student")
+        token = self._login(login, password)
+        me = self.client.get("/api/v1/auth/me", headers=self._headers(token))
+        self.assertEqual(me.status_code, 200)
+        code = me.get_json()["user"]["child_code"]
+        self.assertTrue(code)
+        self.assertEqual(
+            code, self.auth.get_user_by_login(login)["child_code"]
+        )
+
+        teacher_login, teacher_password = self._user("api_code_teacher", "teacher")
+        teacher_token = self._login(teacher_login, teacher_password)
+        teacher_me = self.client.get(
+            "/api/v1/auth/me", headers=self._headers(teacher_token)
+        )
+        self.assertIsNone(teacher_me.get_json()["user"].get("child_code"))
+
     def test_login_returns_boolean_user_flags(self):
         login, password = self._user("api_flags", "teacher")
         response = self.client.post(

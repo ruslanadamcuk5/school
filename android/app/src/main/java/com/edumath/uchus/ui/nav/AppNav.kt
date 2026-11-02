@@ -171,6 +171,14 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
         }
     }
 
+    val refreshSession: () -> Unit = {
+        scope.launch {
+            runCatching { apiCall { container.api.me() } }.onSuccess { fresh ->
+                container.session.updateSnapshot(ApiJson.gson.toJson(fresh))
+            }
+        }
+    }
+
     val logout: () -> Unit = {
         scope.launch {
             runCatching { apiCall { container.api.logout() } }
@@ -234,11 +242,7 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
             ShopScreen(
                 container = container,
                 onBack = back,
-                onRefreshSession = {
-                    runCatching { apiCall { container.api.me() } }.onSuccess { fresh ->
-                        container.session.updateSnapshot(ApiJson.gson.toJson(fresh))
-                    }
-                },
+                onRefreshSession = refreshSession,
             )
         }
 
@@ -406,6 +410,7 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
                 onAbout = { nav.navigate("about") },
                 onSchedule = { nav.navigate("schedule") },
                 onShop = { nav.navigate("shop") },
+                onRefreshSession = refreshSession,
             )
         }
 

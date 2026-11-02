@@ -35,12 +35,23 @@ MAX_PROFILES_PER_DEVICE = 8
 
 
 def _session_payload(user, learner) -> dict:
-    return {
+    payload = {
         "ok": True,
         "user": user_payload(user),
         "learner": learner_payload(learner),
         "theme": theme_for(user, learner),
     }
+    # Код подключения родителя — часть собственного профиля ученика.
+    # Показываем его только в сессии самого пользователя, но не в общих
+    # списках детей у родителя/учителя/администратора.
+    if (
+        user is not None
+        and payload["user"] is not None
+        and user["role"] == auth_service.ROLE_STUDENT
+        and "child_code" in user.keys()
+    ):
+        payload["user"]["child_code"] = user["child_code"] or None
+    return payload
 
 
 def device_id() -> str:

@@ -22,6 +22,16 @@ class MainActivity : ComponentActivity() {
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
+    override fun onResume() {
+        super.onResume()
+        isInForeground = true
+    }
+
+    override fun onPause() {
+        isInForeground = false
+        super.onPause()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         GoogleBrowserAuth.handleIntent(intent)
@@ -57,5 +67,12 @@ class MainActivity : ComponentActivity() {
         if (!granted) {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
+    }
+
+    companion object {
+        /** Нужно приёмнику после обновления: открылось ли приложение само. */
+        @Volatile
+        var isInForeground: Boolean = false
+            private set
     }
 }
