@@ -8,6 +8,22 @@ FastAPI требует **ASGI**, поэтому v2 запускается отд
 Нужны права в панели AlwaysData (аккаунт `virusadk`). По SSH всё, кроме
 создания базы и сайта, можно сделать скриптами ниже.
 
+## Быстрый путь через API
+
+Если в панели создан ключ (**Settings → API**), базу и сайт можно создать
+одной командой:
+
+```bash
+export ALWAYSDATA_TOKEN='...'
+export ALWAYSDATA_ACCOUNT='virusadk'
+python3 v2/deploy/alwaysdata/provision.py           # только план
+python3 v2/deploy/alwaysdata/provision.py --apply   # создать
+```
+
+Скрипт создаёт пользователя PostgreSQL, базу `virusadk_school` и сайт
+`v2.virusadk.alwaysdata.net`, а строку подключения сохраняет в
+`/tmp/opencode/alwaysdata_secrets.json` (права 600). Дальше — шаги 2–4.
+
 ---
 
 ## 1. PostgreSQL
@@ -18,7 +34,7 @@ FastAPI требует **ASGI**, поэтому v2 запускается отд
 3. Проверка с сервера:
 
 ```bash
-psql 'postgresql://virusadk:ПАРОЛЬ@postgresql-virusadk.alwaysdata.net:5432/virusadk_school' -c 'select version()'
+psql 'postgresql://virusadk_school:ПАРОЛЬ@postgresql-virusadk.alwaysdata.net:5432/virusadk_school' -c 'select version()'
 ```
 
 ## 2. Код и зависимости
@@ -37,6 +53,14 @@ cd v2/frontend
 npm ci
 npm run build
 cd ~/edu-math
+```
+
+Для v2 лучше отдельное окружение, чтобы не менять зависимости живого
+Flask-сайта (скрипт запуска сам выберет его, если оно есть):
+
+```bash
+python3 -m venv ~/.virtualenvs/school-v2
+~/.virtualenvs/school-v2/bin/pip install -r ~/edu-math/v2/backend/requirements.txt
 ```
 
 ## 3. Переменные окружения
