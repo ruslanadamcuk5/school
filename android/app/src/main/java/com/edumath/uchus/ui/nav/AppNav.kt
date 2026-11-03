@@ -479,6 +479,7 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
                 onLibrary = { nav.navigate("library") },
                 onCreate = { nav.navigate("parent_create_assignment") },
                 onMap = { nav.navigate("parent_map") },
+                onRemoteHelp = { nav.navigate("parent_remote/$it") },
             )
         }
 
@@ -487,6 +488,7 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
                 container = container,
                 learnerId = 0,
                 onBack = back,
+                onRemoteHelp = { nav.navigate("parent_remote/$it") },
             )
         }
 
@@ -498,6 +500,7 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
                 container = container,
                 learnerId = entry.arguments?.getInt("id") ?: 0,
                 onBack = back,
+                onRemoteHelp = { nav.navigate("parent_remote/$it") },
             )
         }
 

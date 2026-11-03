@@ -67,6 +67,7 @@ fun ParentScreen(
     onLibrary: () -> Unit,
     onCreate: () -> Unit,
     onMap: () -> Unit,
+    onRemoteHelp: (Int) -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     var tick by remember { mutableStateOf(0) }
@@ -121,7 +122,11 @@ fun ParentScreen(
                 }
 
                 items(data.children) { child ->
-                    ChildCard(child) { onChild(child.learner?.id ?: 0) }
+                    ChildCard(
+                        child = child,
+                        onOpen = { onChild(child.learner?.id ?: 0) },
+                        onHelp = { onRemoteHelp(child.learner?.id ?: 0) },
+                    )
                 }
 
                 item { SectionTitle("Привязать ребёнка") }
@@ -179,32 +184,41 @@ fun ParentScreen(
 }
 
 @Composable
-private fun ChildCard(child: ChildDto, onClick: () -> Unit) {
+private fun ChildCard(
+    child: ChildDto,
+    onOpen: () -> Unit,
+    onHelp: () -> Unit,
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .clickable(onClick = onOpen),
     ) {
-        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(child.emoji, fontSize = 34.sp)
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(child.displayName, fontWeight = FontWeight.SemiBold)
-                Text(
-                    child.classes.firstOrNull()?.displayTitle ?: "${child.grade} класс",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                val stats = child.stats
-                if (stats != null) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Tag("ур. ${stats.level}")
-                        Tag("${stats.xp} опыта")
-                        if (child.grade in 1..4) Tag("${stats.stars} ★")
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(child.emoji, fontSize = 34.sp)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(child.displayName, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        child.classes.firstOrNull()?.displayTitle ?: "${child.grade} класс",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    val stats = child.stats
+                    if (stats != null) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Tag("ур. ${stats.level}")
+                            Tag("${stats.xp} опыта")
+                            if (child.grade in 1..4) Tag("${stats.stars} ★")
+                        }
                     }
                 }
+                Text("→", style = MaterialTheme.typography.titleMedium)
             }
-            Text("→", style = MaterialTheme.typography.titleMedium)
+            OutlinedButton(onClick = onHelp, modifier = Modifier.fillMaxWidth()) {
+                Text("🆘 Удалённая помощь")
+            }
         }
     }
 }
@@ -257,6 +271,17 @@ fun ChildDetailScreen(
                 }
 
                 item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = onMap, modifier = Modifier.weight(1f)) {
+                            Text("🗺 Карта")
+                        }
+                        Button(onClick = onRemoteHelp, modifier = Modifier.weight(1f)) {
+                            Text("🆘 Помощь")
+                        }
+                    }
+                }
+
+                item {
                     if (playful) {
                         StatsRow(
                             "уровень" to "${data.stats?.level ?: 1}",
@@ -281,21 +306,6 @@ fun ChildDetailScreen(
                             KeyValue("Верных", "${data.stats?.totalCorrect ?: 0}")
                             if (playful) KeyValue("Звёзды", "${data.stats?.stars ?: 0}")
                         }
-                    }
-                }
-
-                item {
-                    OutlinedButton(onClick = onMap, modifier = Modifier.fillMaxWidth()) {
-                        Text("🗺 Показать на карте")
-                    }
-                }
-
-                item {
-                    Button(
-                        onClick = onRemoteHelp,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text("🆘 Удалённая помощь")
                     }
                 }
 

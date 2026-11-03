@@ -62,6 +62,7 @@ fun ParentMapScreen(
     container: AppContainer,
     learnerId: Int,
     onBack: () -> Unit,
+    onRemoteHelp: (Int) -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val tzMinutes = remember {
@@ -267,6 +268,12 @@ fun ParentMapScreen(
                                 },
                                 enabled = !busy,
                             ) { Text("🔊 Включить звук на телефоне ребёнка") }
+                            Spacer(Modifier.height(6.dp))
+                            Button(
+                                onClick = { onRemoteHelp(selectedId) },
+                                enabled = selectedId != 0,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) { Text("🆘 Удалённая помощь") }
                         }
                     }
                 }
