@@ -1,0 +1,1003 @@
+-- ============================================================
+--  PostgreSQL schema for the v2 application.
+--  Generated from schema.sql by convert_schema.py.
+--  Do not edit by hand: change schema.sql and regenerate.
+-- ============================================================
+
+-- SQLite-compatible UTC timestamp helper.  The legacy domain layer stores and
+-- compares timestamps as strings in the format YYYY-MM-DD HH:MM:SS.
+CREATE OR REPLACE FUNCTION datetime(ts text, modifier text DEFAULT NULL)
+RETURNS text
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF ts = 'now' THEN
+        IF modifier IS NULL THEN
+            RETURN to_char((now() AT TIME ZONE 'utc'), 'YYYY-MM-DD HH24:MI:SS');
+        END IF;
+        RETURN to_char(
+            (now() AT TIME ZONE 'utc') + modifier::interval,
+            'YYYY-MM-DD HH24:MI:SS'
+        );
+    END IF;
+    IF modifier IS NULL THEN
+        RETURN ts;
+    END IF;
+    RETURN to_char(ts::timestamp + modifier::interval, 'YYYY-MM-DD HH24:MI:SS');
+END;
+$$;
+
+
+-- ============================================================
+--  Схема базы данных «Учусь · 3–4 класс» (SQLite)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS learners (
+    id           SERIAL PRIMARY KEY,
+    name         TEXT    NOT NULL,
+    avatar       TEXT    NOT NULL DEFAULT '🦊',
+    grade        INTEGER NOT NULL DEFAULT 3,
+    pin_hash     TEXT,
+    coins        INTEGER NOT NULL DEFAULT 0,
+    xp           INTEGER NOT NULL DEFAULT 0,
+    streak_days  INTEGER NOT NULL DEFAULT 0,
+    last_day     TEXT,
+    sound_on     INTEGER NOT NULL DEFAULT 1,
+    voice_on     INTEGER NOT NULL DEFAULT 1,
+    daily_limit  INTEGER NOT NULL DEFAULT 0,
+    device_id    TEXT,
+    -- Семья, создавшая профиль в веб-интерфейсе. Случайный ключ хранится
+    -- в подписанной cookie-сессии: профили видны только своей семье.
+    family_key   TEXT,
+    created_at   TEXT    NOT NULL DEFAULT datetime('now')
+);
+
+-- Индексы по learners создаются после миграций (database.migrate): на старой
+-- базе колонок family_key/device_id ещё нет, и CREATE INDEX здесь падал.
+
+-- Счётчики попыток для защиты от подбора паролей и PIN-кодов.
+-- Хранятся на сервере, поэтому очистка cookie не сбрасывает блокировку.
+CREATE TABLE IF NOT EXISTS throttle (
+    key           TEXT PRIMARY KEY,
+    attempts      INTEGER NOT NULL DEFAULT 0,
+    first_at      REAL    NOT NULL DEFAULT 0,
+    locked_until  REAL    NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS topics (
+    id           SERIAL PRIMARY KEY,
+    slug         TEXT    NOT NULL UNIQUE,
+    title        TEXT    NOT NULL,
+    grade        INTEGER NOT NULL,
+    subject_id   INTEGER,
+    textbook_id  INTEGER,
+    source       TEXT    NOT NULL DEFAULT 'manual',   -- curriculum | pdf | manual
+    kind         TEXT    NOT NULL DEFAULT 'reading',  -- practice | reading
+    icon         TEXT    NOT NULL DEFAULT '⭐',
+    color        TEXT    NOT NULL DEFAULT 'sky',
+    part         INTEGER NOT NULL DEFAULT 1,
+    page_start   INTEGER NOT NULL DEFAULT 1,
+    page_end     INTEGER NOT NULL DEFAULT 1,
+    description  TEXT    NOT NULL DEFAULT '',
+    content_json TEXT,
+    min_level    INTEGER NOT NULL DEFAULT 1,
+    order_index  INTEGER NOT NULL DEFAULT 0,
+    created_at   TEXT    NOT NULL DEFAULT datetime('now')
+);
+
+CREATE TABLE IF NOT EXISTS methods (
+    id           SERIAL PRIMARY KEY,
+    topic_slug   TEXT    NOT NULL,
+    slug         TEXT    NOT NULL,
+    name         TEXT    NOT NULL,
+    widget       TEXT    NOT NULL DEFAULT 'none',
+    explanation  TEXT    NOT NULL DEFAULT '',
+    steps_json   TEXT    NOT NULL DEFAULT '[]',
+    example_key  TEXT,
+    order_index  INTEGER NOT NULL DEFAULT 0,
+    UNIQUE (topic_slug, slug),
+    FOREIGN KEY (topic_slug) REFERENCES topics(slug)
+);
+
+CREATE TABLE IF NOT EXISTS attempts (
+    id           SERIAL PRIMARY KEY,
+    learner_id   INTEGER NOT NULL,
+    topic_slug   TEXT    NOT NULL,
+    method_slug  TEXT,
+    generator    TEXT,
+    correct      INTEGER NOT NULL DEFAULT 0,
+    given_answer TEXT,
+    expected     TEXT,
+    time_ms      INTEGER NOT NULL DEFAULT 0,
+    hints_used   INTEGER NOT NULL DEFAULT 0,
+    mode         TEXT    NOT NULL DEFAULT 'practice',
+    created_at   TEXT    NOT NULL DEFAULT datetime('now')
+);
+
+CREATE INDEX IF NOT EXISTS idx_attempts_learner ON attempts(learner_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_attempts_topic ON attempts(learner_id, topic_slug);
+
+CREATE TABLE IF NOT EXISTS topic_progress (
+    learner_id   INTEGER NOT NULL,
+    topic_slug   TEXT    NOT NULL,
+    stars        INTEGER NOT NULL DEFAULT 0,
+    best_streak  INTEGER NOT NULL DEFAULT 0,
+    best_accuracy REAL   NOT NULL DEFAULT 0,
+    attempts     INTEGER NOT NULL DEFAULT 0,
+    correct      INTEGER NOT NULL DEFAULT 0,
+    boss_cleared INTEGER NOT NULL DEFAULT 0,
+    updated_at   TEXT    NOT NULL DEFAULT datetime('now'),
+    PRIMARY KEY (learner_id, topic_slug)
+);
+
+CREATE TABLE IF NOT EXISTS method_progress (
+    learner_id   INTEGER NOT NULL,
+    topic_slug   TEXT    NOT NULL,
+    method_slug  TEXT    NOT NULL,
+    seen         INTEGER NOT NULL DEFAULT 0,
+    attempts     INTEGER NOT NULL DEFAULT 0,
+    correct      INTEGER NOT NULL DEFAULT 0,
+    mastered     INTEGER NOT NULL DEFAULT 0,
+    updated_at   TEXT    NOT NULL DEFAULT datetime('now'),
+    PRIMARY KEY (learner_id, topic_slug, method_slug)
+);
+
+CREATE TABLE IF NOT EXISTS badges (
+    id           SERIAL PRIMARY KEY,
+    learner_id   INTEGER NOT NULL,
+    badge_key    TEXT    NOT NULL,
+    earned_at    TEXT    NOT NULL DEFAULT datetime('now'),
+    UNIQUE (learner_id, badge_key)
+);
+
+CREATE TABLE IF NOT EXISTS daily_answers (
+    learner_id   INTEGER NOT NULL,
+    day          TEXT    NOT NULL,
+    generator    TEXT    NOT NULL,
+    correct      INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (learner_id, day, generator)
+);
+
+CREATE TABLE IF NOT EXISTS play_sessions (
+    id           SERIAL PRIMARY KEY,
+    learner_id   INTEGER NOT NULL,
+    topic_slug   TEXT    NOT NULL,
+    mode         TEXT    NOT NULL DEFAULT 'practice',
+    started_at   TEXT    NOT NULL DEFAULT datetime('now'),
+    ended_at     TEXT,
+    task_count   INTEGER NOT NULL DEFAULT 0,
+    correct_count INTEGER NOT NULL DEFAULT 0,
+    xp_gained    INTEGER NOT NULL DEFAULT 0,
+    round_state  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_learner ON play_sessions(learner_id, started_at);
+
+CREATE TABLE IF NOT EXISTS app_meta (
+    key          TEXT PRIMARY KEY,
+    value        TEXT
+);
+
+-- ============================================================
+--  МНОГОПОЛЬЗОВАТЕЛЬСКАЯ ЧАСТЬ: организации, аккаунты, курсы
+-- ============================================================
+
+-- Аккаунты пользователей: admin | teacher | student | parent
+CREATE TABLE IF NOT EXISTS users (
+    id            SERIAL PRIMARY KEY,
+    login         TEXT    NOT NULL UNIQUE,
+    email         TEXT,
+    password_hash TEXT    NOT NULL,
+    role          TEXT    NOT NULL DEFAULT 'student',
+    first_name    TEXT    NOT NULL DEFAULT '',
+    last_name     TEXT    NOT NULL DEFAULT '',
+    avatar        TEXT    NOT NULL DEFAULT '🦊',
+    phone         TEXT,
+    city_id       INTEGER,
+    school_id     INTEGER,
+    child_code    TEXT,
+    is_active     INTEGER NOT NULL DEFAULT 1,
+    -- идентификатор Google-аккаунта (поле sub из OpenID Connect)
+    google_sub    TEXT,
+    created_at    TEXT    NOT NULL DEFAULT datetime('now'),
+    last_login    TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+CREATE INDEX IF NOT EXISTS idx_users_school ON users(school_id);
+-- Уникальный индекс users(google_sub) создаётся в database.migrate():
+-- на существующей базе колонка появляется только после ALTER TABLE.
+
+-- Привязка аккаунта ученика к профилю прогресса
+CREATE TABLE IF NOT EXISTS learner_accounts (
+    learner_id    INTEGER PRIMARY KEY,
+    user_id       INTEGER NOT NULL UNIQUE,
+    linked_at     TEXT NOT NULL DEFAULT datetime('now'),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Географическая структура: город → школа → класс
+CREATE TABLE IF NOT EXISTS cities (
+    id            SERIAL PRIMARY KEY,
+    name          TEXT NOT NULL UNIQUE,
+    region        TEXT,
+    created_at    TEXT NOT NULL DEFAULT datetime('now')
+);
+
+CREATE TABLE IF NOT EXISTS schools (
+    id            SERIAL PRIMARY KEY,
+    city_id       INTEGER NOT NULL,
+    name          TEXT NOT NULL,
+    short_name    TEXT,
+    address       TEXT,
+    director      TEXT,
+    created_at    TEXT NOT NULL DEFAULT datetime('now'),
+    UNIQUE (city_id, name),
+    FOREIGN KEY (city_id) REFERENCES cities(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_schools_city ON schools(city_id);
+
+-- Учебный класс (3 «А», 4 «Б» и т.д.) с ведущим учителем
+CREATE TABLE IF NOT EXISTS school_classes (
+    id            SERIAL PRIMARY KEY,
+    school_id     INTEGER NOT NULL,
+    grade         INTEGER NOT NULL,
+    letter        TEXT NOT NULL DEFAULT '',
+    title         TEXT,
+    teacher_id    INTEGER,
+    year          TEXT NOT NULL DEFAULT '2025/2026',
+    created_at    TEXT NOT NULL DEFAULT datetime('now'),
+    UNIQUE (school_id, grade, letter, year),
+    FOREIGN KEY (school_id) REFERENCES schools(id) ON DELETE CASCADE,
+    FOREIGN KEY (teacher_id) REFERENCES users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_classes_school ON school_classes(school_id);
+CREATE INDEX IF NOT EXISTS idx_classes_teacher ON school_classes(teacher_id);
+
+-- Ученики в классах (у ученика может быть несколько классов/параллелей)
+CREATE TABLE IF NOT EXISTS class_students (
+    class_id      INTEGER NOT NULL,
+    student_id    INTEGER NOT NULL,
+    joined_at     TEXT NOT NULL DEFAULT datetime('now'),
+    PRIMARY KEY (class_id, student_id),
+    FOREIGN KEY (class_id) REFERENCES school_classes(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_class_students_student ON class_students(student_id);
+
+-- Связь родителя с детьми
+CREATE TABLE IF NOT EXISTS parent_children (
+    parent_id     INTEGER NOT NULL,
+    child_id      INTEGER NOT NULL,
+    relation      TEXT NOT NULL DEFAULT 'родитель',
+    created_at    TEXT NOT NULL DEFAULT datetime('now'),
+    PRIMARY KEY (parent_id, child_id),
+    FOREIGN KEY (parent_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (child_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Предметы
+CREATE TABLE IF NOT EXISTS subjects (
+    id            SERIAL PRIMARY KEY,
+    slug          TEXT NOT NULL UNIQUE,
+    name          TEXT NOT NULL,
+    icon          TEXT NOT NULL DEFAULT '📘',
+    color         TEXT NOT NULL DEFAULT 'sky',
+    description   TEXT,
+    is_active     INTEGER NOT NULL DEFAULT 1,
+    order_index   INTEGER NOT NULL DEFAULT 0
+);
+
+-- Курс предмета (программа для класса/параллели)
+CREATE TABLE IF NOT EXISTS courses (
+    id            SERIAL PRIMARY KEY,
+    subject_id    INTEGER NOT NULL,
+    title         TEXT NOT NULL,
+    description   TEXT,
+    grade         INTEGER NOT NULL DEFAULT 3,
+    teacher_id    INTEGER,
+    school_id     INTEGER,
+    is_active     INTEGER NOT NULL DEFAULT 1,
+    created_at    TEXT NOT NULL DEFAULT datetime('now'),
+    FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+    FOREIGN KEY (teacher_id) REFERENCES users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_courses_teacher ON courses(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_courses_subject ON courses(subject_id);
+
+-- Темы, включённые в курс (учитель настраивает состав и порядок)
+CREATE TABLE IF NOT EXISTS course_topics (
+    course_id     INTEGER NOT NULL,
+    topic_slug    TEXT NOT NULL,
+    order_index   INTEGER NOT NULL DEFAULT 0,
+    enabled       INTEGER NOT NULL DEFAULT 1,
+    PRIMARY KEY (course_id, topic_slug),
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+);
+
+-- Классы, подключённые к курсу
+CREATE TABLE IF NOT EXISTS course_classes (
+    course_id     INTEGER NOT NULL,
+    class_id      INTEGER NOT NULL,
+    PRIMARY KEY (course_id, class_id),
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    FOREIGN KEY (class_id) REFERENCES school_classes(id) ON DELETE CASCADE
+);
+
+-- Учебные пособия (PDF), загруженные администратором
+CREATE TABLE IF NOT EXISTS textbooks (
+    id            SERIAL PRIMARY KEY,
+    subject_id    INTEGER NOT NULL,
+    grade         INTEGER NOT NULL,
+    title         TEXT NOT NULL,
+    author        TEXT,
+    publisher     TEXT,
+    year          TEXT,
+    filename      TEXT NOT NULL,
+    original_name TEXT,
+    size_bytes    INTEGER NOT NULL DEFAULT 0,
+    pages         INTEGER NOT NULL DEFAULT 0,
+    description   TEXT,
+    uploaded_by   INTEGER,
+    created_at    TEXT NOT NULL DEFAULT datetime('now'),
+    FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+    FOREIGN KEY (uploaded_by) REFERENCES users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_textbooks_grade ON textbooks(subject_id, grade);
+
+-- Привязка пособия к теме и странице
+CREATE TABLE IF NOT EXISTS textbook_topics (
+    textbook_id   INTEGER NOT NULL,
+    topic_slug    TEXT NOT NULL,
+    page          INTEGER NOT NULL DEFAULT 1,
+    page_end      INTEGER NOT NULL DEFAULT 1,
+    PRIMARY KEY (textbook_id, topic_slug),
+    FOREIGN KEY (textbook_id) REFERENCES textbooks(id) ON DELETE CASCADE
+);
+
+-- Проверочные и контрольные работы
+CREATE TABLE IF NOT EXISTS assignments (
+    id              SERIAL PRIMARY KEY,
+    title           TEXT NOT NULL,
+    kind            TEXT NOT NULL DEFAULT 'проверочная',
+    description     TEXT,
+    course_id       INTEGER,
+    subject_id      INTEGER,
+    class_id        INTEGER,
+    teacher_id      INTEGER,
+    author_role     TEXT,
+    student_id      INTEGER,
+    topic_slugs     TEXT NOT NULL DEFAULT '[]',
+    questions_json  TEXT NOT NULL DEFAULT '[]',
+    -- test | read | dictation | other
+    task_type       TEXT NOT NULL DEFAULT 'test',
+    -- текст диктанта / текст темы для чтения (ученику не показывается до сдачи)
+    reference_text  TEXT,
+    -- что произносит синтезатор речи при выполнении
+    audio_text      TEXT,
+    allow_photo     INTEGER NOT NULL DEFAULT 1,
+    allow_text      INTEGER NOT NULL DEFAULT 1,
+    questions_count INTEGER NOT NULL DEFAULT 10,
+    time_limit      INTEGER NOT NULL DEFAULT 0,
+    due_date        TEXT,
+    status          TEXT NOT NULL DEFAULT 'черновик',
+    created_at      TEXT NOT NULL DEFAULT datetime('now'),
+    published_at    TEXT,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL,
+    FOREIGN KEY (class_id) REFERENCES school_classes(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (teacher_id) REFERENCES users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_assignments_class ON assignments(class_id, status);
+CREATE INDEX IF NOT EXISTS idx_assignments_teacher ON assignments(teacher_id);
+
+-- Уведомления (доставляются в веб-кабинет и в Android-приложение).
+--
+-- dedup_key защищает от повторов одного и того же события, но не мешает
+-- отправлять несколько произвольных сообщений: у сообщений ключ уникальный.
+CREATE TABLE IF NOT EXISTS app_notifications (
+    id              SERIAL PRIMARY KEY,
+    -- NULL — уведомление семейному профилю без аккаунта (learner_id).
+    user_id         INTEGER,
+    kind            TEXT    NOT NULL,
+    title           TEXT    NOT NULL,
+    body            TEXT    NOT NULL,
+    assignment_id   INTEGER NOT NULL DEFAULT 0,
+    student_id      INTEGER NOT NULL DEFAULT 0,
+    -- профиль ребёнка без аккаунта (семейный режим)
+    learner_id      INTEGER NOT NULL DEFAULT 0,
+    class_id        INTEGER NOT NULL DEFAULT 0,
+    sender_id       INTEGER NOT NULL DEFAULT 0,
+    link            TEXT    NOT NULL DEFAULT '',
+    dedup_key       TEXT    NOT NULL DEFAULT '',
+    is_read         INTEGER NOT NULL DEFAULT 0,
+    read_at         TEXT,
+    created_at      TEXT    NOT NULL DEFAULT datetime('now'),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Индексы создаются в database._migrate_notifications(): на старой базе
+-- колонки dedup_key ещё нет, и CREATE INDEX здесь ломал весь executescript.
+
+-- Выполненные работы
+CREATE TABLE IF NOT EXISTS assignment_results (
+    id              SERIAL PRIMARY KEY,
+    assignment_id   INTEGER NOT NULL,
+    student_id      INTEGER NOT NULL,
+    score           INTEGER NOT NULL DEFAULT 0,
+    max_score       INTEGER NOT NULL DEFAULT 0,
+    answers         TEXT NOT NULL DEFAULT '[]',
+    duration_sec    INTEGER NOT NULL DEFAULT 0,
+    -- inline | photo | mixed
+    submission_type TEXT NOT NULL DEFAULT 'inline',
+    photos          TEXT NOT NULL DEFAULT '[]',
+    -- not_requested | pending | checked | failed | disabled
+    ai_status       TEXT NOT NULL DEFAULT 'not_requested',
+    ai_feedback     TEXT,
+    ai_model        TEXT,
+    ai_score        INTEGER,
+    started_at      TEXT,
+    completed_at    TEXT,
+    UNIQUE (assignment_id, student_id),
+    FOREIGN KEY (assignment_id) REFERENCES assignments(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Расписание уроков класса
+CREATE TABLE IF NOT EXISTS schedules (
+    id            SERIAL PRIMARY KEY,
+    class_id      INTEGER NOT NULL,
+    subject_id    INTEGER,
+    teacher_id    INTEGER,
+    weekday       INTEGER NOT NULL DEFAULT 1,
+    lesson_no     INTEGER NOT NULL DEFAULT 1,
+    time_start    TEXT,
+    time_end      TEXT,
+    topic_slug    TEXT,
+    note          TEXT,
+    FOREIGN KEY (class_id) REFERENCES school_classes(id) ON DELETE CASCADE,
+    FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_schedules_class ON schedules(class_id, weekday);
+
+-- Журнал действий администратора
+CREATE TABLE IF NOT EXISTS audit_log (
+    id            SERIAL PRIMARY KEY,
+    user_id       INTEGER,
+    action        TEXT NOT NULL,
+    entity        TEXT,
+    entity_id     TEXT,
+    details       TEXT,
+    created_at    TEXT NOT NULL DEFAULT datetime('now')
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at);
+
+-- ============================================================
+--  БИБЛИОТЕКА: книги учителя и доступ учеников
+-- ============================================================
+
+-- Книга, которую учитель загрузил в библиотеку школы.
+-- Файл (PDF) хранится в textbooks; темы берутся из оглавления книги.
+CREATE TABLE IF NOT EXISTS library_books (
+    id            SERIAL PRIMARY KEY,
+    owner_id      INTEGER NOT NULL,
+    textbook_id   INTEGER NOT NULL,
+    subject_id    INTEGER,
+    grade         INTEGER,
+    title         TEXT NOT NULL,
+    author        TEXT,
+    description   TEXT,
+    created_at    TEXT NOT NULL DEFAULT datetime('now'),
+    FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (textbook_id) REFERENCES textbooks(id) ON DELETE CASCADE,
+    FOREIGN KEY (subject_id) REFERENCES subjects(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_library_books_owner ON library_books(owner_id);
+CREATE INDEX IF NOT EXISTS idx_library_books_textbook ON library_books(textbook_id);
+CREATE INDEX IF NOT EXISTS idx_library_books_subject ON library_books(subject_id, grade);
+
+-- Классы, которым доступна книга: их ученики видят её в своей библиотеке.
+CREATE TABLE IF NOT EXISTS library_book_classes (
+    book_id    INTEGER NOT NULL,
+    class_id   INTEGER NOT NULL,
+    added_at   TEXT NOT NULL DEFAULT datetime('now'),
+    PRIMARY KEY (book_id, class_id),
+    FOREIGN KEY (book_id) REFERENCES library_books(id) ON DELETE CASCADE,
+    FOREIGN KEY (class_id) REFERENCES school_classes(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_library_book_classes_class ON library_book_classes(class_id);
+
+-- Рекомендация учителя: конкретная тема книги (или книга целиком)
+-- классу либо отдельному ученику.
+CREATE TABLE IF NOT EXISTS library_recommendations (
+    id            SERIAL PRIMARY KEY,
+    teacher_id    INTEGER NOT NULL,
+    book_id       INTEGER NOT NULL,
+    topic_slug    TEXT,
+    target_kind   TEXT NOT NULL DEFAULT 'student',  -- student | class
+    student_id    INTEGER,
+    class_id      INTEGER,
+    note          TEXT,
+    created_at    TEXT NOT NULL DEFAULT datetime('now'),
+    FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (book_id) REFERENCES library_books(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (class_id) REFERENCES school_classes(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_lib_rec_student ON library_recommendations(student_id);
+CREATE INDEX IF NOT EXISTS idx_lib_rec_class ON library_recommendations(class_id);
+CREATE INDEX IF NOT EXISTS idx_lib_rec_teacher ON library_recommendations(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_lib_rec_book ON library_recommendations(book_id);
+
+-- Отметка «прочитано» — своя для каждого ученика,
+-- даже если рекомендация выдана целому классу.
+CREATE TABLE IF NOT EXISTS library_recommendation_done (
+    rec_id      INTEGER NOT NULL,
+    student_id  INTEGER NOT NULL,
+    done_at     TEXT NOT NULL DEFAULT datetime('now'),
+    PRIMARY KEY (rec_id, student_id),
+    FOREIGN KEY (rec_id) REFERENCES library_recommendations(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- ============================================================
+--  ИИ: настройки облачной модели, кэш объяснений и журнал запросов
+-- ============================================================
+
+-- Единственная строка с настройками подключения к облачной модели.
+-- Пока enabled = 0 или нет ключа, все функции ИИ скрыты и приложение
+-- работает полностью офлайн.
+CREATE TABLE IF NOT EXISTS ai_settings (
+    id           INTEGER PRIMARY KEY CHECK (id = 1),
+    enabled      INTEGER NOT NULL DEFAULT 0,
+    provider     TEXT    NOT NULL DEFAULT 'openrouter',
+    base_url     TEXT    NOT NULL DEFAULT 'https://openrouter.ai/api/v1',
+    api_key      TEXT,
+    model        TEXT    NOT NULL DEFAULT 'openai/gpt-4o-mini',
+    temperature  REAL    NOT NULL DEFAULT 0.3,
+    max_tokens   INTEGER NOT NULL DEFAULT 900,
+    system_note  TEXT,
+    updated_at   TEXT    NOT NULL DEFAULT datetime('now')
+);
+
+INSERT INTO ai_settings (id) VALUES (1) ON CONFLICT DO NOTHING;
+
+-- Готовые объяснения тем: генерируются один раз и показываются сразу,
+-- поэтому страницы остаются быстрыми, а объяснения доступны и без сети.
+CREATE TABLE IF NOT EXISTS ai_explanations (
+    id          SERIAL PRIMARY KEY,
+    topic_slug  TEXT    NOT NULL UNIQUE,
+    grade       INTEGER,
+    model       TEXT,
+    content     TEXT    NOT NULL,
+    created_at  TEXT    NOT NULL DEFAULT datetime('now')
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_explanations_slug ON ai_explanations(topic_slug);
+
+-- Вопросы по теме, составленные ИИ. Кэш на тему: один запрос на всех учеников.
+CREATE TABLE IF NOT EXISTS ai_quizzes (
+    topic_slug  TEXT    PRIMARY KEY,
+    grade       INTEGER,
+    model       TEXT,
+    payload     TEXT    NOT NULL,
+    created_at  TEXT    NOT NULL DEFAULT datetime('now')
+);
+
+-- Журнал обращений к ИИ: помогает администратору видеть ошибки и активность.
+CREATE TABLE IF NOT EXISTS ai_requests (
+    id          SERIAL PRIMARY KEY,
+    user_id     INTEGER,
+    kind        TEXT    NOT NULL,
+    model       TEXT,
+    ok          INTEGER NOT NULL DEFAULT 0,
+    detail      TEXT,
+    created_at  TEXT    NOT NULL DEFAULT datetime('now')
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_requests_created ON ai_requests(created_at);
+
+-- ============================================================
+--  YouTube: подключение и обучающие видео к темам
+-- ============================================================
+
+-- Единственная строка с настройками YouTube Data API v3. Ключ хранится
+-- только на сервере и никогда не отдаётся в браузер или мобильное приложение.
+CREATE TABLE IF NOT EXISTS youtube_settings (
+    id                 INTEGER PRIMARY KEY CHECK (id = 1),
+    enabled            INTEGER NOT NULL DEFAULT 0,
+    api_key            TEXT,
+    region_code        TEXT    NOT NULL DEFAULT 'BY',
+    relevance_language TEXT    NOT NULL DEFAULT 'ru',
+    max_per_topic      INTEGER NOT NULL DEFAULT 3,
+    min_duration       INTEGER NOT NULL DEFAULT 60,
+    max_duration       INTEGER NOT NULL DEFAULT 3600,
+    cache_days         INTEGER NOT NULL DEFAULT 14,
+    ai_ranking         INTEGER NOT NULL DEFAULT 1,
+    updated_at         TEXT    NOT NULL DEFAULT datetime('now')
+);
+
+INSERT INTO youtube_settings (id) VALUES (1) ON CONFLICT DO NOTHING;
+
+-- Видео темы: ручные ссылки администратора (source='manual') и
+-- автоматически подобранные ролики (source='auto'). Ручные показываются первыми.
+CREATE TABLE IF NOT EXISTS topic_videos (
+    id          SERIAL PRIMARY KEY,
+    topic_slug  TEXT    NOT NULL,
+    video_id    TEXT    NOT NULL,
+    title       TEXT    NOT NULL DEFAULT '',
+    channel     TEXT    NOT NULL DEFAULT '',
+    description TEXT    NOT NULL DEFAULT '',
+    thumbnail   TEXT    NOT NULL DEFAULT '',
+    duration    INTEGER NOT NULL DEFAULT 0,
+    source      TEXT    NOT NULL DEFAULT 'auto',   -- manual | auto
+    position    INTEGER NOT NULL DEFAULT 0,
+    blocked     INTEGER NOT NULL DEFAULT 0,
+    query       TEXT    NOT NULL DEFAULT '',
+    created_at  TEXT    NOT NULL DEFAULT datetime('now'),
+    updated_at  TEXT    NOT NULL DEFAULT datetime('now'),
+    UNIQUE (topic_slug, video_id),
+    FOREIGN KEY (topic_slug) REFERENCES topics(slug) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_topic_videos_slug
+    ON topic_videos(topic_slug, blocked, source, position);
+
+-- Состояние кэша по теме: когда искали, чем закончилось, когда повторять.
+CREATE TABLE IF NOT EXISTS topic_video_cache (
+    topic_slug  TEXT    PRIMARY KEY,
+    query       TEXT    NOT NULL DEFAULT '',
+    status      TEXT    NOT NULL DEFAULT 'ok',   -- ok | empty | error
+    error       TEXT    NOT NULL DEFAULT '',
+    found       INTEGER NOT NULL DEFAULT 0,
+    selected    INTEGER NOT NULL DEFAULT 0,
+    checked_at  TEXT    NOT NULL DEFAULT datetime('now'),
+    expires_at  TEXT,
+    FOREIGN KEY (topic_slug) REFERENCES topics(slug) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_topic_video_cache_expires
+    ON topic_video_cache(expires_at);
+
+-- ============================================================
+--  Мобильный API: долгоживущие токены (Bearer) вместо cookie-сессий
+-- ============================================================
+
+-- В базе хранится только SHA-256 от токена: утечка базы не даёт войти.
+CREATE TABLE IF NOT EXISTS api_tokens (
+    id           SERIAL PRIMARY KEY,
+    token_hash   TEXT    NOT NULL UNIQUE,
+    kind         TEXT    NOT NULL DEFAULT 'user',   -- user | learner
+    user_id      INTEGER,
+    learner_id   INTEGER,
+    label        TEXT,
+    created_at   TEXT    NOT NULL DEFAULT datetime('now'),
+    last_used_at TEXT,
+    expires_at   TEXT,
+    revoked      INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_api_tokens_hash ON api_tokens(token_hash);
+CREATE INDEX IF NOT EXISTS idx_api_tokens_user ON api_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_api_tokens_learner ON api_tokens(learner_id);
+
+
+
+-- Кто из родителей/учителей открывал разбор работы (отметки о прочтении).
+CREATE TABLE IF NOT EXISTS assignment_views (
+    assignment_id INTEGER NOT NULL,
+    student_id    INTEGER NOT NULL,
+    viewer_id     INTEGER NOT NULL,
+    role          TEXT    NOT NULL DEFAULT '',
+    viewed_at     TEXT    NOT NULL DEFAULT datetime('now'),
+    PRIMARY KEY (assignment_id, student_id, viewer_id),
+    FOREIGN KEY (assignment_id) REFERENCES assignments(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_assignment_views_student
+    ON assignment_views(student_id, assignment_id);
+
+-- Проверка самодельных тестов по фото (ребёнок сам открыл тему и отвечает).
+CREATE TABLE IF NOT EXISTS self_quiz_reviews (
+    id           SERIAL PRIMARY KEY,
+    learner_id   INTEGER NOT NULL,
+    topic_slug   TEXT    NOT NULL,
+    quiz_token   TEXT    NOT NULL DEFAULT '',
+    photos       TEXT    NOT NULL DEFAULT '[]',
+    details      TEXT    NOT NULL DEFAULT '[]',
+    score        INTEGER NOT NULL DEFAULT 0,
+    max_score    INTEGER NOT NULL DEFAULT 0,
+    ai_status    TEXT    NOT NULL DEFAULT 'not_requested',
+    ai_feedback  TEXT,
+    ai_model     TEXT,
+    ai_score     INTEGER,
+    created_at   TEXT    NOT NULL DEFAULT datetime('now'),
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_self_quiz_reviews_learner
+    ON self_quiz_reviews(learner_id, created_at);
+
+-- ============================================================
+--  Магазин: покупки за монеты и опыт
+-- ============================================================
+
+-- Купленные предметы. Для расходуемых (подсказки, щиты) quantity > 1;
+-- для постоянных quantity = 1. progress — рост питомца.
+CREATE TABLE IF NOT EXISTS learner_items (
+    id          SERIAL PRIMARY KEY,
+    learner_id  INTEGER NOT NULL,
+    item_key    TEXT    NOT NULL,
+    quantity    INTEGER NOT NULL DEFAULT 1,
+    progress    INTEGER NOT NULL DEFAULT 0,
+    -- День последнего «поглаживания»: питомец даёт опыт не чаще раза в сутки.
+    last_pat_day TEXT   NOT NULL DEFAULT '',
+    -- Стадия, которую ребёнок уже видел: нужна, чтобы один раз показать
+    -- «я подрос», а не повторять это при каждом открытии экрана.
+    seen_stage  INTEGER NOT NULL DEFAULT 0,
+    equipped    INTEGER NOT NULL DEFAULT 0,
+    slot        TEXT    NOT NULL DEFAULT '',
+    acquired_at TEXT    NOT NULL DEFAULT datetime('now'),
+    updated_at  TEXT    NOT NULL DEFAULT datetime('now'),
+    UNIQUE (learner_id, item_key),
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_learner_items_learner
+    ON learner_items(learner_id);
+
+-- История покупок: чтобы видеть, куда ушли монеты и опыт.
+CREATE TABLE IF NOT EXISTS shop_purchases (
+    id         SERIAL PRIMARY KEY,
+    learner_id INTEGER NOT NULL,
+    item_key   TEXT    NOT NULL,
+    paid_coins INTEGER NOT NULL DEFAULT 0,
+    paid_xp    INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT    NOT NULL DEFAULT datetime('now'),
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_shop_purchases_learner
+    ON shop_purchases(learner_id, created_at);
+
+-- Активные усилители (двойной опыт/монеты) с временем окончания.
+CREATE TABLE IF NOT EXISTS learner_effects (
+    learner_id INTEGER NOT NULL,
+    effect     TEXT    NOT NULL,
+    value      REAL    NOT NULL DEFAULT 0,
+    expires_at TEXT,
+    updated_at TEXT    NOT NULL DEFAULT datetime('now'),
+    PRIMARY KEY (learner_id, effect),
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
+);
+
+-- Ежедневный бесплатный сундук.
+CREATE TABLE IF NOT EXISTS daily_chests (
+    learner_id INTEGER PRIMARY KEY,
+    last_day   TEXT    NOT NULL,
+    updated_at TEXT    NOT NULL DEFAULT datetime('now'),
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
+);
+
+-- Настройки витрины: товар дня, объявление для детей.
+CREATE TABLE IF NOT EXISTS shop_settings (
+    key        TEXT PRIMARY KEY,
+    value      TEXT NOT NULL DEFAULT '',
+    updated_at TEXT NOT NULL DEFAULT datetime('now')
+);
+
+-- Админские правки каталога. NULL в поле — «как в коде», поэтому каталог
+-- остаётся версионируемым, а админ может менять цены и доступность.
+CREATE TABLE IF NOT EXISTS shop_item_overrides (
+    item_key         TEXT PRIMARY KEY,
+    price_coins      INTEGER,
+    price_xp         INTEGER,
+    discount_percent INTEGER,
+    level            INTEGER,
+    name             TEXT,
+    icon             TEXT,
+    tagline          TEXT,
+    description      TEXT,
+    is_active        INTEGER NOT NULL DEFAULT 1,
+    updated_at       TEXT NOT NULL DEFAULT datetime('now')
+);
+
+-- Живые события магазина: двойные монеты/опыт или скидка на всё.
+CREATE TABLE IF NOT EXISTS shop_events (
+    id          SERIAL PRIMARY KEY,
+    title       TEXT    NOT NULL,
+    description TEXT    NOT NULL DEFAULT '',
+    icon        TEXT    NOT NULL DEFAULT '🎉',
+    kind        TEXT    NOT NULL DEFAULT 'double_coins',
+    value       REAL    NOT NULL DEFAULT 2,
+    starts_on   TEXT    NOT NULL,
+    ends_on     TEXT    NOT NULL,
+    is_active   INTEGER NOT NULL DEFAULT 1,
+    created_by  INTEGER,
+    created_at  TEXT    NOT NULL DEFAULT datetime('now')
+);
+
+CREATE INDEX IF NOT EXISTS idx_shop_events_window
+    ON shop_events(is_active, starts_on, ends_on);
+
+-- Подарки от администратора конкретному ребёнку. Ребёнок забирает подарок
+-- сам: так он видит причину («за что») и получает эффект в момент открытия.
+CREATE TABLE IF NOT EXISTS shop_gifts (
+    id         SERIAL PRIMARY KEY,
+    learner_id INTEGER NOT NULL,
+    item_key   TEXT    NOT NULL DEFAULT '',
+    coins      INTEGER NOT NULL DEFAULT 0,
+    xp         INTEGER NOT NULL DEFAULT 0,
+    reason     TEXT    NOT NULL DEFAULT '',
+    message    TEXT    NOT NULL DEFAULT '',
+    status     TEXT    NOT NULL DEFAULT 'pending',
+    gifted_by  INTEGER,
+    created_at TEXT    NOT NULL DEFAULT datetime('now'),
+    claimed_at TEXT,
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_shop_gifts_learner
+    ON shop_gifts(learner_id, status, created_at);
+
+-- Геолокация: передача включена всегда, родитель видит точку и трек.
+-- force_* — команда родителя «включить геолокацию на телефоне ребёнка»;
+-- ребёнок подтверждает её, когда служба геолокации действительно запущена.
+-- История хранится ограниченное время (RETENTION_DAYS).
+CREATE TABLE IF NOT EXISTS location_sharing (
+    learner_id        INTEGER PRIMARY KEY,
+    enabled           INTEGER NOT NULL DEFAULT 1,
+    updated_by        INTEGER,
+    updated_at        TEXT    NOT NULL DEFAULT datetime('now'),
+    last_point_at     TEXT,
+    force_requested_at TEXT,
+    force_requested_by INTEGER,
+    force_ack_at      TEXT,
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS learner_locations (
+    id          SERIAL PRIMARY KEY,
+    learner_id  INTEGER NOT NULL,
+    lat         REAL    NOT NULL,
+    lon         REAL    NOT NULL,
+    accuracy    REAL,
+    altitude    REAL,
+    speed       REAL,
+    battery     INTEGER,
+    source      TEXT    NOT NULL DEFAULT 'gps',
+    recorded_at TEXT    NOT NULL,
+    created_at  TEXT    NOT NULL DEFAULT datetime('now'),
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_locations_point
+    ON learner_locations(learner_id, recorded_at);
+
+-- Звуковой вызов: родитель включает громкий сигнал на телефоне ребёнка.
+-- Команда живёт две минуты, чтобы старое «позвать» не зазвонило неожиданно.
+-- Подтверждение ребёнка не требуется: сигнал будильника слышен и в беззвучном
+-- режиме. Переключить системный режим можно только с доступом к «Не беспокоить».
+CREATE TABLE IF NOT EXISTS sound_commands (
+    id           SERIAL PRIMARY KEY,
+    learner_id   INTEGER NOT NULL,
+    requested_by INTEGER,
+    status       TEXT    NOT NULL DEFAULT 'pending',
+    created_at   TEXT    NOT NULL DEFAULT datetime('now'),
+    delivered_at TEXT,
+    finished_at  TEXT,
+    mode         TEXT    NOT NULL DEFAULT '',
+    detail       TEXT    NOT NULL DEFAULT '',
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_sound_commands_learner
+    ON sound_commands(learner_id, status, id);
+
+-- Удалённая помощь: родитель видит экран ребёнка и может нажимать за него.
+-- Сессия создаётся только по запросу родителя и становится активной после
+-- явного разрешения на телефоне ребёнка. Экран передаётся кадрами JPEG.
+CREATE TABLE IF NOT EXISTS remote_sessions (
+    id            SERIAL PRIMARY KEY,
+    child_user_id INTEGER NOT NULL,
+    parent_user_id INTEGER NOT NULL,
+    status        TEXT    NOT NULL DEFAULT 'pending',
+    created_at    TEXT    NOT NULL DEFAULT datetime('now'),
+    accepted_at   TEXT,
+    ended_at      TEXT,
+    ended_by      TEXT    NOT NULL DEFAULT '',
+    last_seen_at  TEXT,
+    last_frame_at TEXT,
+    frame_width   INTEGER NOT NULL DEFAULT 0,
+    frame_height  INTEGER NOT NULL DEFAULT 0,
+    can_control   INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (child_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_remote_sessions_child
+    ON remote_sessions(child_user_id, status, id);
+
+-- Команды управления: нажатие, свайп, системные кнопки. Координаты
+-- хранятся долями экрана (0..1), чтобы не зависеть от разрешения телефона.
+CREATE TABLE IF NOT EXISTS remote_commands (
+    id          SERIAL PRIMARY KEY,
+    session_id  INTEGER NOT NULL,
+    kind        TEXT    NOT NULL,
+    x           REAL    NOT NULL DEFAULT 0,
+    y           REAL    NOT NULL DEFAULT 0,
+    x2          REAL    NOT NULL DEFAULT 0,
+    y2          REAL    NOT NULL DEFAULT 0,
+    duration_ms INTEGER NOT NULL DEFAULT 0,
+    created_at  TEXT    NOT NULL DEFAULT datetime('now'),
+    delivered_at TEXT,
+    FOREIGN KEY (session_id) REFERENCES remote_sessions(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_remote_commands_session
+    ON remote_commands(session_id, id);
+
+
+-- Columns added by legacy database.migrate().
+ALTER TABLE learners ADD COLUMN IF NOT EXISTS user_id INTEGER;
+ALTER TABLE learners ADD COLUMN IF NOT EXISTS class_id INTEGER;
+ALTER TABLE learners ADD COLUMN IF NOT EXISTS device_id TEXT;
+ALTER TABLE learners ADD COLUMN IF NOT EXISTS family_key TEXT;
+ALTER TABLE learners ADD COLUMN IF NOT EXISTS xp_spent INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS child_code TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub TEXT;
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS questions_json TEXT NOT NULL DEFAULT '[]';
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS student_id INTEGER;
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS author_role TEXT;
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS task_type TEXT NOT NULL DEFAULT 'test';
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS reference_text TEXT;
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS audio_text TEXT;
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS allow_photo INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS allow_text INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE assignment_results ADD COLUMN IF NOT EXISTS submission_type TEXT NOT NULL DEFAULT 'inline';
+ALTER TABLE assignment_results ADD COLUMN IF NOT EXISTS photos TEXT NOT NULL DEFAULT '[]';
+ALTER TABLE assignment_results ADD COLUMN IF NOT EXISTS ai_status TEXT NOT NULL DEFAULT 'not_requested';
+ALTER TABLE assignment_results ADD COLUMN IF NOT EXISTS ai_feedback TEXT;
+ALTER TABLE assignment_results ADD COLUMN IF NOT EXISTS ai_model TEXT;
+ALTER TABLE assignment_results ADD COLUMN IF NOT EXISTS ai_score INTEGER;
+ALTER TABLE topics ADD COLUMN IF NOT EXISTS subject_id INTEGER;
+ALTER TABLE topics ADD COLUMN IF NOT EXISTS textbook_id INTEGER;
+ALTER TABLE topics ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'curriculum';
+ALTER TABLE topics ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'practice';
+ALTER TABLE topics ADD COLUMN IF NOT EXISTS created_at TEXT;
+ALTER TABLE topics ADD COLUMN IF NOT EXISTS content_json TEXT;
+ALTER TABLE textbook_topics ADD COLUMN IF NOT EXISTS page_end INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE library_recommendations ADD COLUMN IF NOT EXISTS target_kind TEXT NOT NULL DEFAULT 'student';
+ALTER TABLE library_recommendations ADD COLUMN IF NOT EXISTS class_id INTEGER;
+ALTER TABLE location_sharing ADD COLUMN IF NOT EXISTS force_requested_at TEXT;
+ALTER TABLE location_sharing ADD COLUMN IF NOT EXISTS force_requested_by INTEGER;
+ALTER TABLE location_sharing ADD COLUMN IF NOT EXISTS force_ack_at TEXT;
+ALTER TABLE learner_items ADD COLUMN IF NOT EXISTS last_pat_day TEXT NOT NULL DEFAULT '';
+ALTER TABLE learner_items ADD COLUMN IF NOT EXISTS seen_stage INTEGER NOT NULL DEFAULT 0;
+
+-- Indexes and cleanups from database.migrate().
+CREATE INDEX IF NOT EXISTS idx_learners_family ON learners(family_key);
+CREATE INDEX IF NOT EXISTS idx_learners_device ON learners(device_id);
+CREATE INDEX IF NOT EXISTS idx_topics_subject ON topics(subject_id, grade, order_index);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users(google_sub) WHERE google_sub IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_textbook_topics_slug ON textbook_topics(topic_slug);
+CREATE INDEX IF NOT EXISTS idx_assignments_student ON assignments(student_id, status);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications_dedup ON app_notifications(dedup_key) WHERE dedup_key <> '';
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON app_notifications(user_id, is_read, created_at);
+DROP TABLE IF EXISTS library_covers;
+DROP TABLE IF EXISTS user_books;
+DROP TABLE IF EXISTS book_recommendations;

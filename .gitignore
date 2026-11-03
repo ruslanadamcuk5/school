@@ -43,3 +43,5 @@ Thumbs.db
 # React-сборка
 frontend/node_modules/
 frontend/.cache/
+node_modules/
+.vite/

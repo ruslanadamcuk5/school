@@ -1,0 +1,14 @@
+.git
+.gitignore
+.github
+**/__pycache__
+**/*.pyc
+.venv
+venv
+node_modules
+v2/frontend/dist
+data/math_tutor.db
+data/uploads
+data/page_cache
+data/releases
+*.log

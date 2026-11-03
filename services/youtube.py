@@ -1163,7 +1163,9 @@ def topic_rows(limit: int = 200, search: str = "") -> list[dict[str, Any]]:
     if search:
         sql += " WHERE t.title LIKE ?"
         params.append(f"%{search}%")
-    sql += " ORDER BY (videos = 0) DESC, t.grade, t.order_index, t.id LIMIT ?"
+    # PostgreSQL cannot use a SELECT alias inside an ORDER BY expression, so
+    # order by the alias directly (0 videos first, exactly as before).
+    sql += " ORDER BY videos ASC, t.grade, t.order_index, t.id LIMIT ?"
     params.append(max(1, min(500, int(limit))))
     return [dict(row) for row in query_all(sql, params)]
 
