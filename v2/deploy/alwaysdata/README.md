@@ -39,33 +39,33 @@ psql 'postgresql://virusadk_school:ПАРОЛЬ@postgresql-virusadk.alwaysdata.n
 
 ## 2. Код и зависимости
 
-Код уже в репозитории (`main`, каталог `v2/`). На сервере:
+v2 разворачивается в отдельный каталог `~/edu-math-v2`, чтобы не менять файлы
+живого Flask-сайта. Данные (`data/`) подключаются симлинком:
 
 ```bash
-cd ~/edu-math
-# код v2 копируется тем же способом, что и текущий сайт (zip/scp/rsync)
-
-source ~/.virtualenvs/edu-math/bin/activate
-pip install -r v2/backend/requirements.txt
-
-# SPA собирается на сервере (node и npm на AlwaysData есть)
-cd v2/frontend
-npm ci
-npm run build
-cd ~/edu-math
+cd ~/edu-math-v2
+ln -sfn ~/edu-math/data data      # SQLite, uploads и всё остальное — общие
 ```
 
-Для v2 лучше отдельное окружение, чтобы не менять зависимости живого
-Flask-сайта (скрипт запуска сам выберет его, если оно есть):
+Зависимости — в отдельном окружении:
 
 ```bash
 python3 -m venv ~/.virtualenvs/school-v2
-~/.virtualenvs/school-v2/bin/pip install -r ~/edu-math/v2/backend/requirements.txt
+~/.virtualenvs/school-v2/bin/pip install -r ~/edu-math-v2/v2/backend/requirements.txt
+```
+
+SPA собирается на сервере (node и npm на AlwaysData есть):
+
+```bash
+cd ~/edu-math-v2/v2/frontend
+npm ci
+npm run build
 ```
 
 ## 3. Переменные окружения
 
 ```bash
+cd ~/edu-math-v2
 cp v2/deploy/alwaysdata/env.example .env.v2
 chmod 600 .env.v2
 # отредактируйте DATABASE_URL, SECRET_KEY, ADMIN_PASSWORD
@@ -74,19 +74,25 @@ chmod 600 .env.v2
 ## 4. Схема и перенос данных
 
 ```bash
-cd ~/edu-math
+cd ~/edu-math-v2
 source .env.v2
 
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f v2/backend/sql/pg_schema.sql
 
-# резервные копии перед переносом
-tar czf ~/uploads-backup-$(date +%F-%H%M).tgz data/uploads
+# резервная копия SQLite на момент переноса (файл может быть занят сайтом)
+python3 - <<'PY'
+import sqlite3
+src = sqlite3.connect('data/math_tutor.db')
+dst = sqlite3.connect('/tmp/school-migrate.db')
+with dst:
+    src.backup(dst)
+PY
 
 python v2/backend/sql/migrate_sqlite.py \
-  --sqlite data/math_tutor.db \
+  --sqlite /tmp/school-migrate.db \
   --dry-run          # посмотреть план
 
-python v2/backend/sql/migrate_sqlite.py --sqlite data/math_tutor.db
+python v2/backend/sql/migrate_sqlite.py --sqlite /tmp/school-migrate.db
 ```
 
 Скрипт идемпотентен и в конце сверяет количество строк в SQLite и PostgreSQL.
@@ -99,14 +105,15 @@ python v2/backend/sql/migrate_sqlite.py --sqlite data/math_tutor.db
 3. Команда:
 
 ```
-/home/virusadk/edu-math/v2/deploy/alwaysdata/start.sh
+/home/virusadk/edu-math-v2/v2/deploy/alwaysdata/start.sh
 ```
 
-4. Домен: сначала тестовый поддомен (например `v2.virusadk.alwaysdata.net`),
+4. Рабочий каталог: `edu-math-v2`.
+5. Домен: сначала тестовый поддомен (например `v2.virusadk.alwaysdata.net`),
    чтобы проверить, не трогая основной сайт.
 
-Скрипт сам читает `.env.v2`, поднимает uvicorn на порту из `PORT` и отдаёт
-и `/api/v1` (Android), и `/api/v2`, и SPA.
+Скрипт сам читает `.env.v2`, поднимает uvicorn на IPv6-адресе из `$IP` и порту
+из `$PORT` и отдаёт и `/api/v1` (Android), и `/api/v2`, и SPA.
 
 ## 6. Проверка перед переключением
 

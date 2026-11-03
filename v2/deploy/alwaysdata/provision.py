@@ -69,9 +69,9 @@ def main() -> None:
     parser.add_argument("--address", default="v2.virusadk.alwaysdata.net")
     parser.add_argument(
         "--command",
-        default="/home/virusadk/edu-math/v2/deploy/alwaysdata/start.sh",
+        default="/home/virusadk/edu-math-v2/v2/deploy/alwaysdata/start.sh",
     )
-    parser.add_argument("--working-directory", default="edu-math")
+    parser.add_argument("--working-directory", default="edu-math-v2")
     parser.add_argument(
         "--reset-password",
         action="store_true",
