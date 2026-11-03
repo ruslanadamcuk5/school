@@ -72,4 +72,7 @@
     <string name="ai_disabled">ИИ не настроен на сервере</string>
     <string name="ai_explain_title">Объяснение темы</string>
     <string name="ai_refresh">Обновить объяснение</string>
+    <string name="remote_control_label">Управление для родителя</string>
+    <string name="remote_control_summary">Разрешает родителю во время помощи нажимать и свайпать на этом телефоне</string>
+    <string name="remote_control_description">Служба выполняет только нажатия и свайпы, которые присылает родитель во время сеанса удалённой помощи. Она не читает текст с экрана. Ребёнок может выключить её в любой момент.</string>
 </resources>

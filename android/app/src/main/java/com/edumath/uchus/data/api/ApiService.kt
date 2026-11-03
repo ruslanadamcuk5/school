@@ -2,6 +2,7 @@ package com.edumath.uchus.data.api
 
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import okhttp3.ResponseBody
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -12,6 +13,7 @@ import retrofit2.http.PUT
 import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.Streaming
 
 /** Контракт JSON API v1 (см. docs/API.md). */
 interface ApiService {
@@ -380,6 +382,49 @@ interface ApiService {
 
     @POST("parent/link")
     suspend fun linkChild(@Body body: Map<String, String>): LinkChildResponseDto
+
+    // ---------------------------------------------------- удалённая помощь
+    @POST("remote/start")
+    suspend fun remoteStart(@Body body: RemoteStartRequest): RemoteSessionDto
+
+    @GET("remote/current")
+    suspend fun remoteCurrent(@Query("learner_id") learnerId: Int): RemoteSessionDto
+
+    @Streaming
+    @GET("remote/frame")
+    suspend fun remoteFrame(@Query("session_id") sessionId: Int): ResponseBody
+
+    @POST("remote/command")
+    suspend fun remoteCommand(@Body body: RemoteCommandRequest): SimpleOkDto
+
+    @POST("remote/stop")
+    suspend fun remoteStop(@Body body: Map<String, Int>): RemoteSessionDto
+
+    @GET("remote/incoming")
+    suspend fun remoteIncoming(): RemoteSessionDto
+
+    @POST("remote/accept")
+    suspend fun remoteAccept(@Body body: RemoteAcceptRequest): RemoteSessionDto
+
+    @POST("remote/decline")
+    suspend fun remoteDecline(@Body body: Map<String, Int>): RemoteSessionDto
+
+    @POST("remote/frame")
+    suspend fun uploadRemoteFrame(
+        @Query("session_id") sessionId: Int,
+        @Query("width") width: Int,
+        @Query("height") height: Int,
+        @Body body: RequestBody,
+    ): RemoteSessionDto
+
+    @GET("remote/commands")
+    suspend fun remoteCommands(
+        @Query("session_id") sessionId: Int,
+        @Query("after_id") afterId: Int,
+    ): RemoteCommandsDto
+
+    @POST("remote/heartbeat")
+    suspend fun remoteHeartbeat(@Body body: RemoteHeartbeatRequest): RemoteSessionDto
     @GET("parent/locations")
     suspend fun parentLocations(@Query("tz") tz: Int): ParentLocationsDto
 

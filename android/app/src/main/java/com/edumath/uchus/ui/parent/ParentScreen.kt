@@ -215,6 +215,7 @@ fun ChildDetailScreen(
     learnerId: Int,
     onBack: () -> Unit,
     onMap: () -> Unit,
+    onRemoteHelp: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     var tick by remember { mutableStateOf(0) }
@@ -286,6 +287,24 @@ fun ChildDetailScreen(
                     OutlinedButton(onClick = onMap, modifier = Modifier.fillMaxWidth()) {
                         Text("🗺 Показать на карте")
                     }
+                }
+
+                item {
+                    Button(
+                        onClick = onRemoteHelp,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("🆘 Удалённая помощь")
+                    }
+                }
+
+                item {
+                    Text(
+                        "Родитель увидит экран телефона ребёнка и сможет помочь " +
+                            "нажатиями. Ребёнок сам разрешает показ и может остановить помощь.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
 
                 item {

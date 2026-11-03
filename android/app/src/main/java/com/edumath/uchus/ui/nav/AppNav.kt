@@ -50,6 +50,8 @@ import com.edumath.uchus.ui.parent.ChildDetailScreen
 import com.edumath.uchus.ui.parent.ParentCreateAssignmentScreen
 import com.edumath.uchus.ui.parent.ParentMapScreen
 import com.edumath.uchus.ui.parent.ParentScreen
+import com.edumath.uchus.ui.parent.RemoteHelpScreen
+import com.edumath.uchus.ui.remote.RemoteHelpGate
 import com.edumath.uchus.ui.student.AssignmentDetailScreen
 import com.edumath.uchus.ui.student.AssignmentsScreen
 import com.edumath.uchus.ui.student.LibraryScreen
@@ -511,6 +513,20 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
                 learnerId = entry.arguments?.getInt("id") ?: 0,
                 onBack = back,
                 onMap = { nav.navigate("parent_map/${entry.arguments?.getInt("id") ?: 0}") },
+                onRemoteHelp = {
+                    nav.navigate("parent_remote/${entry.arguments?.getInt("id") ?: 0}")
+                },
+            )
+        }
+
+        composable(
+            route = "parent_remote/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.IntType }),
+        ) { entry ->
+            RemoteHelpScreen(
+                container = container,
+                learnerId = entry.arguments?.getInt("id") ?: 0,
+                onBack = back,
             )
         }
 
@@ -533,5 +549,6 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
             )
         }
     }
+        RemoteHelpGate(container, session)
     }
 }

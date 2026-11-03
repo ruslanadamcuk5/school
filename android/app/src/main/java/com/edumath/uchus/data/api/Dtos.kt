@@ -1033,6 +1033,71 @@ data class LinkChildResponseDto(
     @SerializedName("children") val children: List<ChildDto> = emptyList(),
 )
 
+// ------------------------------------------------------------- удалённая помощь
+
+data class RemoteSessionInfoDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("status") val status: String = "",
+    @SerializedName("child_name") val childName: String = "",
+    @SerializedName("parent_name") val parentName: String = "",
+    @SerializedName("created_at") val createdAt: String? = null,
+    @SerializedName("accepted_at") val acceptedAt: String? = null,
+    @SerializedName("ended_at") val endedAt: String? = null,
+    @SerializedName("ended_by") val endedBy: String? = null,
+    @SerializedName("last_frame_at") val lastFrameAt: String? = null,
+    @SerializedName("frame_width") val frameWidth: Int = 0,
+    @SerializedName("frame_height") val frameHeight: Int = 0,
+    @SerializedName("can_control") val canControl: Boolean = false,
+    @SerializedName("has_frame") val hasFrame: Boolean = false,
+) {
+    val isActive: Boolean get() = status == "active"
+    val isPending: Boolean get() = status == "pending"
+}
+
+data class RemoteSessionDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("session") val session: RemoteSessionInfoDto? = null,
+)
+
+data class RemoteCommandDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("kind") val kind: String = "",
+    @SerializedName("x") val x: Float = 0f,
+    @SerializedName("y") val y: Float = 0f,
+    @SerializedName("x2") val x2: Float = 0f,
+    @SerializedName("y2") val y2: Float = 0f,
+    @SerializedName("duration_ms") val durationMs: Int = 0,
+)
+
+data class RemoteCommandsDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("commands") val commands: List<RemoteCommandDto> = emptyList(),
+)
+
+data class RemoteStartRequest(
+    @SerializedName("learner_id") val learnerId: Int,
+)
+
+data class RemoteCommandRequest(
+    @SerializedName("session_id") val sessionId: Int,
+    @SerializedName("kind") val kind: String,
+    @SerializedName("x") val x: Float = 0f,
+    @SerializedName("y") val y: Float = 0f,
+    @SerializedName("x2") val x2: Float = 0f,
+    @SerializedName("y2") val y2: Float = 0f,
+    @SerializedName("duration_ms") val durationMs: Int = 0,
+)
+
+data class RemoteAcceptRequest(
+    @SerializedName("session_id") val sessionId: Int,
+    @SerializedName("can_control") val canControl: Boolean,
+)
+
+data class RemoteHeartbeatRequest(
+    @SerializedName("session_id") val sessionId: Int,
+    @SerializedName("can_control") val canControl: Boolean,
+)
+
 // ------------------------------------------------------------------ админ
 
 data class AdminCountersDto(

@@ -856,3 +856,46 @@ CREATE TABLE IF NOT EXISTS learner_locations (
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_locations_point
     ON learner_locations(learner_id, recorded_at);
+
+-- Удалённая помощь: родитель видит экран ребёнка и может нажимать за него.
+-- Сессия создаётся только по запросу родителя и становится активной после
+-- явного разрешения на телефоне ребёнка. Экран передаётся кадрами JPEG.
+CREATE TABLE IF NOT EXISTS remote_sessions (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    child_user_id INTEGER NOT NULL,
+    parent_user_id INTEGER NOT NULL,
+    status        TEXT    NOT NULL DEFAULT 'pending',
+    created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+    accepted_at   TEXT,
+    ended_at      TEXT,
+    ended_by      TEXT    NOT NULL DEFAULT '',
+    last_seen_at  TEXT,
+    last_frame_at TEXT,
+    frame_width   INTEGER NOT NULL DEFAULT 0,
+    frame_height  INTEGER NOT NULL DEFAULT 0,
+    can_control   INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (child_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_remote_sessions_child
+    ON remote_sessions(child_user_id, status, id);
+
+-- Команды управления: нажатие, свайп, системные кнопки. Координаты
+-- хранятся долями экрана (0..1), чтобы не зависеть от разрешения телефона.
+CREATE TABLE IF NOT EXISTS remote_commands (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id  INTEGER NOT NULL,
+    kind        TEXT    NOT NULL,
+    x           REAL    NOT NULL DEFAULT 0,
+    y           REAL    NOT NULL DEFAULT 0,
+    x2          REAL    NOT NULL DEFAULT 0,
+    y2          REAL    NOT NULL DEFAULT 0,
+    duration_ms INTEGER NOT NULL DEFAULT 0,
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+    delivered_at TEXT,
+    FOREIGN KEY (session_id) REFERENCES remote_sessions(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_remote_commands_session
+    ON remote_commands(session_id, id);

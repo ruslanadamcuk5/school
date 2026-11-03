@@ -9,6 +9,7 @@
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
@@ -27,6 +28,26 @@
             android:name=".data.location.LocationTrackingService"
             android:exported="false"
             android:foregroundServiceType="location" />
+
+        <!-- Показ экрана ребёнка родителю во время удалённой помощи. -->
+        <service
+            android:name=".data.remote.RemoteHelpService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+
+        <!-- Выполнение нажатий и свайпов родителя. Включается ребёнком. -->
+        <service
+            android:name=".data.remote.RemoteControlAccessibilityService"
+            android:exported="true"
+            android:label="@string/remote_control_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/remote_control_accessibility" />
+        </service>
 
         <!-- Статус установки APK из PackageInstaller. -->
         <receiver

@@ -67,6 +67,7 @@ from . import notifications as _notifications  # noqa: E402,F401
 from . import shop as _shop  # noqa: E402,F401
 from . import pet as _pet  # noqa: E402,F401
 from . import locations as _locations  # noqa: E402,F401
+from . import remote as _remote  # noqa: E402,F401
 from . import padruchnik as _padruchnik  # noqa: E402,F401
 from . import admin as _admin  # noqa: E402,F401
 from . import admin_shop as _admin_shop  # noqa: E402,F401
