@@ -6,8 +6,10 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Path
+import android.util.DisplayMetrics
 import android.provider.Settings
 import android.view.accessibility.AccessibilityEvent
+import android.view.WindowManager
 import com.edumath.uchus.data.api.RemoteCommandDto
 import kotlin.math.max
 
@@ -35,7 +37,11 @@ class RemoteControlAccessibilityService : AccessibilityService() {
 
     /** Выполнить команду родителя. Возвращает false, если жест не принят. */
     fun perform(command: RemoteCommandDto): Boolean {
-        val metrics = resources.displayMetrics
+        val metrics = DisplayMetrics()
+        @Suppress("DEPRECATION")
+        val display = (getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay
+        @Suppress("DEPRECATION")
+        display.getRealMetrics(metrics)
         val width = max(1, metrics.widthPixels)
         val height = max(1, metrics.heightPixels)
         return when (command.kind) {

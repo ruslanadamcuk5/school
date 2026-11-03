@@ -71,7 +71,7 @@ fun RemoteHelpGate(container: AppContainer, session: SessionDto?) {
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     var controlEnabled by remember {
-        mutableStateOf(RemoteControlAccessibilityService.isEnabled(context))
+        mutableStateOf(RemoteControlAccessibilityService.isReady(context))
     }
     var pendingAccept by remember { mutableStateOf<RemoteSessionInfoDto?>(null) }
 
@@ -128,7 +128,7 @@ fun RemoteHelpGate(container: AppContainer, session: SessionDto?) {
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                controlEnabled = RemoteControlAccessibilityService.isEnabled(context)
+                controlEnabled = RemoteControlAccessibilityService.isReady(context)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -170,7 +170,7 @@ fun RemoteHelpGate(container: AppContainer, session: SessionDto?) {
         if (busy) return
         busy = true
         message = null
-        controlEnabled = RemoteControlAccessibilityService.isEnabled(context)
+        controlEnabled = RemoteControlAccessibilityService.isReady(context)
         val manager = context.getSystemService(Context.MEDIA_PROJECTION_SERVICE)
             as MediaProjectionManager
         pendingAccept = request

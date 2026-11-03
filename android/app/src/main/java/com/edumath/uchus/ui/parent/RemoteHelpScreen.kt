@@ -175,12 +175,9 @@ fun RemoteHelpScreen(
                 apiCall { container.api.remoteFrame(current.id) }
             }.getOrNull()
             if (body != null) {
-                val bytes = runCatching { body.bytes() }.getOrNull()
-                val bitmap = bytes?.let { data ->
-                    withContext(Dispatchers.Default) {
-                        runCatching {
-                            BitmapFactory.decodeByteArray(data, 0, data.size)
-                        }.getOrNull()
+                val bitmap = withContext(Dispatchers.IO) {
+                    runCatching { body.bytes() }.getOrNull()?.let { data ->
+                        BitmapFactory.decodeByteArray(data, 0, data.size)
                     }
                 }
                 if (bitmap != null) {
