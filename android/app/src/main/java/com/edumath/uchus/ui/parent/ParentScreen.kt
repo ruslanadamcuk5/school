@@ -224,6 +224,7 @@ fun ChildDetailScreen(
     var editName by remember { mutableStateOf("") }
     var editGrade by remember { mutableStateOf(3) }
     var resetTarget by remember { mutableStateOf(false) }
+    var ringBusy by remember { mutableStateOf(false) }
 
     ScreenScaffold(title = "Ребёнок", onBack = onBack) { padding ->
         Load(key = "parent-child:$learnerId:$tick", block = { container.api.parentChild(learnerId) }) { data, refresh ->
@@ -302,6 +303,42 @@ fun ChildDetailScreen(
                     Text(
                         "Родитель увидит экран телефона ребёнка и сможет помочь " +
                             "нажатиями. Ребёнок сам разрешает показ и может остановить помощь.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                item {
+                    OutlinedButton(
+                        onClick = {
+                            if (ringBusy) return@OutlinedButton
+                            ringBusy = true
+                            scope.launch {
+                                runCatching {
+                                    apiCall { container.api.ringChild(learnerId) }
+                                }
+                                    .onSuccess {
+                                        message = it.message ?: "Команда отправлена"
+                                    }
+                                    .onFailure { message = it.message }
+                                ringBusy = false
+                            }
+                        },
+                        enabled = !ringBusy,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            if (ringBusy) "Отправляем команду…"
+                            else "🔊 Включить звук на телефоне"
+                        )
+                    }
+                }
+
+                item {
+                    Text(
+                        "Телефон ребёнка зазвонит громко, даже если включён беззвучный " +
+                            "режим. Подтверждение ребёнка не требуется. Если приложение " +
+                            "давно закрыто, команда может прийти с задержкой.",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

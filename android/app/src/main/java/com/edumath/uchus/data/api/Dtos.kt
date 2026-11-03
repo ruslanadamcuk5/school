@@ -2067,6 +2067,30 @@ data class LocationForceResponse(
     @SerializedName("force_pending") val forcePending: Boolean = false,
 )
 
+data class SoundCommandDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("learner_id") val learnerId: Int = 0,
+    @SerializedName("status") val status: String = "",
+    @SerializedName("created_at") val createdAt: String? = null,
+    @SerializedName("delivered_at") val deliveredAt: String? = null,
+    @SerializedName("finished_at") val finishedAt: String? = null,
+    @SerializedName("mode") val mode: String? = null,
+    @SerializedName("detail") val detail: String? = null,
+)
+
+data class SoundCommandResponse(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("command") val command: SoundCommandDto? = null,
+    @SerializedName("message") val message: String? = null,
+    @SerializedName("already") val already: Boolean = false,
+)
+
+data class SoundAckRequest(
+    @SerializedName("status") val status: String,
+    @SerializedName("mode") val mode: String? = null,
+    @SerializedName("detail") val detail: String? = null,
+)
+
 data class LocationPointPayload(
     @SerializedName("lat") val lat: Double,
     @SerializedName("lon") val lon: Double,

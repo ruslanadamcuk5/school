@@ -10,8 +10,14 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <application
         android:name=".UchusApp"
@@ -34,6 +40,12 @@
             android:name=".data.remote.RemoteHelpService"
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
+
+        <!-- Громкий вызов ребёнка: сигнал будильника слышен и в беззвучном режиме. -->
+        <service
+            android:name=".data.sound.SoundAlertService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
 
         <!-- Выполнение нажатий и свайпов родителя. Включается ребёнком. -->
         <service

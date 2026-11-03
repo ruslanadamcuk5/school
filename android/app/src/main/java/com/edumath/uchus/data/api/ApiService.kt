@@ -438,6 +438,22 @@ interface ApiService {
     @POST("parent/children/{id}/location/force")
     suspend fun forceChildLocation(@Path("id") id: Int): LocationForceResponse
 
+    // ---------------------------------------------------------- звук ребёнка
+    @POST("parent/children/{id}/sound")
+    suspend fun ringChild(@Path("id") id: Int): SoundCommandResponse
+
+    @GET("parent/children/{id}/sound")
+    suspend fun childSoundStatus(@Path("id") id: Int): SoundCommandResponse
+
+    @GET("sound/command")
+    suspend fun soundCommand(@Query("after_id") afterId: Int): SoundCommandResponse
+
+    @POST("sound/command/{id}/ack")
+    suspend fun ackSoundCommand(
+        @Path("id") id: Int,
+        @Body body: SoundAckRequest,
+    ): SoundCommandResponse
+
     // ---------------------------------------------------------- геолокация ребёнка
     @GET("location/status")
     suspend fun locationStatus(@Query("tz") tz: Int): LocationStatusDto

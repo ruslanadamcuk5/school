@@ -857,6 +857,26 @@ CREATE TABLE IF NOT EXISTS learner_locations (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_locations_point
     ON learner_locations(learner_id, recorded_at);
 
+-- Звуковой вызов: родитель включает громкий сигнал на телефоне ребёнка.
+-- Команда живёт две минуты, чтобы старое «позвать» не зазвонило неожиданно.
+-- Подтверждение ребёнка не требуется: сигнал будильника слышен и в беззвучном
+-- режиме. Переключить системный режим можно только с доступом к «Не беспокоить».
+CREATE TABLE IF NOT EXISTS sound_commands (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    learner_id   INTEGER NOT NULL,
+    requested_by INTEGER,
+    status       TEXT    NOT NULL DEFAULT 'pending',
+    created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+    delivered_at TEXT,
+    finished_at  TEXT,
+    mode         TEXT    NOT NULL DEFAULT '',
+    detail       TEXT    NOT NULL DEFAULT '',
+    FOREIGN KEY (learner_id) REFERENCES learners(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_sound_commands_learner
+    ON sound_commands(learner_id, status, id);
+
 -- Удалённая помощь: родитель видит экран ребёнка и может нажимать за него.
 -- Сессия создаётся только по запросу родителя и становится активной после
 -- явного разрешения на телефоне ребёнка. Экран передаётся кадрами JPEG.

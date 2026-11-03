@@ -23,18 +23,26 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.edumath.uchus.core.AppContainer
 import com.edumath.uchus.data.api.MapDto
 import com.edumath.uchus.data.api.ScheduleDto
 import com.edumath.uchus.data.api.SessionDto
+import com.edumath.uchus.data.sound.SoundAlertService
 import com.edumath.uchus.ui.common.InfoBox
 import com.edumath.uchus.ui.common.KeyValue
 import com.edumath.uchus.ui.common.Load
@@ -149,6 +157,7 @@ fun ProfileScreen(
                             onRefresh = onRefreshSession,
                         )
                     }
+                    item { SoundForParentCard() }
                 }
 
                 item {
@@ -264,6 +273,52 @@ private fun ParentCodeCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SoundForParentCard() {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var granted by remember { mutableStateOf(SoundAlertService.hasDndAccess(context)) }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                granted = SoundAlertService.hasDndAccess(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    Card(Modifier.fillMaxWidth()) {
+        Column(
+            Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                "🔊 Звук для родителя",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            KeyValue(
+                "Управление звуком",
+                if (granted) "разрешено" else "не разрешено",
+            )
+            Text(
+                "Если телефон на беззвучном, родитель сможет включить звук и " +
+                    "дозвониться. Android требует одно системное разрешение — " +
+                    "«Не беспокоить». Это не запрос на каждый звонок.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (!granted) {
+                OutlinedButton(
+                    onClick = { SoundAlertService.openDndSettings(context) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text("Разрешить управление звуком") }
             }
         }
     }

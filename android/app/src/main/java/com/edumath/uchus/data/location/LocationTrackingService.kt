@@ -28,6 +28,7 @@ import com.edumath.uchus.data.api.ApiException
 import com.edumath.uchus.data.api.LocationPointPayload
 import com.edumath.uchus.data.api.LocationPointsRequest
 import com.edumath.uchus.data.api.apiCall
+import com.edumath.uchus.data.sound.SoundAlertService
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -58,6 +59,7 @@ class LocationTrackingService : Service() {
 
     private var manager: LocationManager? = null
     private var flushJob: Job? = null
+    private var commandJob: Job? = null
     private var listener: LocationListener? = null
     private var api: com.edumath.uchus.data.api.ApiService? = null
     private var started = false
@@ -106,12 +108,48 @@ class LocationTrackingService : Service() {
                 flush()
             }
         }
+        startSoundPolling()
         return START_STICKY
+    }
+
+    /**
+     * Быстрый опрос команды «включить звук».
+     *
+     * Служба уже работает в фоне и держит процесс живым, поэтому именно она
+     * замечает команду родителя за несколько секунд. Без неё остаётся
+     * пятнадцатиминутный worker — для срочного звонка это слишком долго.
+     */
+    private fun startSoundPolling() {
+        commandJob?.cancel()
+        commandJob = scope.launch {
+            while (isActive) {
+                val service = api ?: break
+                val lastSeen = SoundAlertService.lastCommandId(this@LocationTrackingService)
+                val response = runCatching {
+                    apiCall { service.soundCommand(lastSeen) }
+                }.getOrNull()
+                val command = response?.command
+                if (command != null && command.id > lastSeen) {
+                    val started = SoundAlertService.ring(
+                        this@LocationTrackingService,
+                        command.id,
+                    )
+                    if (started) {
+                        SoundAlertService.markCommandSeen(
+                            this@LocationTrackingService,
+                            command.id,
+                        )
+                    }
+                }
+                delay(if (response == null) 20_000L else 10_000L)
+            }
+        }
     }
 
     override fun onDestroy() {
         isRunning = false
         flushJob?.cancel()
+        commandJob?.cancel()
         runCatching { listener?.let { manager?.removeUpdates(it) } }
         listener = null
         scope.coroutineContext[Job]?.cancel()

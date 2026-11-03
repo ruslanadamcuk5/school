@@ -24,6 +24,7 @@ import com.edumath.uchus.data.api.ApiJson
 import com.edumath.uchus.data.api.SessionDto
 import com.edumath.uchus.data.api.apiCall
 import com.edumath.uchus.data.location.LocationTrackingService
+import com.edumath.uchus.data.sound.SoundAlertService
 import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 
@@ -76,7 +77,23 @@ class LocationSyncWorker(
             ensureChannel()
             postPermissionNotification()
         }
+        checkSoundCommand(container)
         return Result.success()
+    }
+
+    /**
+     * Резервная проверка звукового вызова, если служба геолокации не запущена.
+     * Основной путь — быстрый опрос в LocationTrackingService.
+     */
+    private suspend fun checkSoundCommand(container: com.edumath.uchus.core.AppContainer) {
+        val lastSeen = SoundAlertService.lastCommandId(applicationContext)
+        val command = runCatching {
+            apiCall { container.api.soundCommand(lastSeen) }
+        }.getOrNull()?.command ?: return
+        if (command.id <= lastSeen) return
+        if (SoundAlertService.ring(applicationContext, command.id)) {
+            SoundAlertService.markCommandSeen(applicationContext, command.id)
+        }
     }
 
     private fun ensureChannel() {

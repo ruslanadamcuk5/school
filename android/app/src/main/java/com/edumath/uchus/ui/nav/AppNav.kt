@@ -52,6 +52,7 @@ import com.edumath.uchus.ui.parent.ParentMapScreen
 import com.edumath.uchus.ui.parent.ParentScreen
 import com.edumath.uchus.ui.parent.RemoteHelpScreen
 import com.edumath.uchus.ui.remote.RemoteHelpGate
+import com.edumath.uchus.ui.sound.SoundAlertGate
 import com.edumath.uchus.ui.student.AssignmentDetailScreen
 import com.edumath.uchus.ui.student.AssignmentsScreen
 import com.edumath.uchus.ui.student.LibraryScreen
@@ -550,5 +551,6 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
         }
     }
         RemoteHelpGate(container, session)
+        SoundAlertGate(container, session)
     }
 }

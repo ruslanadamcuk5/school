@@ -250,6 +250,23 @@ fun ParentMapScreen(
                                 },
                                 enabled = !busy,
                             ) { Text("📍 Включить геолокацию на телефоне ребёнка") }
+                            Spacer(Modifier.height(6.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    if (busy) return@OutlinedButton
+                                    busy = true
+                                    scope.launch {
+                                        runCatching {
+                                            apiCall { container.api.ringChild(selectedId) }
+                                        }.onSuccess {
+                                            message = it.message ?: "Команда отправлена"
+                                            tick++
+                                        }.onFailure { message = it.message }
+                                        busy = false
+                                    }
+                                },
+                                enabled = !busy,
+                            ) { Text("🔊 Включить звук на телефоне ребёнка") }
                         }
                     }
                 }
