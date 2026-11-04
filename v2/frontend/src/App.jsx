@@ -39,10 +39,16 @@ const TeacherStudent = page(() => import("./pages/Teacher"), "TeacherStudent");
 const TeacherStudents = page(() => import("./pages/Teacher"), "TeacherStudents");
 const AdminAI = page(() => import("./pages/Admin"), "AdminAI");
 const AdminAudit = page(() => import("./pages/Admin"), "AdminAudit");
+const AdminCourses = page(() => import("./pages/Admin"), "AdminCourses");
 const AdminDashboard = page(() => import("./pages/Admin"), "AdminDashboard");
+const AdminMap = page(() => import("./pages/Admin"), "AdminMap");
 const AdminOrgs = page(() => import("./pages/Admin"), "AdminOrgs");
+const AdminPadruchnik = page(() => import("./pages/Admin"), "AdminPadruchnik");
 const AdminShop = page(() => import("./pages/Admin"), "AdminShop");
+const AdminTextbookDetail = page(() => import("./pages/Admin"), "AdminTextbookDetail");
+const AdminTextbooks = page(() => import("./pages/Admin"), "AdminTextbooks");
 const AdminTopics = page(() => import("./pages/Admin"), "AdminTopics");
+const AdminUserDetail = page(() => import("./pages/Admin"), "AdminUserDetail");
 const AdminUsers = page(() => import("./pages/Admin"), "AdminUsers");
 const AdminYouTube = page(() => import("./pages/Admin"), "AdminYouTube");
 
@@ -294,10 +300,58 @@ export default function App() {
           }
         />
         <Route
+          path="admin/users/:id"
+          element={
+            <RequireRole roles={["admin"]}>
+              <AdminUserDetail />
+            </RequireRole>
+          }
+        />
+        <Route
           path="admin/topics"
           element={
             <RequireRole roles={["admin"]}>
               <AdminTopics />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="admin/courses"
+          element={
+            <RequireRole roles={["admin"]}>
+              <AdminCourses />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="admin/textbooks"
+          element={
+            <RequireRole roles={["admin"]}>
+              <AdminTextbooks />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="admin/textbooks/:id"
+          element={
+            <RequireRole roles={["admin"]}>
+              <AdminTextbookDetail />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="admin/padruchnik"
+          element={
+            <RequireRole roles={["admin"]}>
+              <AdminPadruchnik />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="admin/map"
+          element={
+            <RequireRole roles={["admin"]}>
+              <AdminMap />
             </RequireRole>
           }
         />

@@ -45,3 +45,6 @@ frontend/node_modules/
 frontend/.cache/
 node_modules/
 .vite/
+
+# Локальный UI-харнесс
+v2/frontend/.uiharness.entry.jsx

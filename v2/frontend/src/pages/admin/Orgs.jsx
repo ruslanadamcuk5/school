@@ -7,6 +7,7 @@ import {
   MapPin,
   Pencil,
   Plus,
+  Power,
   School,
   Trash2,
   UserPlus,
@@ -47,10 +48,15 @@ export function AdminOrgs() {
   const [cityOpen, setCityOpen] = useState(false);
   const [schoolOpen, setSchoolOpen] = useState(false);
   const [classOpen, setClassOpen] = useState(false);
+  const [editSchool, setEditSchool] = useState(null);
   const [editClass, setEditClass] = useState(null);
+  const [subjectOpen, setSubjectOpen] = useState(false);
+  const [editSubject, setEditSubject] = useState(null);
   const [addStudentClass, setAddStudentClass] = useState(null);
   const [cityForm, setCityForm] = useState({ name: "", region: "" });
   const [schoolForm, setSchoolForm] = useState({ city_id: "", name: "", address: "", director: "" });
+  const [schoolEditForm, setSchoolEditForm] = useState(null);
+  const [subjectForm, setSubjectForm] = useState({ name: "", slug: "", icon: "📘", color: "sky", description: "" });
   const [classForm, setClassForm] = useState({ school_id: "", grade: 1, letter: "", teacher_id: "", year: "2025/2026", title: "" });
   const [classEditForm, setClassEditForm] = useState(null);
   const [studentId, setStudentId] = useState("");
@@ -166,6 +172,45 @@ export function AdminOrgs() {
     }
   };
 
+  const removeCity = async (city) => {
+    if (!window.confirm(`Удалить город «${city.name}»? Школы и классы в нём могут быть затронуты.`)) return;
+    try {
+      await run(() => api.del(`/admin/cities/${city.id}`));
+      await afterChange("Город удалён");
+    } catch (err) {
+      toast(err.message || "Не удалось удалить город", "error");
+    }
+  };
+
+  const openSchoolEdit = (school) => {
+    setEditSchool(school);
+    setSchoolEditForm({
+      city_id: school.city_id ? String(school.city_id) : "",
+      name: school.name || "",
+      address: school.address || "",
+      director: school.director || "",
+    });
+  };
+
+  const submitSchoolEdit = async () => {
+    if (!editSchool || !schoolEditForm) return;
+    if (!schoolEditForm.city_id || !schoolEditForm.name.trim()) {
+      toast("Нужны город и название школы", "info");
+      return;
+    }
+    try {
+      await run(() => api.patch(`/admin/schools/${editSchool.id}`, {
+        ...schoolEditForm,
+        city_id: Number(schoolEditForm.city_id),
+      }));
+      setEditSchool(null);
+      setSchoolEditForm(null);
+      await afterChange("Школа обновлена");
+    } catch (err) {
+      toast(err.message || "Не удалось сохранить школу", "error");
+    }
+  };
+
   const removeSchool = async (school) => {
     if (!window.confirm(`Удалить школу «${school.name}»? Классы и связи могут быть затронуты.`)) return;
     try {
@@ -173,6 +218,61 @@ export function AdminOrgs() {
       await afterChange("Школа удалена");
     } catch (err) {
       toast(err.message || "Не удалось удалить школу", "error");
+    }
+  };
+
+  const openSubject = (subject = null) => {
+    setEditSubject(subject);
+    setSubjectForm(
+      subject
+        ? {
+            name: subject.name || "",
+            slug: subject.slug || "",
+            icon: subject.icon || "📘",
+            color: subject.color || "sky",
+            description: subject.description || "",
+          }
+        : { name: "", slug: "", icon: "📘", color: "sky", description: "" },
+    );
+    setSubjectOpen(true);
+  };
+
+  const submitSubject = async () => {
+    if (!subjectForm.name.trim()) {
+      toast("Введите название предмета", "info");
+      return;
+    }
+    try {
+      if (editSubject) {
+        await run(() => api.patch(`/admin/subjects/${editSubject.id}`, subjectForm));
+        await afterChange("Предмет обновлён");
+      } else {
+        await run(() => api.post("/admin/subjects", subjectForm));
+        await afterChange("Предмет добавлен");
+      }
+      setSubjectOpen(false);
+      setEditSubject(null);
+    } catch (err) {
+      toast(err.message || "Не удалось сохранить предмет", "error");
+    }
+  };
+
+  const toggleSubject = async (subject) => {
+    try {
+      await run(() => api.patch(`/admin/subjects/${subject.id}`, { is_active: !subject.is_active }));
+      await afterChange(subject.is_active ? "Предмет скрыт" : "Предмет включён");
+    } catch (err) {
+      toast(err.message || "Не удалось изменить предмет", "error");
+    }
+  };
+
+  const removeSubject = async (subject) => {
+    if (!window.confirm(`Удалить предмет «${subject.name}» вместе с темами, курсами и пособиями?`)) return;
+    try {
+      await run(() => api.del(`/admin/subjects/${subject.id}`));
+      await afterChange("Предмет удалён");
+    } catch (err) {
+      toast(err.message || "Не удалось удалить предмет", "error");
     }
   };
 
@@ -216,6 +316,7 @@ export function AdminOrgs() {
             {tab === "cities" && <Button icon={Plus} onClick={() => { setCityForm({ name: "", region: "" }); setCityOpen(true); }}>Город</Button>}
             {tab === "schools" && <Button icon={Plus} onClick={openSchool}>Школа</Button>}
             {tab === "classes" && <Button icon={Plus} onClick={openClass}>Класс</Button>}
+            {tab === "subjects" && <Button icon={Plus} onClick={() => openSubject()}>Предмет</Button>}
           </>
         }
       />
@@ -257,7 +358,10 @@ export function AdminOrgs() {
                     <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-iris-400/20 bg-iris-500/10 text-iris-200">
                       <MapPin size={19} />
                     </span>
-                    <Badge tone="iris">{schools.filter((school) => Number(school.city_id) === Number(city.id)).length} школ</Badge>
+                    <div className="flex items-center gap-1.5">
+                      <Badge tone="iris">{schools.filter((school) => Number(school.city_id) === Number(city.id)).length} школ</Badge>
+                      <IconButton icon={Trash2} label="Удалить город" className="text-rose-300" onClick={() => removeCity(city)} />
+                    </div>
                   </div>
                   <h3 className="mt-4 font-display text-base font-semibold text-white">{city.name}</h3>
                   <p className="mt-1 text-[11px] text-mist-500">{city.region || "регион не указан"}</p>
@@ -281,6 +385,7 @@ export function AdminOrgs() {
                     </span>
                     <div className="flex items-center gap-1.5">
                       <Badge tone="cyan">{school.classes_count || 0} классов</Badge>
+                      <IconButton icon={Pencil} label="Изменить школу" onClick={() => openSchoolEdit(school)} />
                       <IconButton icon={Trash2} label="Удалить школу" className="text-rose-300" onClick={() => removeSchool(school)} />
                     </div>
                   </div>
@@ -344,10 +449,21 @@ export function AdminOrgs() {
                 <Card key={subject.id} className="p-5">
                   <div className="flex items-start justify-between gap-3">
                     <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-xl">{subject.icon || "📘"}</span>
-                    <Badge tone={subject.is_active ? "green" : "rose"}>{subject.is_active ? "активен" : "скрыт"}</Badge>
+                    <div className="flex items-center gap-1.5">
+                      <Badge tone={subject.is_active ? "green" : "rose"}>{subject.is_active ? "активен" : "скрыт"}</Badge>
+                      <IconButton icon={Pencil} label="Изменить предмет" onClick={() => openSubject(subject)} />
+                      <IconButton
+                        icon={Power}
+                        label={subject.is_active ? "Скрыть предмет" : "Включить предмет"}
+                        className={subject.is_active ? "text-emerald-300" : "text-rose-300"}
+                        onClick={() => toggleSubject(subject)}
+                      />
+                      <IconButton icon={Trash2} label="Удалить предмет" className="text-rose-300" onClick={() => removeSubject(subject)} />
+                    </div>
                   </div>
                   <h3 className="mt-4 font-display text-base font-semibold text-white">{subject.name}</h3>
                   <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-mist-500">{subject.description}</p>
+                  <p className="mt-1 font-mono text-[10px] text-mist-600">{subject.slug}</p>
                   <div className="mt-4 grid grid-cols-3 gap-2">
                     <MiniStat label="Темы" value={subject.topics_count || 0} />
                     <MiniStat label="Курсы" value={subject.courses_count || 0} />
@@ -388,6 +504,61 @@ export function AdminOrgs() {
           <Field label="Название"><Input value={schoolForm.name} onChange={(event) => setSchoolForm((current) => ({ ...current, name: event.target.value }))} placeholder="Гимназия №1" /></Field>
           <Field label="Адрес"><Input value={schoolForm.address} onChange={(event) => setSchoolForm((current) => ({ ...current, address: event.target.value }))} /></Field>
           <Field label="Директор"><Input value={schoolForm.director} onChange={(event) => setSchoolForm((current) => ({ ...current, director: event.target.value }))} /></Field>
+        </div>
+      </Modal>
+
+      <Modal
+        open={Boolean(editSchool && schoolEditForm)}
+        onClose={() => { setEditSchool(null); setSchoolEditForm(null); }}
+        title="Изменить школу"
+        footer={<><Button variant="ghost" onClick={() => { setEditSchool(null); setSchoolEditForm(null); }}>Отмена</Button><Button icon={Check} loading={pending} onClick={submitSchoolEdit}>Сохранить</Button></>}
+      >
+        {schoolEditForm && (
+          <div className="space-y-4">
+            <Field label="Город">
+              <Select value={schoolEditForm.city_id} onChange={(event) => setSchoolEditForm((current) => ({ ...current, city_id: event.target.value }))}>
+                <option value="">Выберите город</option>
+                {cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}
+              </Select>
+            </Field>
+            <Field label="Название"><Input value={schoolEditForm.name} onChange={(event) => setSchoolEditForm((current) => ({ ...current, name: event.target.value }))} /></Field>
+            <Field label="Адрес"><Input value={schoolEditForm.address} onChange={(event) => setSchoolEditForm((current) => ({ ...current, address: event.target.value }))} /></Field>
+            <Field label="Директор"><Input value={schoolEditForm.director} onChange={(event) => setSchoolEditForm((current) => ({ ...current, director: event.target.value }))} /></Field>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        open={subjectOpen}
+        onClose={() => { setSubjectOpen(false); setEditSubject(null); }}
+        title={editSubject ? "Изменить предмет" : "Новый предмет"}
+        description="Предметы связывают темы, курсы и пособия."
+        footer={<><Button variant="ghost" onClick={() => { setSubjectOpen(false); setEditSubject(null); }}>Отмена</Button><Button icon={Check} loading={pending} onClick={submitSubject}>{editSubject ? "Сохранить" : "Добавить"}</Button></>}
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Название" className="sm:col-span-2">
+            <Input value={subjectForm.name} onChange={(event) => setSubjectForm((current) => ({ ...current, name: event.target.value }))} placeholder="Математика" autoFocus />
+          </Field>
+          <Field label="Код (латиницей)" hint={editSubject ? "Код после создания не меняется." : "Необязательно — соберём из названия."}>
+            <Input
+              value={subjectForm.slug}
+              onChange={(event) => setSubjectForm((current) => ({ ...current, slug: event.target.value }))}
+              placeholder="math"
+              disabled={Boolean(editSubject)}
+              className={editSubject ? "opacity-60" : ""}
+            />
+          </Field>
+          <Field label="Иконка">
+            <Input value={subjectForm.icon} maxLength={8} onChange={(event) => setSubjectForm((current) => ({ ...current, icon: event.target.value }))} placeholder="📘" />
+          </Field>
+          <Field label="Цвет" hint="sky, iris, gold, green, rose">
+            <Select value={subjectForm.color} onChange={(event) => setSubjectForm((current) => ({ ...current, color: event.target.value }))}>
+              {["sky", "iris", "gold", "green", "rose", "violet"].map((color) => <option key={color} value={color}>{color}</option>)}
+            </Select>
+          </Field>
+          <Field label="Описание">
+            <Input value={subjectForm.description} onChange={(event) => setSubjectForm((current) => ({ ...current, description: event.target.value }))} placeholder="Кратко о предмете" />
+          </Field>
         </div>
       </Modal>
 

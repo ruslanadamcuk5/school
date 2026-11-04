@@ -48,6 +48,7 @@ const ICONS = {
   profile: UserRound,
   users: Users,
   topics: BookOpen,
+  textbooks: Library,
   orgs: Building2,
   youtube: Youtube,
   ai: Bot,
@@ -84,10 +85,14 @@ const NAV = {
     { to: "/app/admin", label: "Обзор", icon: "home", end: true },
     { to: "/app/admin/users", label: "Пользователи", icon: "users" },
     { to: "/app/admin/topics", label: "Предметы и темы", icon: "topics" },
+    { to: "/app/admin/courses", label: "Курсы", icon: "classes" },
+    { to: "/app/admin/textbooks", label: "Пособия и книги", icon: "library" },
+    { to: "/app/admin/padruchnik", label: "e-padruchnik", icon: "textbooks" },
     { to: "/app/admin/orgs", label: "Организация", icon: "orgs" },
     { to: "/app/admin/shop", label: "Магазин", icon: "shop" },
     { to: "/app/admin/youtube", label: "YouTube", icon: "youtube" },
     { to: "/app/admin/ai", label: "ИИ-помощник", icon: "ai" },
+    { to: "/app/admin/map", label: "Карта", icon: "map" },
     { to: "/app/admin/audit", label: "Журнал", icon: "audit" },
   ],
 };
@@ -265,7 +270,7 @@ export default function Shell() {
         </div>
       )}
 
-      <div className="lg:pl-[268px]">
+      <div className="min-w-0 lg:pl-[268px]">
         <header className="sticky top-0 z-30 border-b border-white/6 bg-ink-950/60 backdrop-blur-2xl">
           <div className="flex h-[68px] items-center gap-3 px-4 sm:px-6 lg:px-8">
             <button className="icon-btn lg:hidden" onClick={() => setDrawer(true)} aria-label="Меню">
@@ -364,7 +369,7 @@ export default function Shell() {
           </div>
         </header>
 
-        <main className="px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-14 lg:pt-8">
+        <main className="min-w-0 max-w-full px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-14 lg:pt-8">
           <div className="mx-auto max-w-[1220px]">
             <Outlet />
           </div>

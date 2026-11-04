@@ -8,6 +8,7 @@ import {
   ClipboardList,
   GraduationCap,
   Library,
+  Map,
   ScrollText,
   ShieldCheck,
   Sparkles,
@@ -36,10 +37,14 @@ import { RoleBadge } from "./shared";
 const QUICK_LINKS = [
   { to: "/app/admin/users", icon: Users, title: "Пользователи", text: "Роли, доступы, пароли и блокировки.", tone: "iris" },
   { to: "/app/admin/topics", icon: BookOpen, title: "Темы и предметы", text: "Каталог обучения и порядок тем.", tone: "cyan" },
+  { to: "/app/admin/courses", icon: GraduationCap, title: "Курсы", text: "Темы для класса и учителя.", tone: "violet" },
+  { to: "/app/admin/textbooks", icon: Library, title: "Пособия и книги", text: "Загрузка PDF и привязка тем.", tone: "green" },
+  { to: "/app/admin/padruchnik", icon: BookOpen, title: "e-padruchnik", text: "Поиск и импорт учебников.", tone: "cyan" },
   { to: "/app/admin/orgs", icon: Building2, title: "Организация", text: "Города, школы, классы и учителя.", tone: "green" },
   { to: "/app/admin/shop", icon: Store, title: "Магазин", text: "Товары, события, витрина и подарки.", tone: "gold" },
   { to: "/app/admin/youtube", icon: Youtube, title: "YouTube", text: "Видео к темам и кэш подборки.", tone: "rose" },
   { to: "/app/admin/ai", icon: Bot, title: "Искусственный интеллект", text: "Провайдер, модель и лимиты.", tone: "violet" },
+  { to: "/app/admin/map", icon: Map, title: "Карта", text: "Тайлы и стартовый вид.", tone: "iris" },
 ];
 
 const TONES = {

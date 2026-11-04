@@ -106,6 +106,42 @@ export const api = {
     request(path, { ...opts, method: "POST", form }),
 };
 
+/** Скачать файл с авторизацией (PDF пособия) и отдать браузеру. */
+export async function downloadFile(path, fileName = "document.pdf") {
+  const headers = {};
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch("/api/v1" + path, { headers, credentials: "same-origin" });
+  if (!response.ok) {
+    throw new ApiError(`Не удалось скачать файл (${response.status})`, response.status, "download");
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName || "document.pdf";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  return blob;
+}
+
+/** Открыть PDF в новой вкладке с авторизацией. */
+export async function openFile(path) {
+  const headers = {};
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch("/api/v1" + path, { headers, credentials: "same-origin" });
+  if (!response.ok) {
+    throw new ApiError(`Не удалось открыть файл (${response.status})`, response.status, "download");
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank", "noopener,noreferrer");
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
 /* ------------------------------------------------------------------ login */
 export async function login(loginName, password) {
   const data = await request("/auth/login", {

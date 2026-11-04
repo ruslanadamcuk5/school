@@ -70,10 +70,16 @@ export function Button({
   );
 }
 
-export function IconButton({ icon: Icon, label, className = "", ...props }) {
+export function IconButton({ icon: Icon, label, className = "", loading = false, ...props }) {
   return (
-    <button className={`icon-btn ${className}`} aria-label={label} title={label} {...props}>
-      <Icon size={18} />
+    <button
+      className={`icon-btn ${className}`}
+      aria-label={label}
+      title={label}
+      disabled={loading || props.disabled}
+      {...props}
+    >
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <Icon size={18} />}
     </button>
   );
 }

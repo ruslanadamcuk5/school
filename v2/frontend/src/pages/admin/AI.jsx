@@ -8,6 +8,7 @@ import {
   RefreshCw,
   Server,
   Sparkles,
+  Trash2,
   Wand2,
   Zap,
 } from "lucide-react";
@@ -103,6 +104,17 @@ export function AdminAI() {
     }
   };
 
+  const clearCache = async () => {
+    if (!window.confirm("Удалить готовые объяснения и кэш вопросов? Они будут созданы заново при следующем запросе.")) return;
+    try {
+      const payload = await run(() => api.post("/admin/ai/clear-cache", {}));
+      toast(`Очищено объяснений: ${payload.removed ?? 0}`, "info");
+      await refresh();
+    } catch (err) {
+      toast(err.message || "Не удалось очистить кэш", "error");
+    }
+  };
+
   const total = Number(stats.total || 0);
   const ok = Number(stats.ok || 0);
   const percent = total ? Math.round((ok / total) * 100) : 0;
@@ -125,6 +137,7 @@ export function AdminAI() {
         actions={
           <>
             <Button variant="ghost" icon={RefreshCw} loading={busy} onClick={test}>Проверить модель</Button>
+            <Button variant="ghost" icon={Trash2} loading={pending} onClick={clearCache}>Очистить кэш</Button>
             <Button icon={Check} loading={pending} onClick={save}>Сохранить</Button>
           </>
         }
@@ -139,8 +152,8 @@ export function AdminAI() {
         <StatCard icon={Cpu} label="Провайдер" value={settings.provider_name || settings.provider || "—"} hint={settings.has_key ? "ключ задан" : "ключ не задан"} tone="cyan" />
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
-        <Card className="p-5 sm:p-6">
+      <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+        <Card className="min-w-0 p-5 sm:p-6">
           <SectionTitle
             eyebrow="Подключение"
             title="Провайдер и модель"
@@ -164,7 +177,7 @@ export function AdminAI() {
                       <option key={provider.id} value={provider.id}>{provider.name}</option>
                     ))}
                   </Select>
-                  {activeProvider?.note && <p className="mt-1.5 text-[11px] leading-relaxed text-mist-600">{activeProvider.note}</p>}
+                  {activeProvider?.note && <p className="mt-1.5 break-words text-[11px] leading-relaxed text-mist-600">{activeProvider.note}</p>}
                 </Field>
 
                 {activeProvider?.models?.length ? (
@@ -237,7 +250,7 @@ export function AdminAI() {
               ))}
             </div>
             {stats.last_error ? (
-              <p className="mt-4 line-clamp-4 rounded-xl border border-rose-400/20 bg-rose-500/[0.06] px-3 py-2 text-[11px] leading-relaxed text-rose-200/80">
+              <p className="mt-4 line-clamp-4 break-words rounded-xl border border-rose-400/20 bg-rose-500/[0.06] px-3 py-2 text-[11px] leading-relaxed text-rose-200/80">
                 {text(stats.last_error)}
               </p>
             ) : (

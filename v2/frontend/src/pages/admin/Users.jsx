@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
+  ArrowRight,
   Check,
   KeyRound,
   Mail,
@@ -53,6 +55,7 @@ function roleCounts(users) {
 }
 
 export function AdminUsers() {
+  const navigate = useNavigate();
   const { data, loading, error, refresh } = useApi("/admin/users");
   const { data: orgs } = useApi("/admin/orgs", { ttl: 120_000 });
   const [search, setSearch] = useState("");
@@ -237,12 +240,14 @@ export function AdminUsers() {
       ) : (
         <Card className="divide-y divide-white/6 p-2">
           {visible.map((user) => (
-            <div key={user.id} className="flex flex-col gap-3 rounded-xl px-3 py-3 transition hover:bg-white/[0.025] sm:flex-row sm:items-center">
-              <div className="flex min-w-0 flex-1 items-center gap-3">
+            <div key={user.id} className="flex min-w-0 flex-col gap-3 rounded-xl px-3 py-3 transition hover:bg-white/[0.025] sm:flex-row sm:items-center">
+              <Link to={`/app/admin/users/${user.id}`} className="flex min-w-0 flex-1 items-center gap-3">
                 <Avatar emoji={user.avatar || "🦊"} size={44} seed={user.login} />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="truncate text-sm font-bold text-white">{user.first_name} {user.last_name}</p>
+                    <span className="truncate text-sm font-bold text-white">
+                      {`${user.first_name || ""} ${user.last_name || ""}`.trim() || `@${user.login}`}
+                    </span>
                     <RoleBadge role={user.role} />
                     {!user.is_active && <Badge tone="rose">заблокирован</Badge>}
                   </div>
@@ -251,12 +256,13 @@ export function AdminUsers() {
                     {user.email ? ` · ${user.email}` : ""}
                     {user.school_name ? ` · ${user.school_name}` : ""}
                   </p>
-                  <p className="mt-0.5 text-[10px] text-mist-600">
+                  <p className="mt-0.5 truncate text-[10px] text-mist-600">
                     {user.last_login ? `Вход: ${relativeTime(user.last_login)}` : `Создан: ${formatDate(user.created_at, { year: true })}`}
                   </p>
                 </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
+              </Link>
+              <div className="flex w-full shrink-0 flex-wrap items-center gap-1.5 sm:w-auto sm:justify-end">
+                <Button size="sm" variant="ghost" icon={ArrowRight} onClick={() => navigate(`/app/admin/users/${user.id}`)}>Открыть</Button>
                 <Button size="sm" variant="ghost" icon={Pencil} onClick={() => openEdit(user)}>Изменить</Button>
                 <IconButton icon={KeyRound} label="Сменить пароль" onClick={() => { setPwdUser(user); setPassword(""); }} />
                 <IconButton

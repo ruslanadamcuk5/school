@@ -230,14 +230,14 @@ export function AdminYouTube() {
         </Card>
       )}
 
-      <Card className="p-5 sm:p-6">
+      <Card className="min-w-0 p-5 sm:p-6">
         <SectionTitle
           eyebrow="Интеграция"
           title="Настройки"
           subtitle="Ключ хранится на сервере и не показывается в интерфейсе."
           action={<Badge tone={status.enabled && configured ? "green" : "gold"}><Settings2 size={12} /> {status.enabled && configured ? "активна" : "не готова"}</Badge>}
         />
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-5 grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div className="sm:col-span-2 lg:col-span-3">
             <Toggle
               value={form.enabled}

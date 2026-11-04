@@ -1,7 +1,12 @@
 export { AdminDashboard } from "./admin/Dashboard";
 export { AdminUsers } from "./admin/Users";
+export { AdminUserDetail } from "./admin/UserDetail";
 export { AdminTopics } from "./admin/Topics";
 export { AdminOrgs } from "./admin/Orgs";
+export { AdminCourses } from "./admin/Courses";
+export { AdminTextbooks, AdminTextbookDetail } from "./admin/Textbooks";
+export { AdminPadruchnik } from "./admin/Padruchnik";
+export { AdminMap } from "./admin/Map";
 export { AdminShop } from "./admin/Shop";
 export { AdminYouTube } from "./admin/YouTube";
 export { AdminAI } from "./admin/AI";

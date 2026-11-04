@@ -1,12 +1,15 @@
 """API: администрирование — пользователи, организации, темы, пособия, ИИ."""
 from __future__ import annotations
 
+import os
+
 from flask import jsonify, request
 
 from database import execute, query_all, query_one
 from services import ai as ai_service
 from services import auth as auth_service
 from services import learners as learners_service
+from services import library as library_service
 from services import map_settings as map_settings_service
 from services import orgs
 from services import textbooks as textbooks_service
@@ -267,6 +270,84 @@ def create_city():
     return jsonify({"ok": True, "id": city_id}), 201
 
 
+@bp.delete("/admin/cities/<int:city_id>")
+@require_user("admin")
+def delete_city(city_id: int):
+    if orgs.get_city(city_id) is None:
+        fail(404, "not_found", "Город не найден")
+    try:
+        orgs.delete_city(city_id)
+    except Exception as exc:  # noqa: BLE001
+        fail(409, "delete_failed", f"Не удалось удалить город: {exc}")
+    _log("delete", "city", str(city_id))
+    return jsonify({"ok": True})
+
+
+@bp.post("/admin/subjects")
+@require_user("admin")
+def create_subject():
+    data = json_body()
+    name = str(data.get("name") or "").strip()
+    if not name:
+        fail(400, "bad_name", "Введите название предмета")
+    slug = str(data.get("slug") or "").strip().lower() or topics_service.slugify(name, 40)
+    if orgs.get_subject_by_slug(slug) is not None:
+        fail(409, "slug_taken", "Предмет с таким кодом уже существует")
+    try:
+        subject_id = orgs.create_subject(
+            slug,
+            name,
+            str(data.get("icon") or "📘")[:8],
+            str(data.get("color") or "sky"),
+            str(data.get("description") or ""),
+        )
+    except Exception as exc:  # noqa: BLE001
+        fail(400, "create_failed", f"Не удалось создать предмет: {exc}")
+    _log("create", "subject", str(subject_id), name)
+    return jsonify({"ok": True, "id": subject_id, "slug": slug}), 201
+
+
+@bp.patch("/admin/subjects/<int:subject_id>")
+@require_user("admin")
+def update_subject(subject_id: int):
+    subject = orgs.get_subject(subject_id)
+    if subject is None:
+        fail(404, "not_found", "Предмет не найден")
+    data = json_body()
+    fields = {}
+    for key in ("name", "icon", "color", "description"):
+        if key in data:
+            fields[key] = str(data[key] or "").strip()
+    if not fields.get("name", subject["name"]):
+        fail(400, "bad_name", "Введите название предмета")
+    if "is_active" in data:
+        fields["is_active"] = 1 if data.get("is_active") else 0
+    if "order_index" in data:
+        fields["order_index"] = _as_int(data.get("order_index")) or 0
+    orgs.update_subject(subject_id, **fields)
+    _log("update", "subject", str(subject_id))
+    return jsonify(
+        {
+            "ok": True,
+            "subject": row_dict(orgs.get_subject(subject_id)),
+            "subjects": [row_dict(row) for row in orgs.list_subjects()],
+        }
+    )
+
+
+@bp.delete("/admin/subjects/<int:subject_id>")
+@require_user("admin")
+def delete_subject(subject_id: int):
+    if orgs.get_subject(subject_id) is None:
+        fail(404, "not_found", "Предмет не найден")
+    try:
+        orgs.delete_subject(subject_id)
+    except Exception as exc:  # noqa: BLE001
+        fail(409, "delete_failed", f"Не удалось удалить предмет: {exc}")
+    _log("delete", "subject", str(subject_id))
+    return jsonify({"ok": True})
+
+
 @bp.post("/admin/schools")
 @require_user("admin")
 def create_school():
@@ -520,6 +601,561 @@ def delete_textbook(textbook_id: int):
     return jsonify({"ok": True})
 
 
+def _as_int(value) -> int | None:
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        return None
+    return number
+
+
+def _topic_rows(textbook) -> list[dict]:
+    """Темы, которые можно привязать к пособию, вместе с текущими страницами."""
+    links = {
+        row["topic_slug"]: row
+        for row in textbooks_service.textbook_topics(textbook["id"])
+    }
+    available = topics_service.list_topics(
+        subject_id=textbook["subject_id"], grade=textbook["grade"]
+    )
+    rows = []
+    seen = set()
+    for topic in available:
+        link = links.get(topic["slug"])
+        rows.append(
+            {
+                "slug": topic["slug"],
+                "title": topic["title"],
+                "grade": topic["grade"],
+                "icon": topic["icon"],
+                "page": int(link["page"]) if link else 0,
+                "page_end": int(link["page_end"] or 0) if link else 0,
+            }
+        )
+        seen.add(topic["slug"])
+    # Старые привязки к темам другого класса/предмета не теряем.
+    for slug, link in links.items():
+        if slug in seen:
+            continue
+        topic = topics_service.get_topic(slug)
+        rows.append(
+            {
+                "slug": slug,
+                "title": (topic["title"] if topic else slug),
+                "grade": (topic["grade"] if topic else textbook["grade"]),
+                "icon": (topic["icon"] if topic else ""),
+                "page": int(link["page"] or 0),
+                "page_end": int(link["page_end"] or 0),
+            }
+        )
+    rows.sort(key=lambda item: (item["page"] or 10**6, item["title"] or ""))
+    return rows
+
+
+def _textbook_payload(textbook) -> dict:
+    data = row_dict(textbook)
+    data["topics_count"] = len(textbooks_service.textbook_topics(textbook["id"]))
+    books = query_all(
+        "SELECT id, owner_id, title FROM library_books WHERE textbook_id = ?",
+        (textbook["id"],),
+    )
+    data["library_books"] = [row_dict(book) for book in books]
+    data["file_url"] = f"/api/v1/admin/textbooks/{textbook['id']}/file"
+    return data
+
+
+@bp.get("/admin/textbooks/<int:textbook_id>")
+@require_user("admin")
+def admin_textbook_detail(textbook_id: int):
+    textbook = textbooks_service.get_textbook(textbook_id)
+    if textbook is None:
+        fail(404, "not_found", "Пособие не найдено")
+    return jsonify(
+        {
+            "ok": True,
+            "textbook": _textbook_payload(textbook),
+            "topics": _topic_rows(textbook),
+            "book": {
+                "id": textbook["id"],
+                "title": textbook["title"],
+                "pages": textbook["pages"],
+                "grade": textbook["grade"],
+            },
+        }
+    )
+
+
+@bp.post("/admin/textbooks")
+@require_user("admin")
+def admin_upload_textbook():
+    user = current_user()
+    upload = request.files.get("file")
+    if not upload or not upload.filename:
+        fail(400, "no_file", "Выберите PDF-файл книги")
+    form = request.form
+    subject_id = _as_int(form.get("subject_id"))
+    grade = _as_int(form.get("grade")) or 0
+    title = (form.get("title") or "").strip()
+    author = (form.get("author") or "").strip()
+    publisher = (form.get("publisher") or "").strip()
+    year = (form.get("year") or "").strip()
+    description = (form.get("description") or "").strip()
+    if not subject_id:
+        fail(400, "no_subject", "Выберите предмет")
+    if grade not in range(1, 12):
+        fail(400, "bad_grade", "Укажите класс книги (1–11)")
+    if not title:
+        title = os.path.splitext(os.path.basename(upload.filename))[0]
+
+    try:
+        filename, size = textbooks_service.save_upload(
+            upload, subject_id, grade, title
+        )
+    except ValueError as exc:
+        fail(400, "upload_failed", str(exc))
+
+    path = os.path.join(textbooks_service.upload_dir(), filename)
+    pages = textbooks_service.count_pdf_pages(path)
+    textbook_id = textbooks_service.create_textbook(
+        subject_id,
+        grade,
+        title,
+        filename,
+        original_name=upload.filename,
+        size_bytes=size,
+        pages=pages,
+        author=author,
+        publisher=publisher,
+        year=year,
+        description=description,
+        uploaded_by=int(user["id"]),
+    )
+    imported = {"linked": 0, "created": 0}
+    if str(form.get("auto_link") or "") in {"1", "true", "on", "yes"}:
+        imported = textbooks_service.import_topics_from_pdf(textbook_id)
+
+    class_ids = []
+    for raw in form.getlist("class_ids"):
+        for chunk in str(raw).split(","):
+            value = _as_int(chunk.strip())
+            if value:
+                class_ids.append(value)
+    book_id = None
+    if class_ids:
+        book_id = library_service.create_book(
+            owner_id=int(user["id"]),
+            textbook_id=textbook_id,
+            subject_id=subject_id,
+            grade=grade,
+            title=title,
+            author=author,
+            description=description,
+            class_ids=class_ids,
+        )
+    _log("upload", "textbook", str(textbook_id), title)
+    return jsonify(
+        {
+            "ok": True,
+            "textbook_id": textbook_id,
+            "book_id": book_id,
+            "pages": pages,
+            "topics_linked": imported.get("linked", 0),
+            "topics_created": imported.get("created", 0),
+        }
+    ), 201
+
+
+@bp.patch("/admin/textbooks/<int:textbook_id>")
+@require_user("admin")
+def admin_update_textbook(textbook_id: int):
+    textbook = textbooks_service.get_textbook(textbook_id)
+    if textbook is None:
+        fail(404, "not_found", "Пособие не найдено")
+    data = json_body()
+    fields = {}
+    for key in ("title", "author", "publisher", "year", "description"):
+        if key in data:
+            fields[key] = str(data[key] or "").strip()
+    if "subject_id" in data:
+        subject_id = _as_int(data.get("subject_id"))
+        if not subject_id:
+            fail(400, "bad_subject", "Выберите предмет")
+        fields["subject_id"] = subject_id
+    if "grade" in data:
+        grade = _as_int(data.get("grade"))
+        if grade not in range(1, 12):
+            fail(400, "bad_grade", "Класс должен быть от 1 до 11")
+        fields["grade"] = grade
+    textbooks_service.update_textbook(textbook_id, **fields)
+    _log("update", "textbook", str(textbook_id))
+    return jsonify(
+        {"ok": True, "textbook": _textbook_payload(textbooks_service.get_textbook(textbook_id))}
+    )
+
+
+@bp.post("/admin/textbooks/<int:textbook_id>/import-topics")
+@require_user("admin")
+def admin_import_textbook_topics(textbook_id: int):
+    if textbooks_service.get_textbook(textbook_id) is None:
+        fail(404, "not_found", "Пособие не найдено")
+    result = textbooks_service.import_topics_from_pdf(textbook_id)
+    _log("import_topics", "textbook", str(textbook_id), str(result))
+    message = (
+        f"Из содержания PDF сформировано тем: {result['linked']} "
+        f"(новых: {result['created']})"
+        if result.get("linked")
+        else "В PDF не найдено оглавление — добавьте темы вручную."
+    )
+    return jsonify({"ok": True, **result, "message": message})
+
+
+@bp.put("/admin/textbooks/<int:textbook_id>/topics")
+@require_user("admin")
+def admin_set_textbook_topics(textbook_id: int):
+    textbook = textbooks_service.get_textbook(textbook_id)
+    if textbook is None:
+        fail(404, "not_found", "Пособие не найдено")
+    data = json_body()
+    items = data.get("topics")
+    mapping: dict[str, int] = {}
+    page_ends: dict[str, int] = {}
+    if isinstance(items, dict):
+        items = [
+            {"slug": slug, "page": page}
+            for slug, page in items.items()
+        ]
+    for item in items or []:
+        if not isinstance(item, dict):
+            continue
+        slug = str(item.get("slug") or "").strip()
+        page = _as_int(item.get("page"))
+        if not slug or not page or page < 1:
+            continue
+        mapping[slug] = page
+        end = _as_int(item.get("page_end"))
+        if end and end >= page:
+            page_ends[slug] = end
+    textbooks_service.set_textbook_topics(textbook_id, mapping, page_ends)
+    _log("link_topics", "textbook", str(textbook_id), f"тем: {len(mapping)}")
+    return jsonify(
+        {
+            "ok": True,
+            "linked": len(mapping),
+            "topics": _topic_rows(textbooks_service.get_textbook(textbook_id)),
+        }
+    )
+
+
+@bp.post("/admin/textbooks/<int:textbook_id>/topics/manual")
+@require_user("admin")
+def admin_add_textbook_topics(textbook_id: int):
+    textbook = textbooks_service.get_textbook(textbook_id)
+    if textbook is None:
+        fail(404, "not_found", "Пособие не найдено")
+    data = json_body()
+    raw = str(data.get("text") or data.get("topics") or "")
+    from services import pdf_topics
+
+    entries = pdf_topics.parse_manual_topics(raw)
+    if not entries:
+        fail(
+            400,
+            "parse_failed",
+            "Не удалось разобрать список. Формат: «Название — 12» на каждой строке.",
+        )
+    result = textbooks_service.add_topics_manually(textbook_id, entries)
+    _log("add_topics", "textbook", str(textbook_id), str(result))
+    return jsonify(
+        {
+            "ok": True,
+            "linked": result.get("linked", 0),
+            "created": result.get("created", 0),
+            "topics": _topic_rows(textbooks_service.get_textbook(textbook_id)),
+        }
+    )
+
+
+@bp.get("/admin/textbooks/<int:textbook_id>/file")
+@require_user("admin")
+def admin_textbook_file(textbook_id: int):
+    from flask import send_file
+
+    textbook = textbooks_service.get_textbook(textbook_id)
+    if textbook is None:
+        fail(404, "not_found", "Пособие не найдено")
+    path = textbooks_service.file_path(textbook)
+    if not os.path.exists(path):
+        fail(404, "no_file", "Файл пособия не найден")
+    return send_file(
+        path,
+        mimetype="application/pdf",
+        as_attachment=False,
+        download_name=textbook["original_name"] or textbook["filename"],
+        conditional=True,
+    )
+
+
+# ---------------------------------------------------------------- курсы
+def _courses_payload() -> dict:
+    return {
+        "ok": True,
+        "courses": [
+            row_dict(row) for row in orgs.list_courses()
+        ],
+        "subjects": [row_dict(row) for row in orgs.list_subjects(active_only=True)],
+        "schools": [row_dict(row) for row in orgs.list_schools()],
+        "classes": [row_dict(row) for row in orgs.list_classes()],
+        "teachers": [
+            user_payload(user)
+            for user in auth_service.list_users(role=auth_service.ROLE_TEACHER)
+        ],
+        "grades": list(range(1, 12)),
+    }
+
+
+@bp.get("/admin/courses")
+@require_user("admin")
+def admin_courses():
+    return jsonify(_courses_payload())
+
+
+@bp.post("/admin/courses")
+@require_user("admin")
+def admin_create_course():
+    data = json_body()
+    subject_id = _as_int(data.get("subject_id"))
+    title = str(data.get("title") or "").strip()
+    grade = _as_int(data.get("grade")) or 3
+    if not subject_id:
+        fail(400, "bad_subject", "Выберите предмет")
+    if not title:
+        fail(400, "bad_title", "Введите название курса")
+    if grade not in range(1, 12):
+        fail(400, "bad_grade", "Класс курса должен быть от 1 до 11")
+    course_id = orgs.create_course(
+        subject_id,
+        title,
+        grade,
+        description=str(data.get("description") or ""),
+        teacher_id=_as_int(data.get("teacher_id")),
+        school_id=_as_int(data.get("school_id")),
+    )
+    class_ids = [cid for cid in (_as_int(v) for v in data.get("class_ids") or []) if cid]
+    if class_ids:
+        orgs.set_course_classes(course_id, class_ids)
+    _log("create", "course", str(course_id), title)
+    return jsonify({"ok": True, "course_id": course_id, "course": row_dict(orgs.get_course(course_id))}), 201
+
+
+@bp.patch("/admin/courses/<int:course_id>")
+@require_user("admin")
+def admin_update_course(course_id: int):
+    if orgs.get_course(course_id) is None:
+        fail(404, "not_found", "Курс не найден")
+    data = json_body()
+    fields = {}
+    for key in ("title", "description"):
+        if key in data:
+            fields[key] = str(data[key] or "").strip()
+    for key in ("subject_id", "grade", "teacher_id", "school_id", "is_active"):
+        if key in data:
+            value = _as_int(data[key])
+            if key in {"subject_id", "grade"} and not value:
+                fail(400, "bad_value", f"Некорректное поле {key}")
+            if key == "grade" and value not in range(1, 12):
+                fail(400, "bad_grade", "Класс курса должен быть от 1 до 11")
+            fields[key] = value
+    orgs.update_course(course_id, **fields)
+    if "class_ids" in data:
+        class_ids = [cid for cid in (_as_int(v) for v in data.get("class_ids") or []) if cid]
+        orgs.set_course_classes(course_id, class_ids)
+    _log("update", "course", str(course_id))
+    return jsonify({"ok": True, "course": row_dict(orgs.get_course(course_id))})
+
+
+@bp.delete("/admin/courses/<int:course_id>")
+@require_user("admin")
+def admin_delete_course(course_id: int):
+    if orgs.get_course(course_id) is None:
+        fail(404, "not_found", "Курс не найден")
+    orgs.set_course_topics(course_id, [])
+    orgs.set_course_classes(course_id, [])
+    orgs.delete_course(course_id)
+    _log("delete", "course", str(course_id))
+    return jsonify({"ok": True})
+
+
+@bp.get("/admin/courses/<int:course_id>")
+@require_user("admin")
+def admin_course_detail(course_id: int):
+    course = orgs.get_course(course_id)
+    if course is None:
+        fail(404, "not_found", "Курс не найден")
+    linked = {row["topic_slug"]: row for row in orgs.course_topics(course_id)}
+    classes = {row["id"]: row for row in orgs.course_classes(course_id)}
+    topics = []
+    for topic in topics_service.list_topics(
+        subject_id=course["subject_id"], grade=course["grade"]
+    ):
+        link = linked.get(topic["slug"])
+        topics.append(
+            {
+                "slug": topic["slug"],
+                "title": topic["title"],
+                "grade": topic["grade"],
+                "icon": topic["icon"],
+                "enabled": bool(link["enabled"]) if link else False,
+                "order_index": int(link["order_index"]) if link else 0,
+            }
+        )
+    return jsonify(
+        {
+            "ok": True,
+            "course": row_dict(course),
+            "topics": topics,
+            "classes": [row_dict(row) for row in orgs.course_classes(course_id)],
+            "all_classes": [row_dict(row) for row in orgs.list_classes()],
+            "class_ids": list(classes),
+        }
+    )
+
+
+@bp.put("/admin/courses/<int:course_id>/topics")
+@require_user("admin")
+def admin_set_course_topics(course_id: int):
+    course = orgs.get_course(course_id)
+    if course is None:
+        fail(404, "not_found", "Курс не найден")
+    data = json_body()
+    valid = {
+        row["slug"]
+        for row in topics_service.list_topics(
+            subject_id=course["subject_id"], grade=course["grade"]
+        )
+    }
+    items = data.get("topics") or []
+    selected: list[str] = []
+    enabled: dict[str, bool] = {}
+    if isinstance(items, dict):
+        items = [{"slug": key, "enabled": value} for key, value in items.items()]
+    for item in items:
+        if isinstance(item, str):
+            slug = item
+            state = True
+        else:
+            slug = str(item.get("slug") or "").strip()
+            state = bool(item.get("enabled", True))
+        if slug in valid and slug not in selected:
+            selected.append(slug)
+            enabled[slug] = state
+    orgs.set_course_topics(course_id, selected, enabled)
+    if "class_ids" in data:
+        class_ids = [cid for cid in (_as_int(v) for v in data.get("class_ids") or []) if cid]
+        orgs.set_course_classes(course_id, class_ids)
+    _log("course_topics", "course", str(course_id), f"тем: {len(selected)}")
+    return jsonify({"ok": True, "topics": len(selected)})
+
+
+@bp.post("/admin/courses/<int:course_id>/topics")
+@require_user("admin")
+def admin_add_course_topic(course_id: int):
+    course = orgs.get_course(course_id)
+    if course is None:
+        fail(404, "not_found", "Курс не найден")
+    data = json_body()
+    title = str(data.get("title") or "").strip()
+    if not title:
+        fail(400, "bad_title", "Введите название темы")
+    slug = topics_service.create_topic(
+        course["subject_id"],
+        course["grade"],
+        title,
+        description=str(data.get("description") or ""),
+    )
+    current = [row["topic_slug"] for row in orgs.course_topics(course_id)]
+    orgs.set_course_topics(course_id, current + [slug])
+    _log("create", "topic", slug, title)
+    return jsonify({"ok": True, "slug": slug}), 201
+
+
+# ------------------------------------------------------- детали пользователя
+@bp.get("/admin/users/<int:user_id>")
+@require_user("admin")
+def admin_user_detail(user_id: int):
+    user = auth_service.get_user(user_id)
+    if user is None:
+        fail(404, "not_found", "Пользователь не найден")
+    payload = user_payload(user)
+    # Код ребёнка нужен родителю для привязки, а админу — чтобы его подсказать.
+    if payload is not None and "child_code" in user.keys() and user["child_code"]:
+        payload["child_code"] = user["child_code"]
+    role = user["role"]
+
+    def related(rows):
+        out = []
+        for row in rows:
+            item = user_payload(row) or {}
+            if "relation" in row.keys():
+                item["relation"] = row["relation"]
+            out.append(item)
+        return out
+
+    classes = (
+        [row_dict(row) for row in orgs.classes_of_student(user_id)]
+        if role == auth_service.ROLE_STUDENT
+        else []
+    )
+    children = (
+        related(auth_service.children_of(user_id))
+        if role == auth_service.ROLE_PARENT
+        else []
+    )
+    parents = (
+        related(auth_service.parents_of(user_id))
+        if role == auth_service.ROLE_STUDENT
+        else []
+    )
+    learners = [
+        row_dict(row)
+        for row in query_all(
+            """SELECT l.* FROM learners l
+                 JOIN learner_accounts la ON la.learner_id = l.id
+                WHERE la.user_id = ? ORDER BY l.id""",
+            (user_id,),
+        )
+    ]
+    attempts = [
+        row_dict(row)
+        for row in query_all(
+            """SELECT a.*, t.title AS topic_title
+                 FROM attempts a
+            LEFT JOIN topics t ON t.slug = a.topic_slug
+                WHERE a.learner_id IN (
+                    SELECT learner_id FROM learner_accounts WHERE user_id = ?
+                )
+                ORDER BY a.id DESC LIMIT 30""",
+            (user_id,),
+        )
+    ]
+    return jsonify(
+        {
+            "ok": True,
+            "user": payload,
+            "roles": list(ROLES),
+            "classes": classes,
+            "children": children,
+            "parents": parents,
+            "learners": learners,
+            "attempts": attempts,
+            "orgs": {
+                "cities": [row_dict(row) for row in orgs.list_cities()],
+                "schools": [row_dict(row) for row in orgs.list_schools()],
+                "classes": [row_dict(row) for row in orgs.list_classes()],
+            },
+        }
+    )
+
+
 # ------------------------------------------------------------------ ИИ
 @bp.get("/admin/ai")
 @require_user("admin")
@@ -564,6 +1200,18 @@ def ai_test():
     ok, message = ai_service.test_connection()
     _log("ai_test", "ai", "", message)
     return jsonify({"ok": ok, "message": message})
+
+
+@bp.post("/admin/ai/clear-cache")
+@require_user("admin")
+def ai_clear_cache():
+    """Удалить готовые объяснения и кэш вопросов — они будут созданы заново."""
+    removed = ai_service.clear_explanations()
+    from services import ai_quiz as ai_quiz_service
+
+    ai_quiz_service.clear_cache()
+    _log("ai_clear_cache", "ai", "", f"удалено {removed}")
+    return jsonify({"ok": True, "removed": removed})
 
 
 @bp.put("/admin/ai")
