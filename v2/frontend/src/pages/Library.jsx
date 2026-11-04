@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -14,6 +14,8 @@ import {
   Library,
   Sparkles,
   Star,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import {
   Badge,
@@ -203,6 +205,9 @@ export function BookPage() {
   const [page, setPage] = useState(requestedPage);
   const [pageSrc, setPageSrc] = useState("");
   const [pageError, setPageError] = useState("");
+  const [zoom, setZoom] = useState(false);
+  const [pageDraft, setPageDraft] = useState(String(requestedPage));
+  const readerRef = useRef(null);
   const { pending, run } = useAction();
 
   const book = data?.book;
@@ -217,6 +222,28 @@ export function BookPage() {
   useEffect(() => {
     if (pages > 0) setPage((value) => Math.min(Math.max(1, value), pages));
   }, [pages]);
+
+  useEffect(() => {
+    setPageDraft(String(page));
+  }, [page]);
+
+  // Пришли из темы по ссылке «Читать тему · с. N» — сразу показываем страницу.
+  useEffect(() => {
+    if (!book || !searchParams.get("page")) return undefined;
+    const timer = window.setTimeout(() => {
+      readerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [book, numeric, requestedPage]);
+
+  const commitPage = () => {
+    const next = Math.round(Number(pageDraft));
+    if (!Number.isFinite(next) || next < 1) {
+      setPageDraft(String(page));
+      return;
+    }
+    setPage(Math.min(pages || next, next));
+  };
 
   useEffect(() => {
     if (!book || pages <= 0) {
@@ -312,10 +339,71 @@ export function BookPage() {
       )}
 
       <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-        <Card className="p-5 sm:p-6">
+        <div ref={readerRef} className="min-w-0 scroll-mt-24 lg:order-2">
+          <Card className="p-5 sm:p-6">
+            <SectionTitle
+              eyebrow="Чтение"
+              title="Страницы пособия"
+              action={
+                pages > 0 ? (
+                  <Button size="sm" variant="ghost" icon={zoom ? ZoomOut : ZoomIn} onClick={() => setZoom((value) => !value)}>
+                    {zoom ? "Уместить" : "Крупнее"}
+                  </Button>
+                ) : null
+              }
+            />
+            {pages > 0 ? (
+              <>
+                <div className={`mt-4 rounded-2xl border border-white/8 bg-ink-950 ${zoom ? "overflow-auto" : "overflow-hidden"}`}>
+                  {pageSrc ? (
+                    <img
+                      src={pageSrc}
+                      alt={`Страница ${page}`}
+                      className={zoom ? "w-[170%] max-w-none" : "w-full"}
+                    />
+                  ) : (
+                    <div className="flex min-h-64 items-center justify-center px-4 py-10 text-center text-xs text-mist-500">
+                      {pageError || "Загружаем страницу…"}
+                    </div>
+                  )}
+                </div>
+                <div className="mt-4 flex items-center justify-between gap-2">
+                  <Button variant="ghost" icon={ChevronLeft} disabled={page <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>
+                    Назад
+                  </Button>
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-mist-500">
+                    <input
+                      aria-label="Номер страницы"
+                      inputMode="numeric"
+                      value={pageDraft}
+                      onChange={(event) => setPageDraft(event.target.value.replace(/[^0-9]/g, ""))}
+                      onBlur={commitPage}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          commitPage();
+                        }
+                      }}
+                      className="w-14 rounded-lg border border-white/10 bg-ink-900 px-2 py-1.5 text-center text-xs font-bold text-white outline-none focus:border-iris-400/50"
+                    />
+                    <span>/ {pages}</span>
+                  </div>
+                  <Button variant="ghost" icon={ChevronRight} disabled={page >= pages} onClick={() => setPage((value) => Math.min(pages, value + 1))}>
+                    Дальше
+                  </Button>
+                </div>
+                <Progress value={Math.round((page / pages) * 100)} className="mt-3" />
+              </>
+            ) : (
+              <EmptyState icon="📖" title="Файл не загружен" text="У пособия нет PDF-файла, но темы доступны для изучения." />
+            )}
+          </Card>
+        </div>
+
+        <Card className="min-w-0 p-5 sm:p-6 lg:order-1">
           <SectionTitle eyebrow="Содержание" title="Темы в пособии" subtitle="Переходите к теме, чтобы прочитать объяснение и потренироваться." />
           <div className="mt-5 space-y-2">
-            {topics.length === 0 && <EmptyState icon="📄" title="Темы не привязаны" text="Пособие можно читать постранично справа." />}
+            {topics.length === 0 && <EmptyState icon="📄" title="Темы не привязаны" text="Пособие можно читать постранично выше." />}
             {topics.map((topic) => (
               <Link
                 key={`${topic.topic_slug}-${topic.page || 0}`}
@@ -334,31 +422,6 @@ export function BookPage() {
               </Link>
             ))}
           </div>
-        </Card>
-
-        <Card className="p-5 sm:p-6">
-          <SectionTitle eyebrow="Чтение" title="Страницы пособия" />
-          {pages > 0 ? (
-            <>
-              <div className="mt-4 overflow-hidden rounded-2xl border border-white/8 bg-ink-950">
-                {pageSrc ? (
-                  <img src={pageSrc} alt={`Страница ${page}`} className="w-full" />
-                ) : (
-                  <div className="flex min-h-64 items-center justify-center px-4 py-10 text-center text-xs text-mist-500">
-                    {pageError || "Загружаем страницу…"}
-                  </div>
-                )}
-              </div>
-              <div className="mt-4 flex items-center justify-between gap-2">
-                <Button variant="ghost" icon={ChevronLeft} disabled={page <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>Назад</Button>
-                <span className="text-xs font-bold text-mist-500">{page} / {pages}</span>
-                <Button variant="ghost" icon={ChevronRight} disabled={page >= pages} onClick={() => setPage((value) => Math.min(pages, value + 1))}>Дальше</Button>
-              </div>
-              <Progress value={Math.round((page / pages) * 100)} className="mt-3" />
-            </>
-          ) : (
-            <EmptyState icon="📖" title="Файл не загружен" text="У пособия нет PDF-файла, но темы доступны для изучения." />
-          )}
         </Card>
       </div>
     </div>

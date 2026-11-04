@@ -637,14 +637,13 @@ export function TopicPage() {
 
           <div className="flex flex-wrap gap-2">
             {primaryBook ? (
-              <Link to={readHref}>
-                <Button size="lg" variant="ghost" icon={BookOpen}>
-                  Читать тему{primaryBook.page ? ` · с. ${primaryBook.page}` : ""}
-                </Button>
+              <Link to={readHref} className="btn btn-ghost btn-lg">
+                <BookOpen size={16} />
+                Читать тему{primaryBook.page ? ` · с. ${primaryBook.page}` : ""}
               </Link>
             ) : (
-              <Link to="/app/library">
-                <Button size="lg" variant="ghost" icon={BookOpen}>Учебники</Button>
+              <Link to="/app/library" className="btn btn-ghost btn-lg">
+                <BookOpen size={16} /> Учебники
               </Link>
             )}
             {data.can_play && (
@@ -814,10 +813,9 @@ export function TopicPage() {
                 <SectionTitle eyebrow="Чтение" title="Текст темы" subtitle="Прочитайте и отметьте — за это начисляется опыт." />
                 <div className="flex flex-wrap items-center gap-2">
                   {primaryBook && (
-                    <Link to={readHref}>
-                      <Button size="sm" variant="ghost" icon={BookOpen}>
-                        Открыть PDF{primaryBook.page ? ` · стр. ${primaryBook.page}` : ""}
-                      </Button>
+                    <Link to={readHref} className="btn btn-ghost btn-sm">
+                      <BookOpen size={16} />
+                      Открыть PDF{primaryBook.page ? ` · стр. ${primaryBook.page}` : ""}
                     </Link>
                   )}
                   {topic.kind === "reading" && (
