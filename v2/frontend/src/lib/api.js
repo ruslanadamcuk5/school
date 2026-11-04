@@ -127,6 +127,19 @@ export async function downloadFile(path, fileName = "document.pdf") {
   return blob;
 }
 
+/** Загрузить файл с авторизацией и вернуть blob: URL для <img>. */
+export async function objectUrl(path) {
+  const headers = {};
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch("/api/v1" + path, { headers, credentials: "same-origin" });
+  if (!response.ok) {
+    throw new ApiError(`Не удалось загрузить страницу (${response.status})`, response.status, "file");
+  }
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
+}
+
 /** Открыть PDF в новой вкладке с авторизацией. */
 export async function openFile(path) {
   const headers = {};

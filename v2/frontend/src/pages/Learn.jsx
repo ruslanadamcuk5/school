@@ -513,6 +513,10 @@ export function TopicPage() {
   const topic = data?.topic;
   const tone = subjectColor(topic?.color);
   const methods = data?.methods || [];
+  const primaryBook = (data?.books || [])[0];
+  const readHref = primaryBook
+    ? `/app/library/-${primaryBook.id}?page=${primaryBook.page || 1}`
+    : "/app/library";
 
   const openTab = async (key) => {
     setTab(key);
@@ -587,7 +591,7 @@ export function TopicPage() {
 
   const tabs = [
     { key: "overview", label: "Обзор" },
-    { key: "text", label: "Текст темы" },
+    ...(data.can_read ? [{ key: "text", label: "Текст темы" }] : []),
     { key: "videos", label: "Видео" },
     ...(data.can_quiz ? [{ key: "quiz", label: "Тест" }] : []),
   ];
@@ -625,6 +629,17 @@ export function TopicPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            {primaryBook ? (
+              <Link to={readHref}>
+                <Button size="lg" variant="ghost" icon={BookOpen}>
+                  Читать тему{primaryBook.page ? ` · с. ${primaryBook.page}` : ""}
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/app/library">
+                <Button size="lg" variant="ghost" icon={BookOpen}>Учебники</Button>
+              </Link>
+            )}
             {data.can_play && (
               <>
                 <Button size="lg" icon={Play} loading={pending} onClick={() => start("practice")}>Тренировка</Button>
@@ -699,7 +714,7 @@ export function TopicPage() {
                   {data.books.map((book) => (
                     <Link
                       key={book.id}
-                      to={`/app/library/${book.id}`}
+                      to={`/app/library/-${book.id}?page=${book.page || 1}`}
                       className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.025] px-3.5 py-3 transition hover:border-iris-400/30"
                     >
                       <BookOpen size={17} className="text-iris-300" />
@@ -790,11 +805,20 @@ export function TopicPage() {
             <div>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <SectionTitle eyebrow="Чтение" title="Текст темы" subtitle="Прочитайте и отметьте — за это начисляется опыт." />
-                {topic.kind === "reading" && (
-                  <Button size="sm" icon={CheckCircle2} loading={pending} onClick={markRead} disabled={readMarked}>
-                    {readMarked ? "Прочитано" : "Отметить прочитанным"}
-                  </Button>
-                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  {primaryBook && (
+                    <Link to={readHref}>
+                      <Button size="sm" variant="ghost" icon={BookOpen}>
+                        Открыть PDF{primaryBook.page ? ` · стр. ${primaryBook.page}` : ""}
+                      </Button>
+                    </Link>
+                  )}
+                  {topic.kind === "reading" && (
+                    <Button size="sm" icon={CheckCircle2} loading={pending} onClick={markRead} disabled={readMarked}>
+                      {readMarked ? "Прочитано" : "Отметить прочитанным"}
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <div className="mt-6 space-y-5">

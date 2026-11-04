@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
@@ -29,7 +29,7 @@ import {
   Tabs,
 } from "../components/ui";
 import { useAction, useApi, toast } from "../lib/hooks";
-import { api, invalidate } from "../lib/api";
+import { api, invalidate, objectUrl } from "../lib/api";
 import { formatDate, plural, subjectColor } from "../lib/format";
 
 function BookCard({ book }) {
@@ -194,17 +194,54 @@ export function LibraryPage() {
 
 export function BookPage() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const numeric = Number(id);
   const isTextbook = numeric < 0;
   const path = isTextbook ? `/books/${Math.abs(numeric)}` : `/library/books/${numeric}`;
   const { data, loading, error, refresh } = useApi(path);
-  const [page, setPage] = useState(1);
+  const requestedPage = Math.max(1, Number(searchParams.get("page")) || 1);
+  const [page, setPage] = useState(requestedPage);
+  const [pageSrc, setPageSrc] = useState("");
+  const [pageError, setPageError] = useState("");
   const { pending, run } = useAction();
 
   const book = data?.book;
   const topics = data?.topics || [];
   const recommendations = (data?.recommendations || []).filter((item) => !item.done);
   const pages = Number(book?.pages || 0);
+
+  useEffect(() => {
+    setPage(requestedPage);
+  }, [numeric, requestedPage]);
+
+  useEffect(() => {
+    if (pages > 0) setPage((value) => Math.min(Math.max(1, value), pages));
+  }, [pages]);
+
+  useEffect(() => {
+    if (!book || pages <= 0) {
+      setPageSrc("");
+      return undefined;
+    }
+    let alive = true;
+    let url = "";
+    setPageError("");
+    setPageSrc("");
+    objectUrl(`/books/${book.textbook_id || Math.abs(numeric)}/page/${page}.png`)
+      .then((next) => {
+        if (!alive) {
+          URL.revokeObjectURL(next);
+          return;
+        }
+        url = next;
+        setPageSrc(next);
+      })
+      .catch((err) => { if (alive) setPageError(err.message || "Не удалось загрузить страницу"); });
+    return () => {
+      alive = false;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [book, page, pages, numeric]);
 
   const markDone = async (rec) => {
     try {
@@ -304,13 +341,13 @@ export function BookPage() {
           {pages > 0 ? (
             <>
               <div className="mt-4 overflow-hidden rounded-2xl border border-white/8 bg-ink-950">
-                <img
-                  key={page}
-                  src={`/api/v1/books/${book.textbook_id || Math.abs(numeric)}/page/${page}.png`}
-                  alt={`Страница ${page}`}
-                  className="w-full"
-                  loading="lazy"
-                />
+                {pageSrc ? (
+                  <img src={pageSrc} alt={`Страница ${page}`} className="w-full" />
+                ) : (
+                  <div className="flex min-h-64 items-center justify-center px-4 py-10 text-center text-xs text-mist-500">
+                    {pageError || "Загружаем страницу…"}
+                  </div>
+                )}
               </div>
               <div className="mt-4 flex items-center justify-between gap-2">
                 <Button variant="ghost" icon={ChevronLeft} disabled={page <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>Назад</Button>
