@@ -142,6 +142,13 @@ export function ParentAssignmentsPage() {
   }, [topics]);
 
   useEffect(() => {
+    if (children.length === 1 && selectedChildIds.size === 0) {
+      setSelectedChildIds(new Set([String(children[0].user.id)]));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [children, selectedChildIds.size]);
+
+  useEffect(() => {
     if (!subjectId || !effectiveGrade) {
       setTopics([]);
       setTopicError("");
