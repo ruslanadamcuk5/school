@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { CheckCircle2, Clock, Play, Send, Sparkles, Trophy } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Clock, Play, Send, Sparkles, Trophy } from "lucide-react";
 import {
   Badge,
   Button,
@@ -9,7 +8,6 @@ import {
   ErrorState,
   Field,
   Input,
-  Modal,
   PageHeader,
   Progress,
   SectionTitle,
@@ -20,7 +18,7 @@ import {
   Textarea,
 } from "../components/ui";
 import { useAction, useApi, toast } from "../lib/hooks";
-import { api, invalidate, objectUrl } from "../lib/api";
+import { api, objectUrl } from "../lib/api";
 import { formatDateTime, scoreTone } from "../lib/format";
 
 const TASK_TYPES = [
@@ -365,28 +363,21 @@ function AssignmentForm({
   const selectedChildren = children.filter((child) => selectedChildIds.has(String(child.user.id)));
 
   return (
-    <Modal
-      open={true}
-      onClose={onClose}
-      title="Новое задание для детей"
-      description="Выберите детей, предмет, тему и тип задания. Диктант и чтение можно озвучить."
-      size="lg"
-      footer={
-        <>
-          <Button variant="ghost" onClick={onClose}>
-            Отмена
-          </Button>
-          <Button
-            icon={Send}
-            loading={false}
-            onClick={onCreate}
-            disabled={selectedChildren.length === 0}
-          >
-            Создать задание
-          </Button>
-        </>
-      }
-    >
+    <Card className="p-5 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div>
+          <h3 className="font-display text-lg font-semibold text-white">
+            Новое задание для детей
+          </h3>
+          <p className="mt-1 text-sm text-mist-500">
+            Выберите детей, предмет, тему и тип задания. Диктант и чтение можно озвучить.
+          </p>
+        </div>
+        <Button variant="ghost" icon={ArrowLeft} onClick={onClose}>
+          Назад к списку
+        </Button>
+      </div>
+
       <div className="space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Дети" hint="Кто получит задание">
@@ -608,7 +599,7 @@ function AssignmentForm({
           </p>
         </div>
       </div>
-    </Modal>
+    </Card>
   );
 }
 
