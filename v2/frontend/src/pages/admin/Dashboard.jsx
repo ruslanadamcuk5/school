@@ -61,7 +61,7 @@ function AiHealth({ ai }) {
   const ok = Number(ai?.ok || 0);
   const percent = total ? Math.round((ok / total) * 100) : 0;
   return (
-    <Card className="p-5 sm:p-6">
+    <Card className="min-w-0 p-5 sm:p-6">
       <SectionTitle
         eyebrow="ИИ"
         title="Подсказки и объяснения"
@@ -87,7 +87,7 @@ function AiHealth({ ai }) {
         <Progress value={percent} />
       </div>
       {ai?.last_error ? (
-        <p className="mt-3 line-clamp-2 rounded-xl border border-rose-400/20 bg-rose-500/[0.06] px-3 py-2 text-[11px] text-rose-200/80">
+        <p className="mt-3 line-clamp-2 break-words rounded-xl border border-rose-400/20 bg-rose-500/[0.06] px-3 py-2 text-[11px] text-rose-200/80">
           {text(ai.last_error)}
         </p>
       ) : (
@@ -179,7 +179,7 @@ export function AdminDashboard() {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-        <Card className="p-5 sm:p-6">
+        <Card className="min-w-0 p-5 sm:p-6">
           <SectionTitle eyebrow="Аудитория" title="Роли в системе" subtitle="Кто пользуется платформой прямо сейчас." />
           <div className="mt-5 space-y-3">
             {["admin", "teacher", "parent", "student"].map((role) => {
@@ -221,11 +221,11 @@ export function AdminDashboard() {
           </div>
         </Card>
 
-        <AiHealth ai={ai} />
+        <div className="min-w-0"><AiHealth ai={ai} /></div>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <div>
+        <div className="min-w-0">
           <SectionTitle
             eyebrow="Люди"
             title="Недавние пользователи"
@@ -246,7 +246,7 @@ export function AdminDashboard() {
           </Card>
         </div>
 
-        <div>
+        <div className="min-w-0">
           <SectionTitle
             eyebrow="События"
             title="Журнал действий"

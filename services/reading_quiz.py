@@ -249,6 +249,44 @@ def _description_question(topic: Any) -> dict[str, Any] | None:
     )
 
 
+def _subject_question(topic: Any) -> dict[str, Any] | None:
+    """Самый последний офлайн-вариант: к какому предмету относится тема.
+
+    Нужен, когда у темы нет ни читаемого текста, ни описания (например,
+    скан пособия без текстового слоя), а ИИ временно недоступен. Лучше один
+    простой вопрос, чем ошибка «тест не сформирован».
+    """
+    if isinstance(topic, dict):
+        title = str(topic.get("title") or "").strip()
+        subject = str(topic.get("subject_name") or "").strip()
+    else:
+        title = str(topic["title"] or "").strip()
+        subject = (
+            str(topic["subject_name"] or "").strip()
+            if "subject_name" in topic.keys()
+            else ""
+        )
+    if not title or not subject:
+        return None
+    rows = query_all(
+        """SELECT DISTINCT name FROM subjects
+            WHERE COALESCE(name, '') <> '' AND name <> ?
+            ORDER BY name""",
+        (subject,),
+    )
+    others = [str(row["name"]) for row in rows][:3]
+    if len(others) < 3:
+        return None
+    return task(
+        f"К какому предмету относится тема «{title}»?",
+        subject,
+        answer_type="choice",
+        choices=shuffle_options([subject, *others]),
+        solution=f"Тема «{title}» относится к предмету «{subject}».",
+        difficulty=1,
+    )
+
+
 def _excerpt(pages: list[tuple[int | None, str]], limit: int = 6000) -> str:
     """Фрагмент читаемого текста пособия для модели ИИ."""
     parts: list[str] = []
@@ -290,12 +328,21 @@ def build_questions(
         script=script,
         user_id=user_id,
     ))
-    if len(pool) < count and readable_pages:
+    # Если текстовый слой целиком «грязный» (скан, сбитая кодировка), всё
+    # равно пробуем cloze: отдельные предложения могут быть читаемыми.
+    text_pages = readable_pages or [
+        (page, text) for page, text in pages if (text or "").strip()
+    ]
+    if len(pool) < count and text_pages:
         pool.extend(
-            _cloze_questions(readable_pages, (count - len(pool)) * 2, script)
+            _cloze_questions(text_pages, (count - len(pool)) * 2, script)
         )
     if not pool:
         fallback = _description_question(topic)
+        if fallback:
+            pool.append(fallback)
+    if not pool:
+        fallback = _subject_question(topic)
         if fallback:
             pool.append(fallback)
 

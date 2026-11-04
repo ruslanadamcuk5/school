@@ -228,7 +228,7 @@ export default function StudentDashboard() {
 
       <div className="grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
         {/* daily + assignments */}
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-5">
           <Card className="p-5 sm:p-6">
             <SectionTitle
               eyebrow="План дня"
@@ -344,7 +344,7 @@ export default function StudentDashboard() {
         </div>
 
         {/* right column */}
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-5">
           <Card className="p-5">
             <SectionTitle eyebrow="Сегодня" title="Расписание" action={<Link to="/app/schedule" className="text-xs font-bold text-iris-300 hover:text-white">Всё →</Link>} />
             <div className="mt-4 space-y-2">

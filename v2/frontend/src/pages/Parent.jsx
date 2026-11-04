@@ -383,13 +383,13 @@ export function ParentChild() {
         <ArrowLeft size={15} /> К семье
       </button>
 
-      <Card className="relative overflow-hidden p-6 sm:p-7">
+      <Card className="relative overflow-hidden p-5 sm:p-7">
         <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-iris-500/20 blur-3xl" />
-        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
-          <Avatar emoji={learner.avatar || "🦊"} size={84} seed={data?.user?.login} ring />
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
+          <Avatar emoji={learner.avatar || "🦊"} size={72} seed={data?.user?.login} ring />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-display text-2xl font-semibold text-white">{learner.name}</h1>
+              <h1 className="break-words font-display text-xl font-semibold text-white sm:text-2xl">{learner.name}</h1>
               <Badge tone="iris">{learner.grade} класс</Badge>
               {stats.streak_days > 0 && <Badge tone="gold"><Flame size={11} /> серия {stats.streak_days}</Badge>}
             </div>
@@ -402,14 +402,14 @@ export function ParentChild() {
                 : "Геолокация пока не передавалась"}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="ghost" icon={MapPin} onClick={() => navigate(`/app/parent/map?child=${learnerId}`)}>На карте</Button>
-            <Button icon={LifeBuoy} onClick={() => navigate(`/app/parent/help?child=${learnerId}`)}>Помочь</Button>
+          <div className="grid grid-cols-2 gap-2 sm:flex">
+            <Button variant="ghost" icon={MapPin} className="w-full sm:w-auto" onClick={() => navigate(`/app/parent/map?child=${learnerId}`)}>На карте</Button>
+            <Button icon={LifeBuoy} className="w-full sm:w-auto" onClick={() => navigate(`/app/parent/help?child=${learnerId}`)}>Помочь</Button>
           </div>
         </div>
       </Card>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard icon={Trophy} label="Уровень" value={level.level} hint={level.title} tone="iris" />
         <StatCard icon={Target} label="Точность" value={`${stats.accuracy || 0}%`} hint={`${stats.total_correct || 0} из ${stats.total_attempts || 0}`} tone="cyan" />
         <StatCard icon={Star} label="Звёзды" value={stats.topics_three_stars || 0} hint={`${stats.topics_started || 0} тем начато`} tone="gold" />

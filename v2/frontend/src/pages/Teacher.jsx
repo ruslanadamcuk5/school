@@ -21,6 +21,7 @@ import {
   Send,
   Sparkles,
   Star,
+  Target,
   Trash2,
   Upload,
   UserRound,
@@ -555,12 +556,12 @@ export function TeacherStudent() {
     <div className="space-y-6">
       <button onClick={() => navigate("/app/teacher/students")} className="inline-flex items-center gap-1.5 text-sm font-semibold text-mist-500 hover:text-white"><ArrowLeft size={15} /> К ученикам</button>
 
-      <Card className="relative overflow-hidden p-6">
+      <Card className="relative overflow-hidden p-5 sm:p-6">
         <div className="pointer-events-none absolute -right-20 -top-24 h-56 w-56 rounded-full bg-iris-500/20 blur-3xl" />
-        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
-          <Avatar emoji={learner?.avatar || student.avatar || "🦊"} size={76} seed={student.login} ring />
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
+          <Avatar emoji={learner?.avatar || student.avatar || "🦊"} size={68} seed={student.login} ring />
           <div className="min-w-0 flex-1">
-            <h1 className="font-display text-2xl font-semibold text-white">{student.first_name} {student.last_name}</h1>
+            <h1 className="break-words font-display text-xl font-semibold text-white sm:text-2xl">{student.first_name} {student.last_name}</h1>
             <p className="mt-1 text-xs text-mist-500">@{student.login} · {data?.classes?.[0]?.title || "класс не назначен"}</p>
             <div className="mt-3 max-w-xs">
               <div className="mb-1 flex items-center justify-between text-[10px] font-bold text-mist-500">
@@ -570,12 +571,12 @@ export function TeacherStudent() {
               <Progress value={level.percent} />
             </div>
           </div>
-          <Link to={`/app/teacher/assignments?new=1&student=${student.id}`}><Button icon={Plus}>Дать задание</Button></Link>
+          <Link to={`/app/teacher/assignments?new=1&student=${student.id}`} className="w-full sm:w-auto"><Button icon={Plus} className="w-full sm:w-auto">Дать задание</Button></Link>
         </div>
       </Card>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={TargetIcon} label="Точность" value={`${stats.accuracy || 0}%`} hint={`${stats.total_correct || 0} из ${stats.total_attempts || 0}`} tone="cyan" />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard icon={Target} label="Точность" value={`${stats.accuracy || 0}%`} hint={`${stats.total_correct || 0} из ${stats.total_attempts || 0}`} tone="cyan" />
         <StatCard icon={Star} label="Звёзды" value={stats.topics_three_stars || 0} tone="gold" />
         <StatCard icon={TrophyIcon} label="Уровень" value={level.level} hint={level.title} tone="iris" />
         <StatCard icon={ClipboardList} label="Работ сдано" value={results.length} tone="green" />
@@ -639,8 +640,6 @@ export function TeacherStudent() {
   );
 }
 
-// aliases keep imports tidy without pulling more icons
-const TargetIcon = (props) => <span {...props} />;
 const TrophyIcon = Star;
 
 /* ------------------------------------------------------------------ assignments */

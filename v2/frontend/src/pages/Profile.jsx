@@ -97,17 +97,17 @@ export default function ProfilePage() {
         actions={<Badge tone="iris"><UserRound size={12} /> {ROLE_LABEL[user?.role] || "Профиль"}</Badge>}
       />
 
-      <Card className="relative overflow-hidden p-6 sm:p-8">
+      <Card className="relative overflow-hidden p-5 sm:p-8">
         <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-iris-500/20 blur-3xl" />
-        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center">
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
           <Avatar
             emoji={isStudent ? learner?.avatar || "🦊" : user?.avatar || "👤"}
-            size={96}
+            size={isStudent ? 76 : 84}
             seed={user?.login}
             ring
           />
           <div className="min-w-0 flex-1">
-            <h2 className="font-display text-2xl font-semibold text-white">
+            <h2 className="break-words font-display text-xl font-semibold text-white sm:text-2xl">
               {user?.first_name} {user?.last_name}
             </h2>
             <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-mist-500">
@@ -127,16 +127,16 @@ export default function ProfilePage() {
             )}
           </div>
           {isStudent && (
-            <div className="flex gap-2">
-              <Link to="/app/shop"><Button variant="ghost" icon={Sparkles}>Магазин</Button></Link>
-              <Link to="/app/learn"><Button icon={Trophy}>Учиться</Button></Link>
+            <div className="grid grid-cols-2 gap-2 sm:flex">
+              <Link to="/app/shop" className="w-full sm:w-auto"><Button variant="ghost" icon={Sparkles} className="w-full sm:w-auto">Магазин</Button></Link>
+              <Link to="/app/learn" className="w-full sm:w-auto"><Button icon={Trophy} className="w-full sm:w-auto">Учиться</Button></Link>
             </div>
           )}
         </div>
       </Card>
 
       {isStudent && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard icon={Trophy} label="Уровень" value={level.level} hint={stats.level_title || "Новичок"} tone="iris" />
           <StatCard icon={Flame} label="Серия" value={stats.streak_days || 0} suffix={plural(stats.streak_days || 0, ["день", "дня", "дней"])} tone="gold" />
           <StatCard icon={Target} label="Точность" value={`${stats.accuracy || 0}%`} hint={`${stats.total_correct || 0} из ${stats.total_attempts || 0}`} tone="cyan" />
@@ -197,10 +197,10 @@ export default function ProfilePage() {
                 subtitle="Передайте его родителю — он привяжет ваш профиль и увидит прогресс."
               />
               <div className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:items-center">
-                <div className="flex-1 rounded-xl border border-iris-400/25 bg-ink-950/40 px-4 py-3 text-center">
-                  <p className="font-display text-2xl font-semibold tracking-[0.3em] text-white">{user.child_code}</p>
+                <div className="min-w-0 flex-1 rounded-xl border border-iris-400/25 bg-ink-950/40 px-2.5 py-3 text-center sm:px-4">
+                  <p className="break-all font-display text-xl font-semibold tracking-[0.18em] text-white sm:text-2xl sm:tracking-[0.3em]">{user.child_code}</p>
                 </div>
-                <Button variant="ghost" icon={copied ? Check : Copy} onClick={copyCode}>
+                <Button variant="ghost" icon={copied ? Check : Copy} onClick={copyCode} className="w-full sm:w-auto">
                   {copied ? "Скопировано" : "Копировать"}
                 </Button>
               </div>

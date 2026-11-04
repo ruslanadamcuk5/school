@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -319,8 +319,8 @@ function QuizModal({ open, slug, onClose, onDone }) {
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-iris-400/25 bg-iris-500/10 text-3xl">🧠</div>
           <h4 className="mt-4 font-display text-lg font-semibold text-white">Проверим, как усвоена тема</h4>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-mist-500">
-            Несколько вопросов с вариантами ответов. Это не оценка — просто способ
-            заметить, что стоит перечитать.
+            Несколько вопросов по теме — с вариантами ответов или коротким ответом.
+            Это не оценка, а способ заметить, что стоит перечитать.
           </p>
         </div>
       )}
@@ -333,26 +333,36 @@ function QuizModal({ open, slug, onClose, onDone }) {
                 <span className="mr-2 text-iris-300">{question.index + 1}.</span>
                 {question.question}
               </p>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                {(question.choices || []).map((choice, choiceIndex) => {
-                  const active = answers[question.index] === choice;
-                  return (
-                    <button
-                      key={`${question.index}-${choiceIndex}`}
-                      type="button"
-                      onClick={() => setAnswers((current) => ({ ...current, [question.index]: choice }))}
-                      className={`rounded-xl border px-3 py-2.5 text-left text-xs font-semibold transition ${
-                        active
-                          ? "border-iris-400/50 bg-iris-500/15 text-white"
-                          : "border-white/8 bg-white/[0.02] text-mist-300 hover:border-white/20"
-                      }`}
-                    >
-                      <span className="mr-2 text-mist-600">{String.fromCharCode(65 + choiceIndex)}</span>
-                      {choice}
-                    </button>
-                  );
-                })}
-              </div>
+              {(question.choices || []).length > 0 ? (
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {question.choices.map((choice, choiceIndex) => {
+                    const active = answers[question.index] === choice;
+                    return (
+                      <button
+                        key={`${question.index}-${choiceIndex}`}
+                        type="button"
+                        onClick={() => setAnswers((current) => ({ ...current, [question.index]: choice }))}
+                        className={`rounded-xl border px-3 py-2.5 text-left text-xs font-semibold transition ${
+                          active
+                            ? "border-iris-400/50 bg-iris-500/15 text-white"
+                            : "border-white/8 bg-white/[0.02] text-mist-300 hover:border-white/20"
+                        }`}
+                      >
+                        <span className="mr-2 text-mist-600">{String.fromCharCode(65 + choiceIndex)}</span>
+                        {choice}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <input
+                  value={answers[question.index] || ""}
+                  onChange={(event) => setAnswers((current) => ({ ...current, [question.index]: event.target.value }))}
+                  placeholder={question.answer_type === "fraction" ? "Например, 3/4" : "Введите ответ"}
+                  inputMode={question.answer_type === "number" || question.answer_type === "fraction" ? "decimal" : "text"}
+                  className="mt-3 w-full rounded-xl border border-white/10 bg-ink-950/50 px-3.5 py-2.5 text-sm font-semibold text-white outline-none transition placeholder:text-mist-600 focus:border-iris-400/50"
+                />
+              )}
             </div>
           ))}
         </div>
@@ -400,6 +410,91 @@ function QuizModal({ open, slug, onClose, onDone }) {
   );
 }
 
+function ExplainModal({ open, slug, onClose }) {
+  const [content, setContent] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open) return undefined;
+    let alive = true;
+    setContent(null);
+    setError("");
+    setLoading(true);
+    api.get(`/ai/explain/${slug}`)
+      .then((data) => { if (alive) setContent(data); })
+      .catch((err) => { if (alive) setError(err.message || "Не удалось получить объяснение"); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [open, slug]);
+
+  const refresh = async () => {
+    setRefreshing(true);
+    setError("");
+    try {
+      const data = await api.post(`/ai/explain/${slug}/refresh`, {});
+      setContent(data);
+    } catch (err) {
+      setError(err.message || "Не удалось обновить объяснение");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Объяснение темы"
+      description="ИИ разберёт тему простыми словами, с примерами и вопросами для самопроверки."
+      size="lg"
+      footer={
+        <>
+          {content && !loading && (
+            <Button variant="ghost" icon={Sparkles} loading={refreshing} onClick={refresh}>
+              Обновить
+            </Button>
+          )}
+          <Button onClick={onClose}>Готово</Button>
+        </>
+      }
+    >
+      {loading && (
+        <div className="space-y-3 py-4">
+          <Skeleton className="h-5 w-2/3" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-11/12" />
+          <Skeleton className="h-4 w-4/5" />
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="rounded-xl border border-rose-400/25 bg-rose-500/10 px-3.5 py-3 text-xs font-semibold text-rose-200">
+          <p>{error}</p>
+          <p className="mt-1 font-normal text-rose-200/70">
+            Проверьте настройки ИИ в админ-панели или попробуйте позже.
+            Учебные материалы темы остаются доступны.
+          </p>
+        </div>
+      )}
+
+      {!loading && content && (
+        <div>
+          <div
+            className="text-sm leading-relaxed text-mist-300 [&_code]:rounded [&_code]:bg-white/10 [&_code]:px-1 [&_h3]:mt-5 [&_h3]:font-display [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-white [&_h4]:mt-4 [&_h4]:font-bold [&_h4]:text-white [&_li]:mt-1.5 [&_ol]:mt-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mt-3 [&_strong]:text-white [&_ul]:mt-3 [&_ul]:list-disc [&_ul]:pl-5"
+            dangerouslySetInnerHTML={{ __html: content.html || "" }}
+          />
+          <p className="mt-5 border-t border-white/8 pt-3 text-[11px] leading-relaxed text-mist-600">
+            Объяснение сгенерировано моделью{content.model ? ` «${content.model}»` : ""}.
+            ИИ может ошибаться — сверяйтесь с учебником.
+          </p>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
 export function TopicPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -407,6 +502,7 @@ export function TopicPage() {
   const { data, loading, error, refresh } = useApi(`/topics/${slug}`);
   const [tab, setTab] = useState("overview");
   const [quizOpen, setQuizOpen] = useState(false);
+  const [explainOpen, setExplainOpen] = useState(false);
   const [readText, setReadText] = useState(null);
   const [textLoading, setTextLoading] = useState(false);
   const [videos, setVideos] = useState(null);
@@ -535,6 +631,11 @@ export function TopicPage() {
                 <Button size="lg" variant="ghost" icon={Crown} loading={pending} onClick={() => start("boss")}>Босс</Button>
               </>
             )}
+            {data.ai_available && (
+              <Button size="lg" variant="ghost" icon={Sparkles} onClick={() => setExplainOpen(true)}>
+                Объяснить с ИИ
+              </Button>
+            )}
             {data.can_quiz && (
               <Button size="lg" variant={data.can_play ? "ghost" : "primary"} icon={Sparkles} onClick={() => setQuizOpen(true)}>
                 Пройти тест
@@ -548,7 +649,7 @@ export function TopicPage() {
 
       {tab === "overview" && (
         <div className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
-          <div className="space-y-5">
+          <div className="min-w-0 space-y-5">
             <Card className="p-5 sm:p-6">
               <SectionTitle
                 eyebrow="Способы решения"
@@ -666,6 +767,16 @@ export function TopicPage() {
                   </div>
                   <ArrowRight size={13} className="text-mist-600" />
                 </button>
+                {data.ai_available && (
+                  <button onClick={() => setExplainOpen(true)} className="flex w-full items-center gap-3 rounded-xl border border-iris-400/20 bg-iris-500/[0.06] px-3.5 py-3 text-left transition hover:border-iris-400/35">
+                    <Sparkles size={16} className="text-iris-300" />
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-white">Объяснить с ИИ</p>
+                      <p className="text-[10px] text-mist-500">Простыми словами и с примерами</p>
+                    </div>
+                    <ArrowRight size={13} className="text-mist-600" />
+                  </button>
+                )}
               </div>
             </Card>
           </div>
@@ -779,6 +890,12 @@ export function TopicPage() {
         slug={slug}
         onClose={() => setQuizOpen(false)}
         onDone={() => refresh()}
+      />
+
+      <ExplainModal
+        open={explainOpen}
+        slug={slug}
+        onClose={() => setExplainOpen(false)}
       />
     </div>
   );

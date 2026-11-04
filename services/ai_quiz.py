@@ -301,7 +301,9 @@ def questions(
     if not ai_service.is_enabled():
         return []
 
-    wanted = min(12, max(8, count + 4))
+    # Просим ровно столько вопросов, сколько нужно для теста: меньше ждать
+    # ответа модели и меньше шансов упереться в таймаут.
+    wanted = min(12, max(6, count))
     answer, error = ai_service.chat(
         [
             {"role": "system", "content": _SYSTEM},

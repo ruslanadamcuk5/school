@@ -158,6 +158,7 @@ body {
 }
 
 /* ------------------------------------------------------------------ surfaces */
+@layer components {
 .glass {
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.022));
   border: 1px solid var(--border-soft);
@@ -498,6 +499,7 @@ select.field option { background: #0b0e1d; color: #eef0ff; }
 .role-parent { --role: #4ee1f5; --role-soft: rgba(78, 225, 245, 0.12); }
 .role-teacher { --role: #34d399; --role-soft: rgba(52, 211, 153, 0.12); }
 .role-admin { --role: #f6c977; --role-soft: rgba(246, 201, 119, 0.12); }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

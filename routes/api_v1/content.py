@@ -41,6 +41,14 @@ def _subjects() -> list:
     return rows
 
 
+def _ai_available() -> bool:
+    """ИИ настроен и включён — можно показать кнопку объяснения темы."""
+    try:
+        return bool(ai_service.is_enabled())
+    except Exception:  # noqa: BLE001 - отсутствие настроек не должно ломать тему
+        return False
+
+
 def _visible_slugs(profile, subject_id: int) -> set[str]:
     """Темы, включённые учителем в курсах класса (пусто = все)."""
     if not profile["user_id"]:
@@ -332,7 +340,8 @@ def topic_detail(slug: str):
                 "videos": video_payload["youtube_videos"],
                 "videos_stale": video_payload["youtube_stale"],
                 "can_play": True,
-                "can_quiz": False,
+                "can_quiz": True,
+                "ai_available": _ai_available(),
             }
         )
 
@@ -384,6 +393,7 @@ def topic_detail(slug: str):
             "can_play": False,
             "can_quiz": True,
             "can_read": True,
+            "ai_available": _ai_available(),
         }
     )
 
@@ -450,21 +460,83 @@ def topic_text(slug: str):
     )
 
 
+def _curriculum_quiz_items(topic: dict, count: int = 8) -> list[dict]:
+    """Вопросы теста для темы учебной программы (математика 3–4 класса).
+
+    Задания берутся из тех же генераторов, что и тренировка: так тест всегда
+    собирается без внешнего ИИ и проверяет именно эту тему.
+    """
+    from content.generators import REGISTRY
+
+    generators: list[str] = []
+    for method in topic.get("methods") or []:
+        key = method.get("example")
+        if key in REGISTRY and key not in generators:
+            generators.append(key)
+    for key in topic.get("generators") or []:
+        if key in REGISTRY and key not in generators:
+            generators.append(key)
+    if not generators:
+        return []
+
+    items: list[dict] = []
+    seen: set[str] = set()
+    attempts = 0
+    while len(items) < count and attempts < count * 8:
+        generator = generators[len(items) % len(generators)]
+        attempts += 1
+        try:
+            item = rounds_service.build_task(generator, 1)
+        except Exception:  # noqa: BLE001 - один генератор не должен ломать тест
+            continue
+        question = str(item.get("question") or "").strip()
+        answer = str(item.get("answer") or "").strip()
+        if not question or not answer:
+            continue
+        key = question.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        choices = [str(choice) for choice in (item.get("choices") or [])]
+        kind = item.get("answer_type") or ("choice" if choices else "number")
+        if kind == "choice" and not choices:
+            continue
+        items.append(
+            {
+                "question": question,
+                "answer": answer,
+                "accept": [str(value) for value in (item.get("accept") or [])],
+                "answer_type": kind,
+                "choices": choices,
+                "solution": str(item.get("solution") or ""),
+            }
+        )
+    return items
+
+
 @bp.get("/topics/<slug>/quiz")
 @require_learner
 def quiz_start(slug: str):
     profile = learner()
-    topic = topics_service.get_topic(slug)
-    if topic is None:
-        fail(404, "not_found", "Тема не найдена")
-    if topic["source"] == "curriculum" or topic["kind"] == "practice":
-        fail(400, "not_reading", "Тест доступен только для тем-чтения")
-    if int(topic["grade"]) != int(profile["grade"]):
-        fail(403, "grade_mismatch", "Тема другого класса")
+    curriculum = topic_by_slug(slug)
+    if curriculum:
+        if int(curriculum["grade"]) != int(profile["grade"]):
+            fail(403, "grade_mismatch", "Тема другого класса")
+        questions = _curriculum_quiz_items(curriculum, 8)
+        title = curriculum["title"]
+    else:
+        topic = topics_service.get_topic(slug)
+        if topic is None:
+            fail(404, "not_found", "Тема не найдена")
+        if topic["source"] == "curriculum" or topic["kind"] == "practice":
+            fail(400, "not_reading", "Тест для этой темы пока недоступен")
+        if int(topic["grade"]) != int(profile["grade"]):
+            fail(403, "grade_mismatch", "Тема другого класса")
+        questions = reading_quiz.build_questions(
+            topic, 8, user_id=int(profile["user_id"]) if profile["user_id"] else None
+        )
+        title = topic["title"]
 
-    questions = reading_quiz.build_questions(
-        topic, 8, user_id=int(profile["user_id"]) if profile["user_id"] else None
-    )
     if not questions:
         fail(
             409,
@@ -477,6 +549,8 @@ def quiz_start(slug: str):
         {
             "question": item["question"],
             "answer": str(item.get("answer", "")),
+            "accept": [str(value) for value in (item.get("accept") or [])],
+            "answer_type": item.get("answer_type") or "choice",
             "choices": item.get("choices") or [],
             "solution": item.get("solution", ""),
         }
@@ -492,12 +566,13 @@ def quiz_start(slug: str):
         {
             "ok": True,
             "quiz_id": quiz_id,
-            "topic": {"slug": slug, "title": topic["title"]},            "questions": [
+            "topic": {"slug": slug, "title": title},
+            "questions": [
                 {
                     "index": index,
                     "question": item["question"],
                     "choices": item["choices"],
-                    "answer_type": "choice",
+                    "answer_type": item["answer_type"],
                 }
                 for index, item in enumerate(items)
             ],
@@ -537,7 +612,12 @@ def quiz_submit(slug: str):
     for index, item in enumerate(state["items"]):
         given = answers[index] if index < len(answers) else ""
         correct, expected = check_answer(
-            given, {"answer": item["answer"], "answer_type": "choice"}
+            given,
+            {
+                "answer": item["answer"],
+                "answer_type": item.get("answer_type") or "choice",
+                "accept": item.get("accept") or [],
+            },
         )
         if correct:
             correct_count += 1

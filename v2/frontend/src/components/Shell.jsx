@@ -272,14 +272,14 @@ export default function Shell() {
 
       <div className="relative z-10 min-w-0 lg:pl-[268px]">
         <header className="sticky top-0 z-30 border-b border-white/6 bg-ink-950/60 backdrop-blur-2xl">
-          <div className="flex h-[68px] items-center gap-3 px-4 sm:px-6 lg:px-8">
+          <div className="flex h-[68px] items-center gap-2 px-3 sm:gap-3 sm:px-6 lg:px-8">
             <button className="icon-btn lg:hidden" onClick={() => setDrawer(true)} aria-label="Меню">
               <Menu size={19} />
             </button>
 
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-mist-600">
-                <span>{todayLabel()}</span>
+            <div className="min-w-0 flex-1 overflow-hidden">
+              <div className="flex min-w-0 items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-mist-600">
+                <span className="hidden truncate min-[380px]:inline">{todayLabel()}</span>
                 <span className="hidden sm:inline">·</span>
                 <span className="hidden sm:inline">Школьник</span>
               </div>
