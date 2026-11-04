@@ -737,20 +737,23 @@ def book_info(textbook_id: int):
     if not _can_read_textbook(textbook_id):
         fail(403, "forbidden", "Книга недоступна")
     links = textbooks_service.textbook_topics(textbook_id)
-    return jsonify(
-        {
-            "ok": True,
-            "book": row_dict(row),
-            "topics": [
-                {
-                    "topic_slug": link["topic_slug"],
-                    "page": link["page"],
-                    "page_end": link["page_end"],
-                }
-                for link in links
-            ],
-        }
-    )
+    topics = []
+    for link in links:
+        slug = link["topic_slug"]
+        curriculum = topic_by_slug(slug)
+        # Оглавление хранит только слаги и страницы; название берём из базы,
+        # а для тем учебной программы — из curriculum (в таблице topics их нет).
+        topics.append(
+            {
+                "topic_slug": slug,
+                "title": link["title"] or (curriculum or {}).get("title") or slug.replace("_", " "),
+                "icon": link["icon"] or (curriculum or {}).get("icon") or "📖",
+                "grade": link["grade"] or (curriculum or {}).get("grade"),
+                "page": link["page"],
+                "page_end": link["page_end"],
+            }
+        )
+    return jsonify({"ok": True, "book": row_dict(row), "topics": topics})
 
 
 def _page_cache_dir() -> Path:

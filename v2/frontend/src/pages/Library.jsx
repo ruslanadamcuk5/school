@@ -412,7 +412,7 @@ export function BookPage() {
               >
                 <span className="text-lg">{topic.icon || "📖"}</span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold text-white">{topic.title}</p>
+                  <p className="truncate text-sm font-bold text-white">{topic.title || topic.topic_slug}</p>
                   <p className="text-[11px] text-mist-500">
                     {topic.grade ? `${topic.grade} класс` : "тема"}
                     {topic.page ? ` · стр. ${topic.page}${topic.page_end && topic.page_end !== topic.page ? `–${topic.page_end}` : ""}` : ""}
