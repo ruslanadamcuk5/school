@@ -4,12 +4,14 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
+  Camera,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
   Clock,
   FileText,
+  ImagePlus,
   Info,
   Lightbulb,
   Mic,
@@ -35,7 +37,7 @@ import {
   Tabs,
 } from "../components/ui";
 import { useAction, useApi, toast } from "../lib/hooks";
-import { api, invalidate } from "../lib/api";
+import { api, invalidate, objectUrl } from "../lib/api";
 import { formatDate, formatDateTime, pct, plural, scoreTone, taskTypeLabel } from "../lib/format";
 
 function speak(text) {
@@ -155,6 +157,52 @@ export function AssignmentsPage() {
 }
 
 /* ---------------------------------------------------------------- detail */
+function AnswerPhotos({ urls = [] }) {
+  const [sources, setSources] = useState([]);
+  const key = urls.join("|");
+  useEffect(() => {
+    if (!urls.length) {
+      setSources([]);
+      return undefined;
+    }
+    let alive = true;
+    const created = [];
+    Promise.all(
+      urls.map((url) =>
+        objectUrl(url)
+          .then((src) => {
+            created.push(src);
+            return src;
+          })
+          .catch(() => null),
+      ),
+    ).then((list) => {
+      if (alive) setSources(list.filter(Boolean));
+    });
+    return () => {
+      alive = false;
+      created.forEach((src) => URL.revokeObjectURL(src));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  if (!urls.length) return null;
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      {sources.map((src, index) => (
+        <a
+          key={src}
+          href={src}
+          target="_blank"
+          rel="noreferrer"
+          className="overflow-hidden rounded-xl border border-white/8 bg-ink-950"
+        >
+          <img src={src} alt={`Фото решения ${index + 1}`} className="h-44 w-full object-cover" />
+        </a>
+      ))}
+    </div>
+  );
+}
+
 function ResultView({ payload }) {
   const result = payload.result;
   const details = payload.details || [];
@@ -187,6 +235,15 @@ function ResultView({ payload }) {
           </div>
         </div>
       </Card>
+
+      {(result.photo_urls || []).length > 0 && (
+        <Card className="p-5 sm:p-6">
+          <SectionTitle eyebrow="Фото" title="Фото решения" subtitle="Проверено подключённой моделью ИИ." />
+          <div className="mt-4">
+            <AnswerPhotos urls={result.photo_urls} />
+          </div>
+        </Card>
+      )}
 
       <Card className="p-5 sm:p-6">
         <SectionTitle eyebrow="Разбор" title="Ответы по заданиям" subtitle="Проверьте, где потеряли баллы." />
@@ -225,6 +282,9 @@ export function AssignmentPage() {
   const [startedAt, setStartedAt] = useState(null);
   const [elapsed, setElapsed] = useState(0);
   const [confirm, setConfirm] = useState(false);
+  const [photoMode, setPhotoMode] = useState(false);
+  const [photoFiles, setPhotoFiles] = useState([]);
+  const [photoPreviews, setPhotoPreviews] = useState([]);
   const { pending, run } = useAction();
 
   const assignment = data?.assignment;
@@ -238,6 +298,12 @@ export function AssignmentPage() {
     return () => clearInterval(timer);
   }, [started, startedAt]);
 
+  useEffect(() => {
+    const urls = photoFiles.map((file) => URL.createObjectURL(file));
+    setPhotoPreviews(urls);
+    return () => urls.forEach((url) => URL.revokeObjectURL(url));
+  }, [photoFiles]);
+
   const answeredCount = useMemo(
     () => questions.filter((question) => (answers[question.index] ?? "").trim()).length,
     [questions, answers],
@@ -246,6 +312,29 @@ export function AssignmentPage() {
   const begin = () => {
     setStarted(true);
     setStartedAt(Date.now());
+    setPhotoMode(Boolean(assignment?.allow_photo && !assignment?.allow_text));
+  };
+
+  const submitPhoto = async () => {
+    if (!photoFiles.length) {
+      toast("Прикрепите фото решения", "info");
+      return;
+    }
+    const form = new FormData();
+    form.append("answers", JSON.stringify(questions.map(() => "")));
+    form.append("duration_sec", String(elapsed));
+    photoFiles.forEach((file) => form.append("photos", file));
+    try {
+      const payload = await run(() => api.form(`/assignments/${id}/submit-photo`, form));
+      invalidate("/assignments");
+      invalidate("/map");
+      toast(payload.result ? `Фото проверены: ${payload.result.percent}%` : "Фото отправлены", "success");
+      setPhotoFiles([]);
+      setPhotoMode(false);
+      await refresh();
+    } catch (err) {
+      toast(err.message || "Не удалось отправить фото", "error");
+    }
   };
 
   const submit = async () => {
@@ -340,13 +429,100 @@ export function AssignmentPage() {
     );
   }
 
+  if (photoMode) {
+    return (
+      <div className="mx-auto max-w-4xl space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <button onClick={() => setStarted(false)} className="inline-flex items-center gap-1.5 text-sm font-semibold text-mist-500 hover:text-white">
+            <ArrowLeft size={15} /> К описанию
+          </button>
+          <Badge tone="gold"><Timer size={11} /> {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")}</Badge>
+        </div>
+
+        <Card className="p-5 sm:p-7">
+          <SectionTitle
+            eyebrow="Ответ на фото"
+            title="Сфотографируйте решение"
+            subtitle="Напишите номер задания и решение на листе. ИИ прочитает фото и покажет разбор."
+          />
+          <ol className="mt-5 space-y-2">
+            {questions.map((question, questionIndex) => (
+              <li key={question.index} className="rounded-xl border border-white/8 bg-white/[0.02] px-3.5 py-2.5">
+                <p className="text-sm font-semibold leading-relaxed text-white">
+                  <span className="mr-2 text-iris-300">{questionIndex + 1}.</span>
+                  {question.question}
+                </p>
+                {(question.choices || []).length > 0 && (
+                  <p className="mt-1 text-[11px] text-mist-500">Варианты: {question.choices.join(" · ")}</p>
+                )}
+              </li>
+            ))}
+          </ol>
+
+          <label className="mt-5 flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-8 text-center transition hover:border-iris-400/40">
+            <ImagePlus size={24} className="text-iris-300" />
+            <span className="text-sm font-semibold text-white">Выбрать фото решения</span>
+            <span className="text-[11px] text-mist-500">JPG, PNG или WebP · до 8 МБ · до 6 фото</span>
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              multiple
+              className="hidden"
+              onChange={(event) => setPhotoFiles(Array.from(event.target.files || []).slice(0, 6))}
+            />
+          </label>
+
+          {photoPreviews.length > 0 && (
+            <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
+              {photoPreviews.map((src, index) => (
+                <div key={src} className="relative overflow-hidden rounded-xl border border-white/10 bg-ink-950">
+                  <img src={src} alt={`Фото ${index + 1}`} className="h-28 w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setPhotoFiles((files) => files.filter((_, item) => item !== index))}
+                    className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-lg bg-ink-950/80 text-mist-300 hover:text-white"
+                    aria-label="Убрать фото"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Button icon={Send} loading={pending} onClick={submitPhoto} disabled={!photoFiles.length}>
+              Проверить фото
+            </Button>
+            {assignment.allow_text && (
+              <Button variant="ghost" icon={Camera} onClick={() => setPhotoMode(false)}>
+                Ответить здесь
+              </Button>
+            )}
+          </div>
+          {!assignment.allow_text && (
+            <p className="mt-3 text-[11px] leading-relaxed text-mist-500">
+              В этой работе принимается только фото письменного решения.
+            </p>
+          )}
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <button onClick={() => setStarted(false)} className="inline-flex items-center gap-1.5 text-sm font-semibold text-mist-500 hover:text-white">
           <ArrowLeft size={15} /> К описанию
         </button>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {assignment.allow_photo && (
+            <Button size="sm" variant="ghost" icon={Camera} onClick={() => setPhotoMode(true)}>
+              Ответить фото
+            </Button>
+          )}
           <Badge tone="iris">Вопрос {index + 1} из {questions.length}</Badge>
           <Badge tone="gold"><Timer size={11} /> {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")}</Badge>
         </div>

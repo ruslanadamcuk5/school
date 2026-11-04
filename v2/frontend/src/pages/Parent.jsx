@@ -22,6 +22,7 @@ import {
   LocateFixed,
   MapPin,
   MonitorSmartphone,
+  Play,
   RefreshCw,
   RotateCcw,
   ShieldCheck,
@@ -264,6 +265,7 @@ export function ParentDashboard() {
           [Compass, "Карта и маршрут", "Где ребёнок сейчас и как прошёл день.", "/app/parent/map", "map"],
           [LifeBuoy, "Удалённая помощь", "Показать экран и подсказать прямо на телефоне.", "/app/parent/help", "help"],
           [Library, "Семейная библиотека", "Пособия класса и рекомендации учителя.", "/app/parent/library", "library"],
+          [Play, "Задания детям", "Тесты, диктанты и чтение с озвучкой для ребёнка.", "/app/parent/assignments", "assignments"],
         ].map(([Icon, title, text, to, key]) => (
           <Link key={key} to={to}>
             <Card hover className="h-full p-5">
@@ -1018,6 +1020,59 @@ export function ParentLibrary() {
   const [tab, setTab] = useState("books");
   const [search, setSearch] = useState("");
 
+  // recommendations modal
+  const [recOpen, setRecOpen] = useState(false);
+  const [recChildren, setRecChildren] = useState([]);
+  const [recTextbooks, setRecTextbooks] = useState([]);
+  const [recSubjects, setRecSubjects] = useState([]);
+  const [recChildId, setRecChildId] = useState("");
+  const [recTextbookId, setRecTextbookId] = useState("");
+  const [recTopicSlug, setRecTopicSlug] = useState("");
+  const [recNote, setRecNote] = useState("");
+  const [recLoading, setRecLoading] = useState(false);
+
+  const loadRecommendTopics = async () => {
+    setRecLoading(true);
+    try {
+      const data = await api.get("/parent/recommend/topics");
+      setRecChildren(data.children || []);
+      setRecTextbooks(data.textbooks || []);
+      setRecSubjects(data.subjects || []);
+    } catch (err) {
+      toast(err.message || "Не удалось загрузить пособия", "error");
+    } finally {
+      setRecLoading(false);
+    }
+  };
+
+  const resetRecForm = () => {
+    setRecChildId("");
+    setRecTextbookId("");
+    setRecTopicSlug("");
+    setRecNote("");
+  };
+
+  const submitRecommend = async () => {
+    if (!recChildId || !recTextbookId) {
+      toast("Выберите ребёнка и пособие", "error");
+      return;
+    }
+    try {
+      await api.post("/parent/recommend", {
+        student_ids: [recChildId],
+        textbook_id: recTextbookId,
+        topic_slug: recTopicSlug || undefined,
+        note: recNote,
+      });
+      toast("Рекомендация отправлена ребёнку", "success");
+      setRecOpen(false);
+      resetRecForm();
+      refresh();
+    } catch (err) {
+      toast(err.message || "Не удалось отправить рекомендацию", "error");
+    }
+  };
+
   const children = data?.children || [];
   const child = data?.child;
   const books = data?.books || [];
@@ -1039,7 +1094,14 @@ export function ParentLibrary() {
       <PageHeader
         title="Семейная библиотека"
         subtitle="Пособия класса и рекомендации учителя. Открывайте вместе — так интереснее."
-        actions={<Badge tone="iris"><Library size={12} /> {books.length} {plural(books.length, ["книга", "книги", "книг"])}</Badge>}
+        actions={
+          <>
+            <Badge tone="iris"><Library size={12} /> {books.length} {plural(books.length, ["книга", "книги", "книг"])}</Badge>
+            <Button icon={Sparkles} onClick={() => { loadRecommendTopics(); setRecOpen(true); }}>
+              Рекомендовать
+            </Button>
+          </>
+        }
       />
 
       {children.length > 0 && (
@@ -1135,6 +1197,66 @@ export function ParentLibrary() {
           Пособия открываются постранично — можно читать с телефона или планшета без скачивания.
         </div>
       </Card>
+
+      <Modal
+        open={recOpen}
+        onClose={() => setRecOpen(false)}
+        title="Рекомендовать тему ребёнку"
+        description="Выберите ребёнка, пособие и тему. Рекомендация появится в семейной библиотеке."
+        size="lg"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setRecOpen(false)}>
+              Отмена
+            </Button>
+            <Button icon={Sparkles} loading={recLoading} onClick={submitRecommend} disabled={!recChildId || !recTextbookId}>
+              Отправить рекомендацию
+            </Button>
+          </>
+        }
+      >
+        {recLoading && <div className="space-y-3 py-4"><Skeleton className="h-5 w-2/3" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-11/12" /></div>}
+        {!recLoading && (
+          <div className="space-y-4">
+            <Field label="Ребёнок">
+              <Select value={recChildId} onChange={(event) => setRecChildId(event.target.value)} className="w-full">
+                <option value="">Выберите ребёнка</option>
+                {recChildren.map((child) => (
+                  <option key={child.id} value={child.id}>
+                    {child.first_name} {child.last_name} ({child.grade} класс)
+                  </option>
+                ))}
+              </Select>
+            </Field>
+
+            <Field label="Пособие">
+              <Select value={recTextbookId} onChange={(event) => setRecTextbookId(event.target.value)} className="w-full">
+                <option value="">Выберите пособие</option>
+                {recTextbooks.map((book) => (
+                  <option key={book.id} value={book.id}>
+                    {book.title} — {book.author || "пособие"}{book.grade ? ` · ${book.grade} класс` : ""}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+
+            <Field label="Тема">
+              <Select value={recTopicSlug} onChange={(event) => setRecTopicSlug(event.target.value)} className="w-full">
+                <option value="">(весь пособие)</option>
+                {recTextbooks.length && recTextbooks.find((b) => String(b.id) === recTextbookId)?.topics.map((topic) => (
+                  <option key={topic.slug} value={topic.slug}>
+                    {topic.title || topic.slug}{topic.page ? ` · стр. ${topic.page}` : ""}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+
+            <Field label="Заметка ребёнку" hint="Необязательно. Что именно стоит прочитать.">
+              <Textarea value={recNote} onChange={(event) => setRecNote(event.target.value)} rows={2} placeholder="Например: прочитайте внимательно раздел про дроби…" />
+            </Field>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

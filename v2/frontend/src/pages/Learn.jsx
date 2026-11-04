@@ -5,6 +5,7 @@ import {
   ArrowRight,
   BookOpen,
   Bookmark,
+  Camera,
   Check,
   CheckCircle2,
   CircleHelp,
@@ -13,6 +14,7 @@ import {
   Eye,
   Gamepad2,
   GraduationCap,
+  ImagePlus,
   Lightbulb,
   Lock,
   Play,
@@ -40,7 +42,7 @@ import {
   Tabs,
 } from "../components/ui";
 import { useAction, useApi, useSession, toast } from "../lib/hooks";
-import { api, invalidate } from "../lib/api";
+import { api, invalidate, objectUrl } from "../lib/api";
 import { plural, subjectColor } from "../lib/format";
 
 /* ==================================================================== LIST */
@@ -239,6 +241,9 @@ function QuizModal({ open, slug, onClose, onDone }) {
   const [answers, setAnswers] = useState({});
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+  const [photoMode, setPhotoMode] = useState(false);
+  const [photoFiles, setPhotoFiles] = useState([]);
+  const [photoPreviews, setPhotoPreviews] = useState([]);
   const { pending, run } = useAction();
 
   const reset = () => {
@@ -247,6 +252,9 @@ function QuizModal({ open, slug, onClose, onDone }) {
     setAnswers({});
     setResult(null);
     setError("");
+    setPhotoMode(false);
+    setPhotoFiles([]);
+    setPhotoPreviews([]);
   };
 
   const start = async () => {
@@ -280,6 +288,30 @@ function QuizModal({ open, slug, onClose, onDone }) {
     }
   };
 
+  const submitPhoto = async () => {
+    if (!photoFiles.length) {
+      toast("Прикрепите фото решения", "info");
+      return;
+    }
+    const form = new FormData();
+    form.append("quiz_id", String(quiz.quiz_id));
+    photoFiles.forEach((file) => form.append("photos", file));
+    try {
+      const data = await run(() => api.form(`/topics/${slug}/quiz/photo`, form));
+      setResult(data);
+      setStage("result");
+      invalidate(`/topics/${slug}`);
+      invalidate("/map");
+      onDone?.();
+    } catch (err) {
+      setError(err.message || "Не удалось проверить фото");
+    } finally {
+      setPhotoFiles([]);
+      setPhotoPreviews([]);
+      setPhotoMode(false);
+    }
+  };
+
   const close = () => {
     onClose();
     setTimeout(reset, 150);
@@ -301,6 +333,11 @@ function QuizModal({ open, slug, onClose, onDone }) {
         ) : stage === "quiz" ? (
           <>
             <Button variant="ghost" onClick={close}>Закрыть</Button>
+            {quiz.can_photo && (
+              <Button size="sm" variant="ghost" icon={Camera} onClick={() => setPhotoMode(true)}>
+                Ответить фото
+              </Button>
+            )}
             <Button icon={Check} loading={pending} onClick={submit}>Проверить ответы</Button>
           </>
         ) : (
@@ -325,7 +362,76 @@ function QuizModal({ open, slug, onClose, onDone }) {
         </div>
       )}
 
-      {stage === "quiz" && quiz && (
+      {photoMode && (
+        <div className="mx-auto max-w-4xl space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <button onClick={() => setPhotoMode(false)} className="inline-flex items-center gap-1.5 text-sm font-semibold text-mist-500 hover:text-white">
+              <ArrowLeft size={15} /> К тесту
+            </button>
+          </div>
+
+          <Card className="p-5 sm:p-7">
+            <SectionTitle
+              eyebrow="Ответ на фото"
+              title="Сфотографируйте решение"
+              subtitle="Напишите ответы на листе, сфотографируйте и пришлите. Подключённая модель ИИ проверит работу и покажет разбор."
+            />
+            <ol className="mt-5 space-y-2">
+              {quiz.questions.map((question, questionIndex) => (
+                <li key={question.index} className="rounded-xl border border-white/8 bg-white/[0.02] px-3.5 py-2.5">
+                  <p className="text-sm font-semibold leading-relaxed text-white">
+                    <span className="mr-2 text-iris-300">{questionIndex + 1}.</span>
+                    {question.question}
+                  </p>
+                  {(question.choices || []).length > 0 && (
+                    <p className="mt-1 text-[11px] text-mist-500">Варианты: {question.choices.join(" · ")}</p>
+                  )}
+                </li>
+              ))}
+            </ol>
+
+            <label className="mt-5 flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-8 text-center transition hover:border-iris-400/40">
+              <ImagePlus size={24} className="text-iris-300" />
+              <span className="text-sm font-semibold text-white">Выбрать фото решения</span>
+              <span className="text-[11px] text-mist-500">JPG, PNG или WebP · до 8 МБ · до 6 фото</span>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                multiple
+                className="hidden"
+                onChange={(event) => setPhotoFiles(Array.from(event.target.files || []).slice(0, 6))}
+              />
+            </label>
+
+            {photoPreviews.length > 0 && (
+              <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {photoPreviews.map((src, index) => (
+                  <div key={src} className="relative overflow-hidden rounded-xl border border-white/10 bg-ink-950">
+                    <img src={src} alt={`Фото ${index + 1}`} className="h-28 w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setPhotoFiles((files) => files.filter((_, item) => item !== index))}
+                      className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-lg bg-ink-950/80 text-mist-300 hover:text-white"
+                      aria-label="Убрать фото"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Button icon={Send} loading={pending} onClick={submitPhoto} disabled={!photoFiles.length}>
+                Проверить фото
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {stage === "quiz" && quiz && !photoMode && (
         <div className="space-y-4">
           {quiz.questions.map((question) => (
             <div key={question.index} className="rounded-2xl border border-white/8 bg-white/[0.025] p-4">
@@ -387,6 +493,14 @@ function QuizModal({ open, slug, onClose, onDone }) {
               </Badge>
             </div>
           </div>
+
+          {result.ai_feedback && (
+            <div className="mt-4 rounded-xl border border-iris-400/20 bg-iris-500/[0.06] p-4">
+              <p className="mb-2 text-xs font-semibold text-iris-300">Разбор от ИИ</p>
+              <p className="text-[11px] leading-relaxed text-mist-300">{result.ai_feedback}</p>
+            </div>
+          )}
+
           <div className="mt-4 space-y-2">
             {result.results.map((item) => (
               <div key={item.index} className={`rounded-xl border px-3.5 py-3 ${item.correct ? "border-emerald-400/20 bg-emerald-500/[0.04]" : "border-rose-400/20 bg-rose-500/[0.04]"}`}>
@@ -398,6 +512,9 @@ function QuizModal({ open, slug, onClose, onDone }) {
                       Ваш ответ: <span className={item.correct ? "text-emerald-300" : "text-rose-300"}>{item.given || "—"}</span>
                       {!item.correct && <> · верно: <span className="text-emerald-300">{item.expected}</span></>}
                     </p>
+                    {item.ai_comment && (
+                      <p className="mt-1 text-[11px] leading-relaxed text-iris-200">{item.ai_comment}</p>
+                    )}
                     {item.solution && <p className="mt-1 text-[11px] leading-relaxed text-mist-600">{item.solution}</p>}
                   </div>
                 </div>

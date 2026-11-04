@@ -567,6 +567,7 @@ def quiz_start(slug: str):
             "ok": True,
             "quiz_id": quiz_id,
             "topic": {"slug": slug, "title": title},
+            "can_photo": ai_service.is_enabled(),
             "questions": [
                 {
                     "index": index,
@@ -658,6 +659,116 @@ def quiz_submit(slug: str):
             "stars": stars,
             "results": results,
             "badges": badges,
+        }
+    )
+
+
+@bp.post("/topics/<slug>/quiz/photo")
+@require_learner
+def quiz_submit_photo(slug: str):
+    """Проверить письменные ответы по фотографии через подключённый ИИ."""
+    profile = learner()
+    if not ai_service.is_enabled():
+        fail(
+            409,
+            "ai_disabled",
+            "Проверка по фото недоступна: ИИ не подключён. Ответьте вариантами "
+            "или попросите администратора подключить ИИ.",
+        )
+    try:
+        quiz_id = int(request.form.get("quiz_id") or 0)
+    except (TypeError, ValueError):
+        fail(400, "bad_quiz", "Не передан quiz_id")
+    state = rounds_service.load_round(quiz_id) if quiz_id else None
+    session_row = query_one(
+        "SELECT * FROM play_sessions WHERE id = ? AND learner_id = ?",
+        (quiz_id, profile["id"]),
+    )
+    if not state or not session_row or state.get("slug") != slug:
+        fail(404, "quiz_not_found", "Тест не найден. Начните заново.")
+    uploads = [
+        item for item in request.files.getlist("photos")
+        if item is not None and getattr(item, "filename", "")
+    ]
+    if not uploads:
+        fail(400, "no_photos", "Прикрепите хотя бы одну фотографию решения")
+
+    from services import quiz_review
+
+    token = f"{quiz_id}-{profile['id']}"
+    try:
+        photos = quiz_review.save_photos(uploads, int(profile["id"]), token)
+    except ValueError as exc:
+        fail(400, "bad_photo", str(exc))
+
+    items = state.get("items") or []
+    title = state.get("title") or slug
+    review = quiz_review.review_with_photos(
+        items,
+        photos,
+        title,
+        user_id=int(profile["user_id"]) if profile["user_id"] else None,
+    )
+    quiz_review.save_review(int(profile["id"]), slug, token, photos, review)
+    if review.get("ai_status") != "checked":
+        return jsonify(
+            {
+                "ok": False,
+                "ai_status": review.get("ai_status") or "failed",
+                "ai_feedback": review.get("ai_feedback")
+                or "Не удалось проверить фото. Попробуйте ещё раз или ответьте вариантами.",
+                "correct": 0,
+                "total": len(items),
+                "stars": 0,
+                "results": [],
+            }
+        )
+
+    details = review.get("details") or []
+    results = []
+    for index, entry in enumerate(details):
+        item = items[index] if index < len(items) else {}
+        correct = bool(entry.get("correct"))
+        results.append(
+            {
+                "index": index,
+                "question": entry.get("question") or item.get("question", ""),
+                "given": entry.get("given") or "фото ответа",
+                "expected": entry.get("answer") or item.get("answer", ""),
+                "correct": correct,
+                "solution": item.get("solution", ""),
+                "ai_comment": entry.get("ai_comment") or "",
+            }
+        )
+        progress_service.record_attempt(
+            profile["id"],
+            slug,
+            None,
+            "reading.quiz",
+            correct,
+            entry.get("given") or "",
+            entry.get("answer") or "",
+            0,
+            0,
+            mode="reading_quiz_photo",
+        )
+    correct_count = sum(1 for item in results if item["correct"])
+    stars = progress_service.apply_round_result(
+        profile["id"], slug, correct_count, len(results)
+    )
+    badges = rewards_service.grant_badges(profile["id"])
+    state["done"] = True
+    rounds_service.save_round(quiz_id, state)
+    return jsonify(
+        {
+            "ok": True,
+            "ai_status": "checked",
+            "ai_feedback": review.get("ai_feedback") or "",
+            "correct": correct_count,
+            "total": len(results),
+            "stars": stars,
+            "badges": badges,
+            "results": results,
         }
     )
 

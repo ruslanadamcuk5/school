@@ -71,6 +71,7 @@ const NAV = {
     { to: "/app/parent/map", label: "Карта", icon: "map" },
     { to: "/app/parent/help", label: "Помощь", icon: "help" },
     { to: "/app/parent/library", label: "Библиотека", icon: "library" },
+    { to: "/app/parent/assignments", label: "Задания", icon: "assignments" },
     { to: "/app/notifications", label: "Уведомления", icon: "notifications" },
   ],
   teacher: [
@@ -99,7 +100,7 @@ const NAV = {
 
 const BOTTOM = {
   student: ["/app", "/app/learn", "/app/assignments", "/app/library", "/app/shop"],
-  parent: ["/app/parent", "/app/parent/map", "/app/parent/help", "/app/parent/library"],
+  parent: ["/app/parent", "/app/parent/map", "/app/parent/help", "/app/parent/library", "/app/parent/assignments"],
   teacher: ["/app/teacher", "/app/teacher/classes", "/app/teacher/assignments", "/app/teacher/library"],
   admin: ["/app/admin", "/app/admin/users", "/app/admin/topics", "/app/admin/shop"],
 };

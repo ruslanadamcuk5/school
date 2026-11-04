@@ -538,6 +538,110 @@ def teacher_recommend_textbook():
     return jsonify({"ok": True, **result})
 
 
+# ------------------------------------------------------------------ родитель
+def _parent_children(user) -> list:
+    return [
+        child for child in auth_service.children_of(int(user["id"]))
+        if child["role"] == auth_service.ROLE_STUDENT
+    ]
+
+
+@bp.get("/parent/recommend/topics")
+@require_user("parent")
+def parent_recommend_topics():
+    """Пособия и темы для рекомендаций родителя своим детям."""
+    user = current_user()
+    children = []
+    grades = set()
+    for child in _parent_children(user):
+        classes = orgs.classes_of_student(int(child["id"]))
+        grade = int(classes[0]["grade"]) if classes else None
+        if grade:
+            grades.add(grade)
+        children.append(
+            {
+                "id": int(child["id"]),
+                "first_name": child["first_name"],
+                "last_name": child["last_name"],
+                "login": child["login"],
+                "grade": grade,
+            }
+        )
+    textbooks: dict[int, dict] = {}
+    for grade in sorted(grades) or [None]:
+        for item in library_service.textbooks_with_topics(grade=grade):
+            textbooks.setdefault(int(item["id"]), item)
+    return jsonify(
+        {
+            "ok": True,
+            "children": children,
+            "textbooks": [
+                {
+                    "id": item["id"],
+                    "title": item.get("title"),
+                    "author": item.get("author"),
+                    "subject_id": item.get("subject_id"),
+                    "subject_name": item.get("subject_name"),
+                    "subject_icon": item.get("subject_icon"),
+                    "grade": item.get("grade"),
+                    "book_id": item.get("book_id"),
+                    "topics": [
+                        {
+                            "slug": topic.get("topic_slug"),
+                            "title": topic.get("title") or topic.get("topic_slug"),
+                            "page": topic.get("page"),
+                            "page_end": topic.get("page_end"),
+                        }
+                        for topic in item.get("topics", [])
+                    ],
+                }
+                for item in textbooks.values()
+            ],
+            "subjects": [
+                row_dict(subject) for subject in orgs.list_subjects(active_only=True)
+            ],
+        }
+    )
+
+
+@bp.post("/parent/recommend")
+@require_user("parent")
+def parent_recommend_textbook():
+    """Рекомендовать тему пособия своим детям (как это делает учитель)."""
+    user = current_user()
+    data = json_body()
+    textbook_id = _optional_int(data.get("textbook_id"))
+    if not textbook_id:
+        fail(400, "bad_textbook", "Выберите пособие")
+    textbook = textbooks_service.get_textbook(textbook_id)
+    if textbook is None:
+        fail(404, "not_found", "Пособие не найдено")
+    topic_slug = str(data.get("topic_slug") or "").strip() or None
+    if topic_slug and not query_all(
+        "SELECT 1 AS x FROM textbook_topics WHERE textbook_id = ? AND topic_slug = ?",
+        (textbook_id, topic_slug),
+    ):
+        fail(400, "bad_topic", "Тема не относится к выбранному пособию")
+    own = {int(child["id"]) for child in _parent_children(user)}
+    student_ids = [
+        student_id
+        for student_id in _int_list(data.get("student_ids") or data.get("children"))
+        if student_id in own
+    ]
+    if not student_ids:
+        fail(400, "no_target", "Выберите ребёнка")
+    result = library_service.recommend_textbook_topic(
+        teacher_id=int(user["id"]),
+        textbook_id=textbook_id,
+        topic_slug=topic_slug,
+        student_ids=student_ids,
+        note=str(data.get("note") or ""),
+    )
+    if not result.get("ok"):
+        fail(400, "recommend_failed", result.get("error", "Не удалось порекомендовать"))
+    return jsonify({"ok": True, **result})
+
+
 @bp.post("/teacher/textbooks")
 @require_user("teacher", "admin")
 def teacher_upload_textbook():

@@ -29,6 +29,7 @@ const ParentDashboard = page(() => import("./pages/Parent"), "ParentDashboard");
 const ParentHelp = page(() => import("./pages/Parent"), "ParentHelp");
 const ParentLibrary = page(() => import("./pages/Parent"), "ParentLibrary");
 const ParentMap = page(() => import("./pages/Parent"), "ParentMap");
+const ParentAssignments = page(() => import("./pages/ParentAssignments"), "ParentAssignments");
 const TeacherAssignments = page(() => import("./pages/Teacher"), "TeacherAssignments");
 const TeacherClass = page(() => import("./pages/Teacher"), "TeacherClass");
 const TeacherClasses = page(() => import("./pages/Teacher"), "TeacherClasses");
@@ -214,6 +215,14 @@ export default function App() {
           element={
             <RequireRole roles={["parent"]}>
               <ParentLibrary />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="parent/assignments"
+          element={
+            <RequireRole roles={["parent"]}>
+              <ParentAssignments />
             </RequireRole>
           }
         />

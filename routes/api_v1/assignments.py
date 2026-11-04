@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from datetime import date
 
-from flask import jsonify, request
+from flask import jsonify, request, send_file
 
 from database import execute, query_one
 from services import assignment_photos
@@ -76,6 +76,9 @@ def _result_summary(result) -> dict | None:
         return None
     max_score = result["max_score"] or 0
     percent = round(result["score"] / max_score * 100) if max_score else 0
+    photos = assignments_service.result_photos(result)
+    assignment_id = result["assignment_id"] if "assignment_id" in result.keys() else 0
+    student_id = result["student_id"] if "student_id" in result.keys() else 0
     return {
         "score": result["score"],
         "max_score": max_score,
@@ -88,7 +91,12 @@ def _result_summary(result) -> dict | None:
         "ai_feedback": result["ai_feedback"] if "ai_feedback" in result.keys() else None,
         "ai_model": result["ai_model"] if "ai_model" in result.keys() else None,
         "ai_score": result["ai_score"] if "ai_score" in result.keys() else None,
-        "photos": assignments_service.result_photos(result),
+        "photos": photos,
+        "photo_urls": [
+            f"/assignments/{assignment_id}/photos/{student_id}/{path.rsplit('/', 1)[-1]}"
+            for path in photos
+            if path
+        ],
     }
 
 
@@ -251,6 +259,15 @@ def student_submit_photo(assignment_id: int):
         fail(403, "forbidden", "Работа недоступна")
     if not assignment["allow_photo"]:
         fail(403, "photo_forbidden", "В этой работе нельзя отвечать фотографией")
+    from services import ai as ai_service
+
+    if not ai_service.is_enabled():
+        fail(
+            409,
+            "ai_disabled",
+            "Проверка по фото недоступна: ИИ не подключён. Ответьте текстом "
+            "или попросите учителя включить проверку.",
+        )
     tasks = assignments_service.assignment_tasks(assignment)
     raw = request.form.get("answers")
     answers: list[str] = []
@@ -301,6 +318,35 @@ def student_submit_photo(assignment_id: int):
             "details": result["details"],
         }
     )
+
+
+@bp.get("/assignments/<int:assignment_id>/photos/<int:student_id>/<path:filename>")
+@require_user("student", "teacher", "parent", "admin")
+def assignment_photo(assignment_id: int, student_id: int, filename: str):
+    """Фото письменного ответа: ученику, учителю, родителю и админу."""
+    user = current_user()
+    assignment = assignments_service.get_assignment(assignment_id)
+    if assignment is None:
+        fail(404, "not_found", "Работа не найдена")
+    role = user["role"]
+    allowed = False
+    if role == "admin":
+        allowed = True
+    elif role == "student":
+        allowed = int(user["id"]) == int(student_id) and _can_open(user, assignment)
+    elif role == "teacher":
+        allowed = _teacher_owns(user, assignment)
+    elif role == "parent":
+        allowed = any(
+            int(child["id"]) == int(student_id)
+            for child in auth_service.children_of(int(user["id"]))
+        )
+    if not allowed:
+        fail(403, "forbidden", "Фото недоступно")
+    path = assignment_photos.absolute_path(f"{assignment_id}/{student_id}/{filename}")
+    if path is None:
+        fail(404, "not_found", "Фото не найдено")
+    return send_file(path, conditional=True)
 
 
 @bp.post("/assignments/<int:assignment_id>/retry")
@@ -585,6 +631,11 @@ def parent_assignments():
                 "completed_at": result["completed_at"],
                 "details": _details_of(result),
                 "photos": assignments_service.result_photos(result),
+                "photo_urls": [
+                    f"/assignments/{row['id']}/photos/{result['student_id']}/{path.rsplit('/', 1)[-1]}"
+                    for path in assignments_service.result_photos(result)
+                    if path
+                ],
                 "ai_status": result["ai_status"] if "ai_status" in result.keys() else "not_requested",
                 "ai_feedback": result["ai_feedback"] if "ai_feedback" in result.keys() else None,
                 "ai_score": result["ai_score"] if "ai_score" in result.keys() else None,
