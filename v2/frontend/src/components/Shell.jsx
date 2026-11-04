@@ -270,7 +270,7 @@ export default function Shell() {
         </div>
       )}
 
-      <div className="min-w-0 lg:pl-[268px]">
+      <div className="relative z-10 min-w-0 lg:pl-[268px]">
         <header className="sticky top-0 z-30 border-b border-white/6 bg-ink-950/60 backdrop-blur-2xl">
           <div className="flex h-[68px] items-center gap-3 px-4 sm:px-6 lg:px-8">
             <button className="icon-btn lg:hidden" onClick={() => setDrawer(true)} aria-label="Меню">

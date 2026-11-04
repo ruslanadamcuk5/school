@@ -88,7 +88,10 @@ body {
 .aurora {
   position: fixed;
   inset: 0;
-  z-index: 0;
+  /* Декоративный фон должен лежать ПОД контентом. При z-index: 0 он
+     перекрывал все неспозиционированные карточки и поля, и они
+     «проявлялись» только при наведении (hover создаёт stacking context). */
+  z-index: -1;
   overflow: hidden;
   pointer-events: none;
   background:
