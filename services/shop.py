@@ -339,18 +339,28 @@ class ShopError(Exception):
 
 
 # ------------------------------------------------------------------ утилиты
-def get_item(key: str) -> dict[str, Any] | None:
-    """Товар с учётом админских правок (цена, название, доступность)."""
+_UNSET = object()
+
+
+def get_item(key: str, *, override: Any = _UNSET) -> dict[str, Any] | None:
+    """Товар с учётом админских правок (цена, название, доступность).
+
+    Pass ``override`` to reuse an already fetched ``shop_item_overrides`` row
+    and avoid a database round-trip per catalog item.
+    """
     base = CATALOG_BY_KEY.get(str(key or "").strip())
     if base is None:
         return None
     item = dict(base)
     item["custom_discount"] = 0
     item["is_active"] = 1
-    try:
-        row = query_one("SELECT * FROM shop_item_overrides WHERE item_key = ?", (item["key"],))
-    except Exception:  # pragma: no cover - база ещё не инициализирована
-        row = None
+    if override is _UNSET:
+        try:
+            row = query_one("SELECT * FROM shop_item_overrides WHERE item_key = ?", (item["key"],))
+        except Exception:  # pragma: no cover - база ещё не инициализирована
+            row = None
+    else:
+        row = override
     if row is not None:
         for field, alias in (
             ("name", "name"), ("icon", "icon"), ("tagline", "tagline"),
@@ -387,8 +397,15 @@ def rarity_key(item: dict[str, Any]) -> str:
     return "common"
 
 
-def catalog_items(*, active_only: bool = True) -> list[dict[str, Any]]:
-    items = [get_item(item["key"]) for item in CATALOG]
+def catalog_items(*, active_only: bool = True,
+                  overrides: dict[str, dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+    items = [
+        get_item(
+            entry["key"],
+            override=overrides.get(entry["key"]) if overrides is not None else _UNSET,
+        )
+        for entry in CATALOG
+    ]
     out = [item for item in items if item is not None]
     if active_only:
         out = [item for item in out if item.get("is_active", 1)]
@@ -549,16 +566,21 @@ def event_multiplier(kind: str, event: dict[str, Any] | None = None) -> float:
 
 
 # ------------------------------------------------------- ежедневная витрина
-def featured_key(day: str | None = None) -> str:
+def featured_key(day: str | None = None, *, catalog: list[dict[str, Any]] | None = None) -> str:
     """Товар дня: выбор админа на сегодня или детерминированный автоматически."""
     day = day_key(day)
     saved = get_setting("featured_key", "")
     saved_day = get_setting("featured_day", "")
     if saved and (not saved_day or saved_day == day):
-        item = get_item(saved)
+        item = (
+            next((entry for entry in catalog if entry["key"] == saved), None)
+            if catalog is not None
+            else get_item(saved)
+        )
         if item and item.get("is_active", 1) and int(item["coins"]) > 0:
             return saved
-    keys = [item["key"] for item in catalog_items() if int(item["coins"]) > 0]
+    source = catalog if catalog is not None else catalog_items()
+    keys = [item["key"] for item in source if int(item["coins"]) > 0]
     if not keys:
         return ""
     digest = hashlib.sha256(f"shop-featured:{day}".encode("utf-8")).digest()

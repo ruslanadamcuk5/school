@@ -5,6 +5,7 @@ import {
   Award,
   CalendarDays,
   Check,
+  Copy,
   Flame,
   GraduationCap,
   LogOut,
@@ -29,6 +30,7 @@ export default function ProfilePage() {
   const { data: shop } = useApi("/shop", { enabled: isStudent });
   const { pending, run } = useAction();
   const [name, setName] = useState(learner?.name || user?.first_name || "");
+  const [copied, setCopied] = useState(false);
   const stats = map?.stats || {};
   const level = levelInfo(stats.xp ?? learner?.xp_total ?? 0);
   const avatars = shop?.avatars || [];
@@ -59,6 +61,31 @@ export default function ProfilePage() {
       toast("Аватар обновлён", "success");
     } catch (err) {
       toast(err.message || "Не удалось сменить аватар", "error");
+    }
+  };
+
+  const copyCode = async () => {
+    const code = user?.child_code;
+    if (!code) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(code);
+      } else {
+        const area = document.createElement("textarea");
+        area.value = code;
+        area.setAttribute("readonly", "");
+        area.style.position = "fixed";
+        area.style.opacity = "0";
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand("copy");
+        document.body.removeChild(area);
+      }
+      setCopied(true);
+      toast("Код скопирован", "success");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast("Не удалось скопировать — выделите код вручную", "info");
     }
   };
 
@@ -158,6 +185,24 @@ export default function ProfilePage() {
                     </button>
                   );
                 })}
+              </div>
+            </Card>
+          )}
+
+          {isStudent && user?.child_code && (
+            <Card className="border-iris-400/20 bg-iris-500/[0.045] p-5 sm:p-6">
+              <SectionTitle
+                eyebrow="Семья"
+                title="Код для родителя"
+                subtitle="Передайте его родителю — он привяжет ваш профиль и увидит прогресс."
+              />
+              <div className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:items-center">
+                <div className="flex-1 rounded-xl border border-iris-400/25 bg-ink-950/40 px-4 py-3 text-center">
+                  <p className="font-display text-2xl font-semibold tracking-[0.3em] text-white">{user.child_code}</p>
+                </div>
+                <Button variant="ghost" icon={copied ? Check : Copy} onClick={copyCode}>
+                  {copied ? "Скопировано" : "Копировать"}
+                </Button>
               </div>
             </Card>
           )}

@@ -154,10 +154,11 @@ def _bump_topic_progress(learner_id: int, topic_slug: str, correct: bool) -> Non
     if row:
         execute(
             """UPDATE topic_progress
-               SET attempts = ?, correct = ?, best_accuracy = MAX(best_accuracy, ?),
+               SET attempts = ?, correct = ?,
+                   best_accuracy = CASE WHEN ? > best_accuracy THEN ? ELSE best_accuracy END,
                    updated_at = datetime('now')
              WHERE learner_id = ? AND topic_slug = ?""",
-            (attempts, correct_total, accuracy, learner_id, topic_slug),
+            (attempts, correct_total, accuracy, accuracy, learner_id, topic_slug),
         )
     else:
         execute(
@@ -177,8 +178,8 @@ def _bump_method_progress(learner_id: int, topic_slug: str, method_slug: str | N
         VALUES (?, ?, ?, 1, 1, ?, datetime('now'))
         ON CONFLICT(learner_id, topic_slug, method_slug) DO UPDATE SET
             seen = 1,
-            attempts = attempts + 1,
-            correct = correct + excluded.correct,
+            attempts = method_progress.attempts + 1,
+            correct = method_progress.correct + excluded.correct,
             mastered = CASE WHEN method_progress.correct + excluded.correct >= 5 THEN 1 ELSE 0 END,
             updated_at = datetime('now')
         """,
@@ -249,7 +250,9 @@ def mark_topic_read(learner_id: int, topic_slug: str) -> dict[str, Any]:
         """INSERT INTO topic_progress (learner_id, topic_slug, stars, updated_at)
            VALUES (?, ?, 1, datetime('now'))
            ON CONFLICT(learner_id, topic_slug) DO UPDATE SET
-               stars = MAX(topic_progress.stars, 1), updated_at = datetime('now')""",
+               stars = CASE WHEN topic_progress.stars > 1
+                            THEN topic_progress.stars ELSE 1 END,
+               updated_at = datetime('now')""",
         (learner_id, topic_slug),
     )
     xp, coins = reward_amounts(learner_id, "reading")

@@ -59,7 +59,8 @@ def _event_payload(row) -> dict:
     }
 
 
-def _item_payload(item: dict, override: dict | None) -> dict:
+def _item_payload(item: dict, override: dict | None, featured: str = "",
+                  event: dict | None = None) -> dict:
     fields = (
         "key", "category", "kind", "slot", "name", "icon", "tagline",
         "description", "coins", "xp", "level", "rarity", "rarity_name",
@@ -68,7 +69,9 @@ def _item_payload(item: dict, override: dict | None) -> dict:
     data = {field: item.get(field) for field in fields}
     data["is_active"] = bool(item.get("is_active", 1))
     data["avatars"] = item.get("avatars") or []
-    data["final_coins"] = shop_service.price_for(item)["coins"]
+    data["final_coins"] = shop_service.price_for(
+        item, featured=featured, event=event
+    )["coins"]
     data["override"] = override
     return data
 
@@ -76,16 +79,18 @@ def _item_payload(item: dict, override: dict | None) -> dict:
 def _payload() -> dict:
     """Полное состояние админки магазина одним ответом."""
     overrides = shop_service.overrides_map()
-    catalog = shop_service.catalog_items(active_only=False)
+    catalog = shop_service.catalog_items(active_only=False, overrides=overrides)
+    featured = shop_service.featured_key(catalog=catalog)
+    event = shop_service.active_event()
     events = query_all(
         "SELECT * FROM shop_events ORDER BY is_active DESC, id DESC LIMIT 20"
     )
     today = date.today()
     return {
         "summary": shop_insights.summary(),
-        "board": shop_insights.leaderboard(),
+        "board": shop_insights.leaderboard(catalog=catalog),
         "catalog": [
-            _item_payload(item, overrides.get(item["key"]))
+            _item_payload(item, overrides.get(item["key"]), featured, event)
             for item in catalog
         ],
         "categories": [
@@ -98,7 +103,7 @@ def _payload() -> dict:
         ],
         "events": [_event_payload(row) for row in events],
         "gifts": shop_service.recent_gifts(40),
-        "featured_key": shop_service.featured_key(),
+        "featured_key": featured,
         "announcement": shop_service.get_setting("announcement", ""),
         "reasons": REASONS,
         "today": today.isoformat(),

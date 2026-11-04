@@ -31,6 +31,12 @@ def _user_payload(user) -> dict:
     data = dict(user)
     data.pop("password_hash", None)
     data.pop("pin_hash", None)
+    # The parent-linking code belongs to the student's own profile: expose it
+    # in the student's session only, never in teacher/parent/admin payloads.
+    if data.get("role") == "student":
+        data["child_code"] = data.get("child_code") or None
+    else:
+        data.pop("child_code", None)
     return data
 
 

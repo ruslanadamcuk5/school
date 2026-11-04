@@ -290,6 +290,7 @@ def answer(round_id: int):
 @bp.post("/play/<int:round_id>/hint")
 @require_learner
 def hint(round_id: int):
+    profile = learner()
     _, state = _load(round_id)
     cfg = get_config()
     item = rounds_service.ensure_item(state)

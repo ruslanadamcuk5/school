@@ -97,6 +97,17 @@ class LegacyApi:
 app.mount("/api/v1", LegacyApi())
 
 
+# The Android build and other root-level legacy endpoints live outside the
+# ``/api/v1`` prefix (for example the APK at ``/download/android``).  They must
+# keep working after the SPA takes over the domain.
+app.mount("/download", LegacyApi())
+
+# YouTube-обёртка (``/embed/youtube/<id>``) — обычная HTML-страница Flask.
+# Android открывает её из WebView, поэтому корневой путь должен остаться
+# доступным и после перехода на SPA.
+app.mount("/embed", LegacyApi())
+
+
 # --------------------------------------------------------------------------
 #  React SPA
 # --------------------------------------------------------------------------

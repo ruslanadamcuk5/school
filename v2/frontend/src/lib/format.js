@@ -166,6 +166,32 @@ export function safeArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
+/**
+ * Turn any API value into a string safe to render as a React child.
+ * Error payloads from the backend are sometimes objects such as
+ * ``{created_at, detail}``; rendering them directly crashes React.
+ */
+export function text(value, fallback = "") {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (typeof value === "object") {
+    for (const key of ["detail", "message", "error", "text"]) {
+      if (typeof value[key] === "string") return value[key];
+      if (value[key] && typeof value[key] === "object") {
+        const nested = text(value[key], "");
+        if (nested) return nested;
+      }
+    }
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return fallback;
+    }
+  }
+  return String(value);
+}
+
 export function parseJsonArray(value, fallback = []) {
   if (Array.isArray(value)) return value;
   if (!value) return fallback;

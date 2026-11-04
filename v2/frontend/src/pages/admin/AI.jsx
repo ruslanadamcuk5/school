@@ -29,7 +29,7 @@ import {
 } from "../../components/ui";
 import { useAction, useApi, toast } from "../../lib/hooks";
 import { api, invalidate } from "../../lib/api";
-import { formatDateTime, relativeTime } from "../../lib/format";
+import { formatDateTime, relativeTime, text } from "../../lib/format";
 import { Toggle } from "./shared";
 
 export function AdminAI() {
@@ -238,7 +238,7 @@ export function AdminAI() {
             </div>
             {stats.last_error ? (
               <p className="mt-4 line-clamp-4 rounded-xl border border-rose-400/20 bg-rose-500/[0.06] px-3 py-2 text-[11px] leading-relaxed text-rose-200/80">
-                {stats.last_error}
+                {text(stats.last_error)}
               </p>
             ) : (
               <p className="mt-4 text-[11px] leading-relaxed text-mist-500">
@@ -273,8 +273,8 @@ export function AdminAI() {
             <div key={`${item.created_at}-${index}`} className="flex items-start gap-3 rounded-xl px-3 py-2.5">
               <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${item.ok || item.status === "ok" ? "bg-emerald-400" : "bg-rose-400"}`} />
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-semibold text-white">{item.prompt || item.question || item.kind || "Запрос к ИИ"}</p>
-                <p className="mt-0.5 line-clamp-2 text-[10px] text-mist-600">{item.answer || item.error || item.detail || ""}</p>
+                <p className="text-[11px] font-semibold text-white">{text(item.prompt || item.question || item.kind, "Запрос к ИИ")}</p>
+                <p className="mt-0.5 line-clamp-2 text-[10px] text-mist-600">{text(item.answer || item.error || item.detail)}</p>
               </div>
               <span className="shrink-0 text-[10px] text-mist-600">
                 {item.created_at ? relativeTime(item.created_at) : ""}

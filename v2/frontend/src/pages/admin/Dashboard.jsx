@@ -30,7 +30,7 @@ import {
   StatCard,
 } from "../../components/ui";
 import { useApi, useSession } from "../../lib/hooks";
-import { ROLE_LABEL, formatDateTime, plural, relativeTime, todayLabel } from "../../lib/format";
+import { ROLE_LABEL, formatDateTime, plural, relativeTime, text, todayLabel } from "../../lib/format";
 import { RoleBadge } from "./shared";
 
 const QUICK_LINKS = [
@@ -83,7 +83,7 @@ function AiHealth({ ai }) {
       </div>
       {ai?.last_error ? (
         <p className="mt-3 line-clamp-2 rounded-xl border border-rose-400/20 bg-rose-500/[0.06] px-3 py-2 text-[11px] text-rose-200/80">
-          {ai.last_error}
+          {text(ai.last_error)}
         </p>
       ) : (
         <p className="mt-3 text-[11px] leading-relaxed text-mist-500">
@@ -259,7 +259,7 @@ export function AdminDashboard() {
                     {entry.action} · {entry.entity || "система"}
                   </p>
                   <p className="truncate text-[10px] text-mist-600">
-                    {entry.login ? `@${entry.login} · ` : ""}{entry.detail || formatDateTime(entry.created_at)}
+                    {entry.login ? `@${entry.login} · ` : ""}{text(entry.detail) || formatDateTime(entry.created_at)}
                   </p>
                 </div>
                 <span className="shrink-0 text-[10px] text-mist-600">{relativeTime(entry.created_at)}</span>

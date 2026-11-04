@@ -34,7 +34,7 @@ import {
 } from "../../components/ui";
 import { useAction, useApi, toast } from "../../lib/hooks";
 import { api, invalidate } from "../../lib/api";
-import { formatDateTime, plural } from "../../lib/format";
+import { formatDateTime, plural, text } from "../../lib/format";
 import { SearchBox, Toggle } from "./shared";
 
 const BASE_FORM = {
@@ -226,7 +226,7 @@ export function AdminYouTube() {
       {stats.last_error && (
         <Card className="border-rose-400/20 bg-rose-500/[0.04] p-4">
           <p className="text-[11px] font-bold text-rose-200">Последняя ошибка YouTube</p>
-          <p className="mt-1 text-[11px] leading-relaxed text-rose-200/70">{stats.last_error}</p>
+          <p className="mt-1 text-[11px] leading-relaxed text-rose-200/70">{text(stats.last_error)}</p>
         </Card>
       )}
 
@@ -310,7 +310,7 @@ export function AdminYouTube() {
                   {topic.subject_name} · <span className="font-mono">{topic.slug}</span>
                   {topic.checked_at ? ` · проверено ${formatDateTime(topic.checked_at)}` : ""}
                 </p>
-                {topic.error && <p className="mt-0.5 line-clamp-1 text-[10px] text-rose-300/80">{topic.error}</p>}
+                {topic.error && <p className="mt-0.5 line-clamp-1 text-[10px] text-rose-300/80">{text(topic.error)}</p>}
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
                 <Button size="sm" variant="ghost" icon={RefreshCw} loading={busy === topic.slug} onClick={() => refreshTopic(topic)}>Обновить</Button>

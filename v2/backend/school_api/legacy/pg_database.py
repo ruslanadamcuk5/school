@@ -218,6 +218,12 @@ class Connection:
 
     def __init__(self, raw: psycopg.Connection) -> None:
         self.raw = raw
+        self._total_changes = 0
+
+    @property
+    def total_changes(self) -> int:
+        """sqlite3 compatibility: number of rows changed on this connection."""
+        return self._total_changes
 
     def execute(self, sql: str, params: Sequence[Any] = ()) -> _Cursor:
         query = translate(sql)
@@ -240,12 +246,16 @@ class Connection:
                 row = None
             if row:
                 lastrowid = int(row.get("id") or 0)
+        if cursor.rowcount and cursor.rowcount > 0:
+            self._total_changes += cursor.rowcount
         return _Cursor(cursor, lastrowid)
 
     def executemany(self, sql: str, seq: Iterable[Sequence[Any]]) -> None:
         query = translate(sql)
         with self.raw.cursor() as cursor:
             cursor.executemany(query, [_adapt_params(row) for row in seq])
+            if cursor.rowcount and cursor.rowcount > 0:
+                self._total_changes += cursor.rowcount
 
     def executescript(self, script: str) -> None:
         with self.raw.cursor() as cursor:

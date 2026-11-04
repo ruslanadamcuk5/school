@@ -115,10 +115,13 @@ export default function NotificationsPage() {
           const meta = KIND[item.kind] || { icon: Bell, tone: "iris", label: "Событие" };
           const Icon = meta.icon;
           const to = targetLink(item);
-          const body = (
-            <div className={`flex items-start gap-3.5 rounded-2xl border px-4 py-3.5 transition ${
-              item.is_read ? "border-white/7 bg-white/[0.02]" : "border-iris-400/20 bg-iris-500/[0.055]"
-            }`}>
+          return (
+            <div
+              key={item.id}
+              className={`relative flex items-start gap-3.5 rounded-2xl border px-4 py-3.5 transition ${
+                item.is_read ? "border-white/7 bg-white/[0.02]" : "border-iris-400/20 bg-iris-500/[0.055]"
+              } ${to ? "hover:border-iris-400/35" : ""}`}
+            >
               <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 ${
                 meta.tone === "gold" ? "text-amber-300" : meta.tone === "green" ? "text-emerald-300" : meta.tone === "cyan" ? "text-cyan-300" : "text-iris-300"
               }`}>
@@ -126,7 +129,25 @@ export default function NotificationsPage() {
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className={`text-sm font-bold ${item.is_read ? "text-mist-300" : "text-white"}`}>{item.title}</p>
+                  {to ? (
+                    <Link
+                      to={to}
+                      onClick={() => markRead(item)}
+                      className={`text-sm font-bold after:absolute after:inset-0 after:rounded-2xl ${
+                        item.is_read ? "text-mist-300" : "text-white"
+                      }`}
+                    >
+                      {item.title}
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => markRead(item)}
+                      className={`text-left text-sm font-bold ${item.is_read ? "text-mist-300" : "text-white"}`}
+                    >
+                      {item.title}
+                    </button>
+                  )}
                   <Badge tone={meta.tone}>{meta.label}</Badge>
                   {!item.is_read && <span className="h-1.5 w-1.5 rounded-full bg-iris-400" />}
                 </div>
@@ -137,19 +158,15 @@ export default function NotificationsPage() {
               </div>
               {!item.is_read && (
                 <button
+                  type="button"
                   onClick={(event) => { event.preventDefault(); event.stopPropagation(); markRead(item); }}
-                  className="icon-btn h-8 w-8 shrink-0"
+                  className="icon-btn relative z-10 h-8 w-8 shrink-0"
                   title="Отметить прочитанным"
                 >
                   <CheckCheck size={14} />
                 </button>
               )}
             </div>
-          );
-          return to ? (
-            <Link key={item.id} to={to} onClick={() => markRead(item)} className="block">{body}</Link>
-          ) : (
-            <button key={item.id} onClick={() => markRead(item)} className="block w-full text-left">{body}</button>
           );
         })}
       </div>

@@ -98,6 +98,14 @@ def _owned_keys(learner_id: int) -> set[str]:
     }
 
 
+def _owned_map() -> dict[int, set[str]]:
+    """Все покупки одним запросом: админка не должна делать N+1."""
+    out: dict[int, set[str]] = {}
+    for row in query_all("SELECT learner_id, item_key FROM learner_items"):
+        out.setdefault(int(row["learner_id"]), set()).add(row["item_key"])
+    return out
+
+
 def _suggestion(item: dict[str, Any]) -> dict[str, Any]:
     price = shop_service.price_for(item)
     return {
@@ -112,19 +120,30 @@ def _suggestion(item: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def gift_ideas(learner_id: int, level: int, limit: int = 3) -> list[dict[str, Any]]:
-    """Что подарить: сначала то, чего у ребёнка ещё нет."""
-    owned = _owned_keys(learner_id)
-    catalog = [item for item in shop_service.catalog_items() if item["key"] not in owned]
+def gift_ideas(learner_id: int, level: int, limit: int = 3, *,
+               owned: set[str] | None = None,
+               catalog: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+    """Что подарить: сначала то, чего у ребёнка ещё нет.
+
+    ``owned`` and ``catalog`` let callers reuse a single preloaded snapshot
+    instead of querying the database for every child.
+    """
+    if owned is None:
+        owned = _owned_keys(learner_id)
+    if catalog is None:
+        candidates = shop_service.catalog_items()
+    else:
+        candidates = [item for item in catalog if item.get("is_active", 1)]
+    candidates = [item for item in candidates if item["key"] not in owned]
     preferred = {"style": 0, "minecraft": 1, "pets": 2, "perks": 3}
-    catalog.sort(
+    candidates.sort(
         key=lambda item: (
             preferred.get(item["category"], 9),
             abs(int(item["level"]) - int(level)),
             int(item["coins"]),
         )
     )
-    ideas = [_suggestion(item) for item in catalog[:limit]]
+    ideas = [_suggestion(item) for item in candidates[:limit]]
     if not ideas:
         for key in ("hint_pack", "boost_xp", "mc_potion"):
             item = shop_service.get_item(key)
@@ -183,11 +202,15 @@ def _score(row: dict[str, Any]) -> tuple[float, float]:
     return round(score, 1), growth
 
 
-def leaderboard(days: int = ACTIVE_DAYS, limit: int = 100) -> list[dict[str, Any]]:
+def leaderboard(days: int = ACTIVE_DAYS, limit: int = 100, *,
+                catalog: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
     """Рейтинг старания с причинами и идеями подарков."""
     rows = _base_rows(days)
     last_gifts, pending = _maps()
     accounts = _accounts()
+    owned_map = _owned_map()
+    if catalog is None:
+        catalog = shop_service.catalog_items()
     board: list[dict[str, Any]] = []
     for row in rows:
         learner_id = int(row["id"])
@@ -227,7 +250,11 @@ def leaderboard(days: int = ACTIVE_DAYS, limit: int = 100) -> list[dict[str, Any
             "reason_text": " · ".join(reason["text"] for reason in reasons[:2]),
             "account_login": account.get("login", ""),
             "account_name": account.get("name", ""),
-            "ideas": gift_ideas(learner_id, level),
+            "ideas": gift_ideas(
+                learner_id, level,
+                owned=owned_map.get(learner_id, set()),
+                catalog=catalog,
+            ),
             "deserving": False,
         })
 

@@ -25,7 +25,7 @@ import {
   StatCard,
 } from "../../components/ui";
 import { useApi } from "../../lib/hooks";
-import { formatDateTime, relativeTime, todayLabel } from "../../lib/format";
+import { formatDateTime, relativeTime, text, todayLabel } from "../../lib/format";
 import { SearchBox } from "./shared";
 
 const LIMIT = 300;
@@ -129,7 +129,7 @@ export function AdminAudit() {
         entry.action,
         entry.entity,
         entry.entity_id,
-        entry.details,
+        text(entry.details),
         entry.login,
         entry.first_name,
         entry.last_name,
@@ -249,7 +249,7 @@ export function AdminAudit() {
                   </div>
                   {entry.details && (
                     <p className="mt-1 line-clamp-2 break-words text-[11px] leading-relaxed text-mist-400">
-                      {entry.details}
+                      {text(entry.details)}
                     </p>
                   )}
                   <p className="mt-1 flex items-center gap-1 text-[10px] text-mist-600">

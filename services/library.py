@@ -155,15 +155,27 @@ def list_books(
 
 
 def delete_book(book_id: int) -> dict[str, Any]:
-    """Удалить книгу из библиотеки вместе с загруженным файлом и её темами."""
+    """Удалить книгу из библиотеки.
+
+    Пособие удаляется вместе с книгой только тогда, когда его загрузил сам
+    владелец книги.  Если учитель добавил в библиотеку общее пособие из
+    каталога, удаление книги не должно стирать файл и темы у всех остальных.
+    """
     book = get_book(book_id)
     if not book:
         return {"ok": False, "error": "Книга не найдена"}
     textbook_id = int(book["textbook_id"])
+    textbook = textbooks_service.get_textbook(textbook_id)
+    owns_file = bool(
+        textbook
+        and textbook["uploaded_by"] is not None
+        and int(textbook["uploaded_by"]) == int(book["owner_id"])
+    )
     execute("DELETE FROM library_books WHERE id = ?", (book_id,))
-    textbooks_service.purge_textbook_topics(textbook_id)
-    textbooks_service.delete_textbook(textbook_id)
-    return {"ok": True, "title": book["title"]}
+    if owns_file:
+        textbooks_service.purge_textbook_topics(textbook_id)
+        textbooks_service.delete_textbook(textbook_id)
+    return {"ok": True, "title": book["title"], "textbook_removed": owns_file}
 
 
 # --------------------------------------------------------------- доступ к классам

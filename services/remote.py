@@ -209,15 +209,28 @@ def start(parent_id: int, learner_id: int) -> dict[str, Any]:
 
 
 def current(parent_id: int, learner_id: int) -> dict[str, Any] | None:
-    """Последняя сессия родителя с этим ребёнком."""
-    child_id = _linked_child(parent_id, learner_id)
+    """Последняя сессия родителя с этим ребёнком.
+
+    Без ``learner_id`` возвращается последняя сессия родителя с любым из его
+    детей: так клиент может восстановить начатую помощь после перезапуска,
+    ещё не зная, какого ребёнка выбрали.
+    """
     _expire_stale()
-    row = query_one(
-        """SELECT id FROM remote_sessions
-            WHERE child_user_id = ? AND parent_user_id = ?
-            ORDER BY id DESC LIMIT 1""",
-        (child_id, int(parent_id)),
-    )
+    if learner_id:
+        child_id = _linked_child(parent_id, learner_id)
+        row = query_one(
+            """SELECT id FROM remote_sessions
+                WHERE child_user_id = ? AND parent_user_id = ?
+                ORDER BY id DESC LIMIT 1""",
+            (child_id, int(parent_id)),
+        )
+    else:
+        row = query_one(
+            """SELECT id FROM remote_sessions
+                WHERE parent_user_id = ?
+                ORDER BY id DESC LIMIT 1""",
+            (int(parent_id),),
+        )
     if row is None:
         return None
     return payload(_row(int(row["id"])))

@@ -9,6 +9,7 @@
 CREATE OR REPLACE FUNCTION datetime(ts text, modifier text DEFAULT NULL)
 RETURNS text
 LANGUAGE plpgsql
+STABLE
 AS $$
 BEGIN
     IF ts = 'now' THEN
