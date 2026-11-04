@@ -309,7 +309,6 @@ export function ParentAssignmentsPage() {
           topicsLoading={topicsLoading}
           selectedTopicSlugs={selectedTopicSlugs}
           onToggleTopic={toggleTopic}
-          taskTypeInfo={taskTypeInfo}
           onCreate={createAssignment}
           onClose={() => setFormOpen(false)}
           onReset={resetForm}
@@ -357,7 +356,6 @@ function AssignmentForm({
   topicsLoading,
   selectedTopicSlugs,
   onToggleTopic,
-  taskTypeInfo,
   onCreate,
   onClose,
   onReset,
