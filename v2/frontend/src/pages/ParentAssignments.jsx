@@ -157,6 +157,8 @@ export function ParentAssignmentsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subjectId, effectiveGrade]);
 
+  const noChildSelected = selectedChildren.length === 0;
+
   const toggleChild = (id) => {
     setSelectedChildIds((prev) => {
       const next = new Set(prev);
@@ -498,17 +500,24 @@ function AssignmentForm({
         {(taskType === "test" || taskType === "read") && (
           <Field label="Темы" hint="Темы из выбранного предмета и класса">
             <div className="mt-2">
-              {topicsLoading && (
+              {noChildSelected && (
+                <p className="mt-2 text-xs text-mist-500">
+                  Сначала выберите ребёнка, чтобы определить класс и подгрузить темы.
+                </p>
+              )}
+              {!noChildSelected && topicsLoading && (
                 <div className="flex items-center gap-2 text-xs text-mist-500">
                   <Skeleton className="h-4 w-24" /> Загрузка тем…
                 </div>
               )}
-              {!topicsLoading && topics.length === 0 && (
+              {!noChildSelected && !topicsLoading && topics.length === 0 && (
                 <p className="mt-2 text-xs text-mist-500">
-                  Тем не найдено для выбранного предмета и класса.
+                  Тем не найдено для выбранного предмета и класса
+                  {effectiveGrade ? ` (${effectiveGrade} класс)` : ""}.
+                  Выберите другой предмет или класс ребёнка.
                 </p>
               )}
-              {!topicsLoading && topics.length > 0 && (
+              {!noChildSelected && !topicsLoading && topics.length > 0 && (
                 <div className="mt-3 grid gap-2 sm:grid-cols-4">
                   {Object.entries(topicsBySubject).map(([groupName, group]) => (
                     <div key={groupName} className="col-span-full">
