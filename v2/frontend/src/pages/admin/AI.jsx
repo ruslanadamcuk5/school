@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Bot,
   Check,
-  Cpu,
   ExternalLink,
   KeyRound,
   RefreshCw,
@@ -104,6 +103,26 @@ export function AdminAI() {
     }
   };
 
+  const clearKey = async () => {
+    if (!window.confirm("Удалить сохранённый ключ доступа? ИИ перестанет работать, пока не вставите новый.")) return;
+    try {
+      await run(() => api.put("/admin/ai", {
+        ...form,
+        enabled: false,
+        temperature: Number(form.temperature),
+        max_tokens: Number(form.max_tokens),
+        api_key: "",
+        keep_key: false,
+      }));
+      invalidate("/admin");
+      await refresh();
+      setKeyInput("");
+      toast("Ключ удалён", "info");
+    } catch (err) {
+      toast(err.message || "Не удалось удалить ключ", "error");
+    }
+  };
+
   const clearCache = async () => {
     if (!window.confirm("Удалить готовые объяснения и кэш вопросов? Они будут созданы заново при следующем запросе.")) return;
     try {
@@ -146,10 +165,10 @@ export function AdminAI() {
       {error && <ErrorState error={error} onRetry={refresh} />}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={Wand2} label="Объяснений" value={stats.total || 0} tone="iris" />
+        <StatCard icon={Wand2} label="Запросов" value={stats.total || 0} tone="iris" />
         <StatCard icon={Check} label="Успешных" value={stats.ok || 0} hint={`${percent}%`} tone="green" />
         <StatCard icon={Zap} label="Ошибок" value={stats.failed || 0} tone="rose" />
-        <StatCard icon={Cpu} label="Провайдер" value={settings.provider_name || settings.provider || "—"} hint={settings.has_key ? "ключ задан" : "ключ не задан"} tone="cyan" />
+        <StatCard icon={Sparkles} label="Объяснений" value={stats.explanations || 0} tone="gold" />
       </div>
 
       <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
@@ -158,7 +177,7 @@ export function AdminAI() {
             eyebrow="Подключение"
             title="Провайдер и модель"
             subtitle="Подойдёт любой OpenAI-совместимый сервис."
-            action={<Badge tone={settings.enabled && settings.has_key ? "green" : "gold"}><Bot size={12} /> {settings.enabled && settings.has_key ? "активен" : "не готов"}</Badge>}
+            action={<Badge tone={settings.enabled && settings.has_key ? "green" : "gold"}><Bot size={12} /> {settings.provider_name || settings.provider || "ИИ"} · {settings.enabled && settings.has_key ? "активен" : "не готов"}</Badge>}
           />
 
           {form && (
@@ -221,6 +240,7 @@ export function AdminAI() {
               <div className="flex flex-wrap gap-2">
                 <Button icon={Check} loading={pending} onClick={save}>Сохранить</Button>
                 <Button variant="ghost" icon={RefreshCw} loading={busy} onClick={test}>Проверить связь</Button>
+                {settings.has_key && <Button variant="ghost" icon={KeyRound} className="text-rose-300" onClick={clearKey}>Удалить ключ</Button>}
                 {settings.has_key && <Badge tone="green"><KeyRound size={11} /> ключ сохранён</Badge>}
               </div>
             </div>
