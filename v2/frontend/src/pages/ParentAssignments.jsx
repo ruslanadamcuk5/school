@@ -118,6 +118,7 @@ export function ParentAssignmentsPage() {
 
   const [topics, setTopics] = useState([]);
   const [topicsLoading, setTopicsLoading] = useState(false);
+  const [topicError, setTopicError] = useState("");
   const [selectedTopicSlugs, setSelectedTopicSlugs] = useState(new Set());
 
   const selectedChildren = useMemo(
@@ -143,14 +144,23 @@ export function ParentAssignmentsPage() {
   useEffect(() => {
     if (!subjectId || !effectiveGrade) {
       setTopics([]);
+      setTopicError("");
       return;
     }
     setTopicsLoading(true);
+    setTopicError("");
     api
       .get(`/topics?grade=${effectiveGrade}&subject_id=${subjectId}`)
-      .then((data) => setTopics(data.topics || []))
-      .catch(() => setTopics([]))
-      .finally(() => setTopicsLoading(false));
+      .then((data) => {
+        setTopics(data.topics || []);
+      })
+      .catch((err) => {
+        setTopicError(err.message || "Не удалось загрузить темы");
+        setTopics([]);
+      })
+      .finally(() => {
+        setTopicsLoading(false);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subjectId, effectiveGrade]);
 
@@ -304,6 +314,7 @@ export function ParentAssignmentsPage() {
           topics={topics}
           topicsBySubject={topicsBySubject}
           topicsLoading={topicsLoading}
+          topicError={topicError}
           selectedTopicSlugs={selectedTopicSlugs}
           onToggleTopic={toggleTopic}
           onCreate={createAssignment}
@@ -351,6 +362,7 @@ function AssignmentForm({
   topics,
   topicsBySubject,
   topicsLoading,
+  topicError,
   selectedTopicSlugs,
   onToggleTopic,
   onCreate,
@@ -499,7 +511,10 @@ function AssignmentForm({
                   <Skeleton className="h-4 w-24" /> Загрузка тем…
                 </div>
               )}
-              {!noChildSelected && !topicsLoading && topics.length === 0 && (
+              {!noChildSelected && !topicsLoading && topicError && (
+                <p className="mt-2 text-xs text-rose-400">{topicError}</p>
+              )}
+              {!noChildSelected && !topicsLoading && !topicError && topics.length === 0 && (
                 <p className="mt-2 text-xs text-mist-500">
                   Тем не найдено для выбранного предмета и класса
                   {effectiveGrade ? ` (${effectiveGrade} класс)` : ""}.
