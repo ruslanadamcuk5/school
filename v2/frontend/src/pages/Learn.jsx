@@ -510,6 +510,13 @@ export function TopicPage() {
   const [readMarked, setReadMarked] = useState(false);
   const { pending, run } = useAction();
 
+  useEffect(() => {
+    setTab("overview");
+    setReadText(null);
+    setVideos(null);
+    setReadMarked(false);
+  }, [slug]);
+
   const topic = data?.topic;
   const tone = subjectColor(topic?.color);
   const methods = data?.methods || [];
