@@ -467,7 +467,7 @@ function AssignmentForm({
 
         <Field label="Название задания">
           <Input
-            value={title}
+            value={title || ""}
             onChange={(event) => onSetTitle(event.target.value)}
             placeholder="Например: Диктант по правилам письма"
           />
@@ -477,7 +477,7 @@ function AssignmentForm({
           <>
             <Field label="Текст диктанта" hint="Ученик прослушает текст и напишет его">
               <Textarea
-                value={referenceText}
+                value={referenceText || ""}
                 onChange={(event) => onSetReferenceText(event.target.value)}
                 rows={4}
                 placeholder="Текст, который нужно написать под диктовку…"
@@ -485,7 +485,7 @@ function AssignmentForm({
             </Field>
             <Field label="Озвучка (вслух)" hint="Если пусто, используется текст диктанта">
               <Textarea
-                value={audioText}
+                value={audioText || ""}
                 onChange={(event) => onSetAudioText(event.target.value)}
                 rows={2}
                 placeholder="Что именно прочитает синтезатор речи…"
@@ -497,7 +497,7 @@ function AssignmentForm({
         {taskType === "other" && (
           <Field label="Описание задания" hint="Что именно нужно сделать ребёнку">
             <Textarea
-              value={description}
+              value={description || ""}
               onChange={(event) => onSetDescription(event.target.value)}
               rows={3}
               placeholder="Свободное описание задания…"
@@ -592,12 +592,12 @@ function AssignmentForm({
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Field label="Срок сдачи">
-            <Input type="date" value={dueDate} onChange={(event) => onSetDueDate(event.target.value)} />
+            <Input type="date" value={dueDate || ""} onChange={(event) => onSetDueDate(event.target.value)} />
           </Field>
           <Field label="Лимит времени (мин)">
             <Input
               type="number"
-              value={timeLimit}
+              value={timeLimit || ""}
               onChange={(event) => onSetTimeLimit(event.target.value)}
               placeholder="0 = без лимита"
             />
@@ -605,7 +605,7 @@ function AssignmentForm({
           <Field label="Вопросов (для теста)">
             <Input
               type="number"
-              value={questionsCount}
+              value={questionsCount || "10"}
               onChange={(event) => onSetQuestionsCount(event.target.value)}
               placeholder="10"
             />
@@ -715,5 +715,3 @@ function initials(name) {
   if (parts.length === 1) return parts[0][0];
   return parts[0][0] + parts[parts.length - 1][0];
 }
-
-
