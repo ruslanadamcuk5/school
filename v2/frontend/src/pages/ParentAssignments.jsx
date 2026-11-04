@@ -14,7 +14,6 @@ import {
   Select,
   Skeleton,
   StatCard,
-  Tabs,
   Textarea,
 } from "../components/ui";
 import { useAction, useApi, toast } from "../lib/hooks";
@@ -154,8 +153,6 @@ export function ParentAssignmentsPage() {
       .finally(() => setTopicsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subjectId, effectiveGrade]);
-
-  const noChildSelected = selectedChildren.length === 0;
 
   const toggleChild = (id) => {
     setSelectedChildIds((prev) => {
@@ -361,6 +358,7 @@ function AssignmentForm({
   onReset,
 }) {
   const selectedChildren = children.filter((child) => selectedChildIds.has(String(child.user.id)));
+  const noChildSelected = selectedChildren.length === 0;
 
   return (
     <Card className="p-5 sm:p-6">
