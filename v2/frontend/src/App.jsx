@@ -29,7 +29,7 @@ const ParentDashboard = page(() => import("./pages/Parent"), "ParentDashboard");
 const ParentHelp = page(() => import("./pages/Parent"), "ParentHelp");
 const ParentLibrary = page(() => import("./pages/Parent"), "ParentLibrary");
 const ParentMap = page(() => import("./pages/Parent"), "ParentMap");
-const ParentAssignments = page(() => import("./pages/ParentAssignments"), "ParentAssignments");
+const ParentAssignments = page(() => import("./pages/ParentAssignments"), "ParentAssignmentsPage");
 const TeacherAssignments = page(() => import("./pages/Teacher"), "TeacherAssignments");
 const TeacherClass = page(() => import("./pages/Teacher"), "TeacherClass");
 const TeacherClasses = page(() => import("./pages/Teacher"), "TeacherClasses");
