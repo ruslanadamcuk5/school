@@ -269,6 +269,33 @@ CREATE TABLE IF NOT EXISTS class_students (
 
 CREATE INDEX IF NOT EXISTS idx_class_students_student ON class_students(student_id);
 
+-- Классы, которые ведёт учитель. Основной класс по-прежнему хранится в
+-- school_classes.teacher_id, а здесь — дополнительные классы учителя.
+CREATE TABLE IF NOT EXISTS teacher_classes (
+    teacher_id    INTEGER NOT NULL,
+    class_id      INTEGER NOT NULL,
+    created_at    TEXT NOT NULL DEFAULT datetime('now'),
+    PRIMARY KEY (teacher_id, class_id),
+    FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (class_id) REFERENCES school_classes(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_teacher_classes_class ON teacher_classes(class_id);
+
+-- Предметы, которые учитель преподаёт в конкретном классе.
+CREATE TABLE IF NOT EXISTS teacher_subjects (
+    teacher_id    INTEGER NOT NULL,
+    class_id      INTEGER NOT NULL,
+    subject_id    INTEGER NOT NULL,
+    created_at    TEXT NOT NULL DEFAULT datetime('now'),
+    PRIMARY KEY (teacher_id, class_id, subject_id),
+    FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (class_id) REFERENCES school_classes(id) ON DELETE CASCADE,
+    FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_teacher_subjects_teacher ON teacher_subjects(teacher_id);
+
 -- Связь родителя с детьми
 CREATE TABLE IF NOT EXISTS parent_children (
     parent_id     INTEGER NOT NULL,

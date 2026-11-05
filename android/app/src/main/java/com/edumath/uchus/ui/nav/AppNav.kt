@@ -332,11 +332,17 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
                 role = session?.user?.role,
                 onBack = back,
                 onBook = openBook,
+                onStudent = { nav.navigate("teacher_student/$it") },
             )
         }
 
         composable("teacher_library") {
-            TeacherLibraryScreen(container, back, openBook)
+            TeacherLibraryScreen(
+                container = container,
+                onBack = back,
+                onBook = openBook,
+                onStudent = { nav.navigate("teacher_student/$it") },
+            )
         }
 
         composable("padruchnik") {

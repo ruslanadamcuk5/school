@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AtSign,
   Award,
+  BookOpen,
   CalendarDays,
   Check,
   Copy,
@@ -10,13 +11,14 @@ import {
   GraduationCap,
   LogOut,
   Mail,
+  MapPin,
   ShieldCheck,
   Sparkles,
   Target,
   Trophy,
   UserRound,
 } from "lucide-react";
-import { Avatar, Badge, Button, Card, Field, Input, PageHeader, Progress, SectionTitle, StatCard } from "../components/ui";
+import { Avatar, Badge, Button, Card, Field, Input, PageHeader, Progress, SectionTitle, Select, StatCard } from "../components/ui";
 import { useAction, useApi, useSession, toast } from "../lib/hooks";
 import { api, invalidate } from "../lib/api";
 import { ROLE_LABEL, formatDate, levelInfo, plural } from "../lib/format";
@@ -144,6 +146,10 @@ export default function ProfilePage() {
         </div>
       )}
 
+      {(isStudent || user?.role === "teacher") && (
+        <EducationCard role={user.role} refreshSession={refreshSession} />
+      )}
+
       <div className="grid gap-5 lg:grid-cols-2">
         <Card className="p-5 sm:p-6">
           <SectionTitle eyebrow="Данные" title="Как вас зовут" subtitle="Имя видят учитель и родители." />
@@ -242,5 +248,260 @@ export default function ProfilePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+/* ------------------------------------------------------- учебное заведение */
+function EducationCard({ role, refreshSession }) {
+  const isStudent = role === "student";
+  const { data, loading, refresh } = useApi("/profile/education", { ttl: 0 });
+  const [cityId, setCityId] = useState("");
+  const [schoolId, setSchoolId] = useState("");
+  const [classId, setClassId] = useState("");
+  const [classIds, setClassIds] = useState([]);
+  const [subjectsByClass, setSubjectsByClass] = useState({});
+  const { pending, run } = useAction();
+
+  useEffect(() => {
+    if (!data) return;
+    setCityId(data.city_id ? String(data.city_id) : "");
+    setSchoolId(data.school_id ? String(data.school_id) : "");
+    if (isStudent) {
+      setClassId(data.class_id ? String(data.class_id) : "");
+    } else {
+      const selected = (data.classes || []).map((klass) => Number(klass.id));
+      setClassIds(selected);
+      const map = {};
+      for (const klass of data.classes || []) {
+        map[Number(klass.id)] = (klass.subjects || []).map((subject) => Number(subject.id));
+      }
+      setSubjectsByClass(map);
+    }
+  }, [data, isStudent]);
+
+  const catalogPath = `/orgs/catalog?city_id=${cityId || ""}&school_id=${schoolId || ""}`;
+  const { data: catalog } = useApi(catalogPath, { enabled: Boolean(cityId), ttl: 60_000 });
+  const cities = catalog?.cities || [];
+  const schools = catalog?.schools || [];
+  const catalogClasses = catalog?.classes || [];
+  // Старые классы учителя могли быть из другой школы: показываем их, если
+  // они уже выбраны, чтобы их можно было снять или сохранить без потери.
+  const savedSelected = (data?.classes || []).filter((klass) =>
+    classIds.includes(Number(klass.id))
+  );
+  const classes = [
+    ...catalogClasses,
+    ...savedSelected.filter(
+      (klass) => !catalogClasses.some((item) => Number(item.id) === Number(klass.id))
+    ),
+  ];
+  const subjects = catalog?.subjects?.length ? catalog.subjects : data?.subjects || [];
+  const classById = new Map(classes.map((klass) => [Number(klass.id), klass]));
+
+  const changeCity = (value) => {
+    setCityId(value);
+    setSchoolId("");
+    setClassId("");
+    setClassIds([]);
+    setSubjectsByClass({});
+  };
+
+  const changeSchool = (value) => {
+    setSchoolId(value);
+    setClassId("");
+    setClassIds([]);
+    setSubjectsByClass({});
+  };
+
+  const toggleClass = (id) => {
+    setClassIds((current) =>
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+    );
+    setSubjectsByClass((current) => (current[id] ? current : { ...current, [id]: [] }));
+  };
+
+  const toggleSubject = (forClass, subjectId) => {
+    setSubjectsByClass((current) => {
+      const list = current[forClass] || [];
+      return {
+        ...current,
+        [forClass]: list.includes(subjectId)
+          ? list.filter((item) => item !== subjectId)
+          : [...list, subjectId],
+      };
+    });
+  };
+
+  const save = async () => {
+    if (!cityId || !schoolId) {
+      toast("Выберите город и школу", "info");
+      return;
+    }
+    if (isStudent && !classId) {
+      toast("Выберите класс", "info");
+      return;
+    }
+    try {
+      const subjectsPayload = {};
+      for (const id of classIds) subjectsPayload[id] = subjectsByClass[id] || [];
+      await run(() =>
+        api.put("/profile/education", {
+          city_id: Number(cityId),
+          school_id: Number(schoolId),
+          ...(isStudent
+            ? { class_id: Number(classId) }
+            : { class_ids: classIds, subjects_by_class: subjectsPayload }),
+        })
+      );
+      invalidate("/profile/education");
+      await refreshSession();
+      refresh();
+      toast(isStudent ? "Класс сохранён" : "Классы и предметы сохранены", "success");
+    } catch (err) {
+      toast(err.message || "Не удалось сохранить учебное заведение", "error");
+    }
+  };
+
+  const selectedSubjects = new Set();
+  for (const id of classIds) {
+    for (const subjectId of subjectsByClass[id] || []) selectedSubjects.add(subjectId);
+  }
+
+  return (
+    <Card className="p-5 sm:p-6">
+      <SectionTitle
+        eyebrow="Обучение"
+        title="Учебное заведение"
+        subtitle={
+          isStudent
+            ? "Город, школа и класс привязывают вас к системе: по ним учитель находит вас в своём классе."
+            : "Выберите город и школу, затем классы, которые вы ведёте, и предметы для каждого класса."
+        }
+        action={
+          isStudent && data?.class ? (
+            <Badge tone="iris"><GraduationCap size={12} /> {data.class.title}</Badge>
+          ) : !isStudent && classIds.length ? (
+            <Badge tone="cyan">{classIds.length} кл. · {selectedSubjects.size} предм.</Badge>
+          ) : null
+        }
+      />
+
+      {loading && !data ? (
+        <p className="mt-4 text-xs text-mist-500">Загружаем данные об обучении…</p>
+      ) : (
+        <>
+          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+            <Field label="Город">
+              <Select value={cityId} onChange={(event) => changeCity(event.target.value)}>
+                <option value="">Выберите город</option>
+                {(cities.length ? cities : data?.city_id ? [{ id: data.city_id, name: data.city_name }] : []).map((city) => (
+                  <option key={city.id} value={city.id}>{city.name}</option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Школа" hint={!cityId ? "Сначала выберите город" : undefined}>
+              <Select value={schoolId} onChange={(event) => changeSchool(event.target.value)} disabled={!cityId}>
+                <option value="">Выберите школу</option>
+                {schools.map((school) => (
+                  <option key={school.id} value={school.id}>{school.name}</option>
+                ))}
+              </Select>
+            </Field>
+            {isStudent ? (
+              <Field label="Класс" hint={!schoolId ? "Сначала выберите школу" : undefined}>
+                <Select value={classId} onChange={(event) => setClassId(event.target.value)} disabled={!schoolId}>
+                  <option value="">Выберите класс</option>
+                  {classes.map((klass) => (
+                    <option key={klass.id} value={klass.id}>{klass.title || `${klass.grade} «${klass.letter}»`}</option>
+                  ))}
+                </Select>
+              </Field>
+            ) : (
+              <Field label="Классы" hint="Можно выбрать несколько">
+                <div className="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto rounded-xl border border-white/8 bg-white/[0.02] p-2">
+                  {classes.length === 0 ? (
+                    <span className="px-1 py-1 text-[11px] text-mist-600">
+                      {schoolId ? "В школе пока нет классов" : "Сначала выберите школу"}
+                    </span>
+                  ) : classes.map((klass) => {
+                    const active = classIds.includes(Number(klass.id));
+                    return (
+                      <button
+                        key={klass.id}
+                        type="button"
+                        onClick={() => toggleClass(Number(klass.id))}
+                        className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition ${
+                          active
+                            ? "border-iris-400/40 bg-iris-500/15 text-white"
+                            : "border-white/8 text-mist-500 hover:border-white/20"
+                        }`}
+                      >
+                        {klass.title || `${klass.grade} «${klass.letter}»`}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+            )}
+          </div>
+
+          {!isStudent && classIds.length > 0 && (
+            <div className="mt-5 space-y-3">
+              <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-mist-500">
+                <BookOpen size={14} className="text-iris-300" /> Предметы по классам
+              </div>
+              {classIds.map((id) => {
+                const klass = classById.get(id);
+                const chosen = subjectsByClass[id] || [];
+                return (
+                  <div key={id} className="rounded-2xl border border-white/8 bg-white/[0.02] p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-white">
+                        {klass?.title || `${klass?.grade || ""} «${klass?.letter || ""}»`}
+                      </span>
+                      <span className="text-[10px] text-mist-600">выбрано: {chosen.length}</span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {subjects.map((subject) => {
+                        const active = chosen.includes(Number(subject.id));
+                        return (
+                          <button
+                            key={subject.id}
+                            type="button"
+                            onClick={() => toggleSubject(id, Number(subject.id))}
+                            className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition ${
+                              active
+                                ? "border-cyan-400/40 bg-cyan-500/15 text-white"
+                                : "border-white/8 text-mist-500 hover:border-white/20"
+                            }`}
+                          >
+                            {subject.icon || "📘"} {subject.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <Button icon={Check} loading={pending} onClick={save} disabled={!cityId || !schoolId || (isStudent && !classId)}>
+              Сохранить
+            </Button>
+            {data?.school_name ? (
+              <span className="inline-flex items-center gap-1.5 text-[11px] text-mist-500">
+                <MapPin size={12} /> {data.school_name}
+              </span>
+            ) : (
+              <span className="text-[11px] text-mist-600">
+                {isStudent ? "Пока не привязаны к школе и классу" : "Классы ещё не выбраны"}
+              </span>
+            )}
+          </div>
+        </>
+      )}
+    </Card>
   );
 }

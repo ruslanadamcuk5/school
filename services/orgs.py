@@ -190,7 +190,171 @@ def set_class_teacher(class_id: int, teacher_id: int | None, *, force: bool = Fa
 
 
 def classes_of_teacher(teacher_id: int) -> list[sqlite3.Row]:
-    return list_classes(teacher_id=teacher_id)
+    """Классы учителя: основной (teacher_id) и дополнительные (teacher_classes)."""
+    return query_all(
+        """SELECT sc.*, s.name AS school_name, c.name AS city_name,
+                  u.first_name AS teacher_first, u.last_name AS teacher_last,
+                  (SELECT COUNT(*) FROM class_students cs WHERE cs.class_id = sc.id) AS students_count,
+                  CASE WHEN sc.teacher_id = ? THEN 1 ELSE 0 END AS is_primary
+             FROM school_classes sc
+             JOIN schools s ON s.id = sc.school_id
+             JOIN cities c ON c.id = s.city_id
+        LEFT JOIN users u ON u.id = sc.teacher_id
+            WHERE sc.teacher_id = ?
+               OR sc.id IN (SELECT tc.class_id FROM teacher_classes tc
+                             WHERE tc.teacher_id = ?)
+            ORDER BY sc.grade, sc.letter, s.name""",
+        (teacher_id, teacher_id, teacher_id),
+    )
+
+
+def set_teacher_classes(teacher_id: int, class_ids: list[int]) -> None:
+    """Полностью заменить список классов учителя.
+
+    Основной класс (school_classes.teacher_id) снимается, если учитель убрал
+    его из списка: иначе он продолжал бы возвращаться объединением.
+    """
+    ids = sorted({int(class_id) for class_id in class_ids})
+    current = {
+        int(row["class_id"])
+        for row in query_all(
+            "SELECT class_id FROM teacher_classes WHERE teacher_id = ?", (teacher_id,)
+        )
+    }
+    wanted = set(ids)
+    for class_id in current - wanted:
+        execute(
+            "DELETE FROM teacher_classes WHERE teacher_id = ? AND class_id = ?",
+            (teacher_id, class_id),
+        )
+    for class_id in wanted - current:
+        execute(
+            "INSERT OR IGNORE INTO teacher_classes (teacher_id, class_id) VALUES (?, ?)",
+            (teacher_id, class_id),
+        )
+    if ids:
+        marks = ", ".join("?" for _ in ids)
+        execute(
+            f"UPDATE school_classes SET teacher_id = NULL "
+            f"WHERE teacher_id = ? AND id NOT IN ({marks})",
+            (teacher_id, *ids),
+        )
+    else:
+        execute(
+            "UPDATE school_classes SET teacher_id = NULL WHERE teacher_id = ?",
+            (teacher_id,),
+        )
+
+
+def teacher_subjects(teacher_id: int) -> list[sqlite3.Row]:
+    """Предметы учителя с привязкой к классу."""
+    return query_all(
+        """SELECT ts.class_id, ts.subject_id, s.name AS subject_name,
+                  s.slug AS subject_slug, s.icon AS subject_icon,
+                  s.color AS subject_color,
+                  sc.grade, sc.letter, sc.school_id
+             FROM teacher_subjects ts
+             JOIN subjects s ON s.id = ts.subject_id
+             JOIN school_classes sc ON sc.id = ts.class_id
+            WHERE ts.teacher_id = ?
+            ORDER BY sc.grade, sc.letter, s.order_index, s.name""",
+        (teacher_id,),
+    )
+
+
+def teacher_subjects_by_class(teacher_id: int) -> dict[int, list[int]]:
+    result: dict[int, list[int]] = {}
+    for row in teacher_subjects(teacher_id):
+        result.setdefault(int(row["class_id"]), []).append(int(row["subject_id"]))
+    return result
+
+
+def set_teacher_subjects(
+    teacher_id: int, subjects_by_class: dict[int, list[int]]
+) -> None:
+    """Полностью заменить предметы учителя по классам."""
+    execute("DELETE FROM teacher_subjects WHERE teacher_id = ?", (teacher_id,))
+    for class_id, subject_ids in subjects_by_class.items():
+        for subject_id in sorted({int(item) for item in subject_ids}):
+            execute(
+                """INSERT OR IGNORE INTO teacher_subjects
+                       (teacher_id, class_id, subject_id)
+                   VALUES (?, ?, ?)""",
+                (teacher_id, int(class_id), subject_id),
+            )
+
+
+def set_teacher_education(teacher_id: int, city_id: int | None, school_id: int | None) -> None:
+    execute(
+        "UPDATE users SET city_id = ?, school_id = ? WHERE id = ?",
+        (city_id, school_id, teacher_id),
+    )
+
+
+def set_student_education(
+    student_id: int, city_id: int, school_id: int, class_id: int
+) -> None:
+    """Привязать ученика к одному классу и синхронизировать профиль ребёнка."""
+    execute(
+        "UPDATE users SET city_id = ?, school_id = ? WHERE id = ?",
+        (city_id, school_id, student_id),
+    )
+    execute("DELETE FROM class_students WHERE student_id = ?", (student_id,))
+    execute(
+        "INSERT OR IGNORE INTO class_students (class_id, student_id) VALUES (?, ?)",
+        (class_id, student_id),
+    )
+    klass = get_class(class_id)
+    if klass is None:
+        return
+    # У семейного профиля, привязанного к аккаунту, класс и параллель
+    # хранятся ещё и в learners — оттуда их берут карта и задания.
+    execute(
+        """UPDATE learners SET grade = ?, class_id = ?
+            WHERE id IN (SELECT learner_id FROM learner_accounts WHERE user_id = ?)""",
+        (int(klass["grade"]), class_id, student_id),
+    )
+
+
+def student_education(student_id: int) -> dict[str, Any]:
+    """Текущее учебное заведение ученика."""
+    user = query_one(
+        "SELECT id, city_id, school_id FROM users WHERE id = ?", (student_id,)
+    )
+    classes = classes_of_student(student_id)
+    klass = classes[0] if classes else None
+    city = get_city(int(user["city_id"])) if user and user["city_id"] else None
+    school = get_school(int(user["school_id"])) if user and user["school_id"] else None
+    return {
+        "city_id": int(user["city_id"]) if user and user["city_id"] else None,
+        "school_id": int(user["school_id"]) if user and user["school_id"] else None,
+        "city_name": city["name"] if city else None,
+        "school_name": school["name"] if school else None,
+        "class_id": int(klass["id"]) if klass else None,
+        "class": {
+            "id": int(klass["id"]),
+            "grade": int(klass["grade"]),
+            "letter": klass["letter"] or "",
+            "title": class_title(klass),
+            "school_id": int(klass["school_id"]),
+            "school_name": klass["school_name"],
+            "city_name": klass["city_name"],
+        }
+        if klass
+        else None,
+        "classes": [
+            {
+                "id": int(row["id"]),
+                "grade": int(row["grade"]),
+                "letter": row["letter"] or "",
+                "title": class_title(row),
+                "school_id": int(row["school_id"]),
+                "school_name": row["school_name"],
+                "city_name": row["city_name"],
+            }
+            for row in classes
+        ],
+    }
 
 
 def classes_of_student(student_id: int) -> list[sqlite3.Row]:

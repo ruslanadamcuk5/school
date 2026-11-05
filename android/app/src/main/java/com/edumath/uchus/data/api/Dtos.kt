@@ -2172,3 +2172,51 @@ data class LocationMessageDto(
     @SerializedName("ok") val ok: Boolean = false,
     @SerializedName("message") val message: String? = null,
 )
+
+// ------------------------------------------------- учебное заведение профиля
+
+data class OrgCatalogDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("cities") val cities: List<CityDto> = emptyList(),
+    @SerializedName("schools") val schools: List<SchoolDto> = emptyList(),
+    @SerializedName("classes") val classes: List<ClassDto> = emptyList(),
+    @SerializedName("subjects") val subjects: List<SubjectDto> = emptyList(),
+)
+
+data class EducationClassDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("school_id") val schoolId: Int = 0,
+    @SerializedName("grade") val grade: Int = 0,
+    @SerializedName("letter") val letter: String? = null,
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("school_name") val schoolName: String? = null,
+    @SerializedName("city_name") val cityName: String? = null,
+    @SerializedName("students_count") val studentsCount: Int = 0,
+    @SerializedName("subjects") val subjects: List<SubjectDto> = emptyList(),
+) {
+    val displayTitle: String
+        get() = title?.takeIf { it.isNotBlank() }
+            ?: (if ((letter ?: "").isBlank()) "$grade класс" else "$grade «$letter»")
+}
+
+data class EducationProfileDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("role") val role: String? = null,
+    @SerializedName("city_id") val cityId: Int? = null,
+    @SerializedName("school_id") val schoolId: Int? = null,
+    @SerializedName("city_name") val cityName: String? = null,
+    @SerializedName("school_name") val schoolName: String? = null,
+    @SerializedName("class_id") val classId: Int? = null,
+    @SerializedName("class") val klass: EducationClassDto? = null,
+    @SerializedName("classes") val classes: List<EducationClassDto> = emptyList(),
+    @SerializedName("subjects") val subjects: List<SubjectDto> = emptyList(),
+    @SerializedName("subjects_by_class") val subjectsByClass: Map<String, List<Int>>? = null,
+)
+
+data class EducationRequest(
+    @SerializedName("city_id") val cityId: Int,
+    @SerializedName("school_id") val schoolId: Int,
+    @SerializedName("class_id") val classId: Int? = null,
+    @SerializedName("class_ids") val classIds: List<Int>? = null,
+    @SerializedName("subjects_by_class") val subjectsByClass: Map<String, List<Int>>? = null,
+)

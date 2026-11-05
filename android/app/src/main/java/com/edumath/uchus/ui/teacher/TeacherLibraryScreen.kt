@@ -1,5 +1,6 @@
 package com.edumath.uchus.ui.teacher
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -59,6 +60,7 @@ fun TeacherLibraryScreen(
     container: AppContainer,
     onBack: () -> Unit,
     onBook: (Int, Int) -> Unit,
+    onStudent: (Int) -> Unit,
 ) {
     var tab by remember { mutableStateOf(0) }
 
@@ -68,34 +70,136 @@ fun TeacherLibraryScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            Row(
-                Modifier
+            LazyRow(
+                modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                FilterChip(
-                    selected = tab == 0,
-                    onClick = { tab = 0 },
-                    label = { Text("Мои книги") },
-                )
-                FilterChip(
-                    selected = tab == 1,
-                    onClick = { tab = 1 },
-                    label = { Text("Пособия") },
-                )
-                FilterChip(
-                    selected = tab == 2,
-                    onClick = { tab = 2 },
-                    label = { Text("Темы") },
-                )
+                item {
+                    FilterChip(
+                        selected = tab == 0,
+                        onClick = { tab = 0 },
+                        label = { Text("Мои классы") },
+                    )
+                }
+                item {
+                    FilterChip(
+                        selected = tab == 1,
+                        onClick = { tab = 1 },
+                        label = { Text("Мои книги") },
+                    )
+                }
+                item {
+                    FilterChip(
+                        selected = tab == 2,
+                        onClick = { tab = 2 },
+                        label = { Text("Пособия") },
+                    )
+                }
+                item {
+                    FilterChip(
+                        selected = tab == 3,
+                        onClick = { tab = 3 },
+                        label = { Text("Темы") },
+                    )
+                }
             }
 
             when (tab) {
-                0 -> TeacherBooksTab(container, onBook)
-                1 -> TeacherTextbooksTab(container)
+                0 -> TeacherClassesTab(container, onStudent)
+                1 -> TeacherBooksTab(container, onBook)
+                2 -> TeacherTextbooksTab(container)
                 else -> TeacherRecommendTopicsTab(container)
             }
+        }
+    }
+}
+
+@Composable
+private fun TeacherClassesTab(
+    container: AppContainer,
+    onStudent: (Int) -> Unit,
+) {
+    var selectedClass by remember { mutableStateOf<Int?>(null) }
+
+    Load(key = "teacher-library-classes", block = { container.api.teacherLibrary(null, null, null) }) { data, _ ->
+        val students = data.students
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            item {
+                Text(
+                    "Нажмите на класс, чтобы увидеть своих учеников этого класса.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (data.classes.isEmpty()) {
+                item {
+                    EmptyBox(
+                        "Классы не выбраны. Укажите город, школу и классы в профиле.",
+                        "🏫",
+                    )
+                }
+            }
+            items(data.classes) { klass ->
+                val count = students.count { it.classId == klass.id }
+                val open = selectedClass == klass.id
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(
+                            Modifier.fillMaxWidth().clickable {
+                                selectedClass = if (open) null else klass.id
+                            },
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    klass.displayTitle,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                                Text(
+                                    klass.schoolName ?: "Школа не указана",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            Tag("$count уч.")
+                        }
+                        if (open) {
+                            val inClass = students.filter { it.classId == klass.id }
+                            if (inClass.isEmpty()) {
+                                Text(
+                                    "В этом классе пока нет учеников.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            } else {
+                                inClass.forEach { student ->
+                                    Row(
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .clickable { onStudent(student.id) }
+                                            .padding(vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Text(student.displayName, modifier = Modifier.weight(1f))
+                                        Text(
+                                            "@${student.login ?: ""}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            item { Spacer(Modifier.height(16.dp)) }
         }
     }
 }

@@ -76,7 +76,15 @@ fun ProfileScreen(
     }
 
     if (session?.learner == null) {
-        SimpleProfile(session, serverUrl, onBack, onLogout, onAbout)
+        SimpleProfile(
+            container = container,
+            session = session,
+            serverUrl = serverUrl,
+            onBack = onBack,
+            onLogout = onLogout,
+            onAbout = onAbout,
+            onRefreshSession = onRefreshSession,
+        )
         return
     }
 
@@ -151,6 +159,13 @@ fun ProfileScreen(
                 }
 
                 if (session?.user?.role == "student") {
+                    item {
+                        EducationCard(
+                            container = container,
+                            role = "student",
+                            onSaved = onRefreshSession,
+                        )
+                    }
                     item {
                         ParentCodeCard(
                             code = session?.user?.childCode,
@@ -332,59 +347,81 @@ private fun themeLabel(theme: String?): String = when (theme) {
 
 @Composable
 private fun SimpleProfile(
+    container: AppContainer,
     session: SessionDto?,
     serverUrl: String,
     onBack: () -> Unit,
     onLogout: () -> Unit,
     onAbout: () -> Unit,
+    onRefreshSession: () -> Unit = {},
 ) {
     ScreenScaffold(title = "Профиль", onBack = onBack) { padding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
+                .padding(padding),
+            contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Card(Modifier.fillMaxWidth()) {
-                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(session?.user?.avatar ?: "👤", fontSize = 44.sp)
-                    Spacer(Modifier.width(14.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            session?.user?.displayName ?: "Профиль",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Text(
-                            when (session?.user?.role) {
-                                "teacher" -> "Учитель"
-                                "parent" -> "Родитель"
-                                "admin" -> "Администратор"
-                                else -> "Пользователь"
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+            item {
+                Card(Modifier.fillMaxWidth()) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(session?.user?.avatar ?: "👤", fontSize = 44.sp)
+                        Spacer(Modifier.width(14.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                session?.user?.displayName ?: "Профиль",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                when (session?.user?.role) {
+                                    "teacher" -> "Учитель"
+                                    "parent" -> "Родитель"
+                                    "admin" -> "Администратор"
+                                    else -> "Пользователь"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
 
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(14.dp)) {
-                    KeyValue("Логин", session?.user?.login ?: "—")
-                    KeyValue("Роль", session?.user?.role ?: "—")
-                    KeyValue("Сервер", serverUrl)
+            if (session?.user?.role == "teacher") {
+                item {
+                    EducationCard(
+                        container = container,
+                        role = "teacher",
+                        onSaved = onRefreshSession,
+                    )
                 }
             }
 
-            OutlinedButton(onClick = onAbout, modifier = Modifier.fillMaxWidth()) {
-                Text("О приложении")
+            item {
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp)) {
+                        KeyValue("Логин", session?.user?.login ?: "—")
+                        KeyValue("Роль", session?.user?.role ?: "—")
+                        KeyValue("Сервер", serverUrl)
+                    }
+                }
             }
 
-            Button(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {
-                Text("Выйти")
+            item {
+                OutlinedButton(onClick = onAbout, modifier = Modifier.fillMaxWidth()) {
+                    Text("О приложении")
+                }
             }
+
+            item {
+                Button(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {
+                    Text("Выйти")
+                }
+            }
+
+            item { Spacer(Modifier.height(16.dp)) }
         }
     }
 }

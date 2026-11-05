@@ -656,4 +656,17 @@ interface ApiService {
 
     @POST("ai/assistant")
     suspend fun aiAsk(@Body body: AiAskRequest): AiAnswerDto
+
+    // ------------------------------------------------- учебное заведение профиля
+    @GET("orgs/catalog")
+    suspend fun orgCatalog(
+        @Query("city_id") cityId: Int?,
+        @Query("school_id") schoolId: Int?,
+    ): OrgCatalogDto
+
+    @GET("profile/education")
+    suspend fun educationProfile(): EducationProfileDto
+
+    @PUT("profile/education")
+    suspend fun saveEducation(@Body body: EducationRequest): EducationProfileDto
 }

@@ -61,6 +61,7 @@ from . import content as _content  # noqa: E402,F401
 from . import play as _play  # noqa: E402,F401
 from . import assignments as _assignments  # noqa: E402,F401
 from . import library as _library  # noqa: E402,F401
+from . import orgs as _orgs  # noqa: E402,F401
 from . import teacher as _teacher  # noqa: E402,F401
 from . import parent as _parent  # noqa: E402,F401
 from . import notifications as _notifications  # noqa: E402,F401

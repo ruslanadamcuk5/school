@@ -1180,6 +1180,7 @@ export function TeacherLibrary() {
   const [upload, setUpload] = useState({ file: null, subject_id: "", grade: 3, title: "", author: "", description: "", class_ids: [] });
   const [addForm, setAddForm] = useState({ textbook_id: "", title: "", class_ids: [] });
   const [recommend, setRecommend] = useState({ class_ids: [], student_ids: [], note: "" });
+  const [openClass, setOpenClass] = useState(null);
   const { pending, run } = useAction();
 
   const books = data?.books || [];
@@ -1303,6 +1304,89 @@ export function TeacherLibrary() {
         <StatCard icon={Users} label="Классов" value={classes.length} tone="cyan" />
         <StatCard icon={Sparkles} label="Рекомендаций" value={stats.recommendations || 0} tone="gold" />
       </div>
+
+      <Card className="p-5">
+        <SectionTitle
+          eyebrow="Учебники"
+          title="Мои классы"
+          subtitle="Нажмите на класс, чтобы увидеть своих учеников этого класса."
+          action={<Badge tone="cyan"><Users size={12} /> {classes.length}</Badge>}
+        />
+        {classes.length === 0 ? (
+          <p className="mt-4 rounded-xl border border-white/8 bg-white/[0.02] p-4 text-xs text-mist-500">
+            Классы пока не выбраны. Укажите город, школу и классы в профиле — после этого здесь появятся ваши ученики.
+          </p>
+        ) : (
+          <>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {classes.map((klass) => {
+                const open = Number(openClass) === Number(klass.id);
+                const count = students.filter((student) => Number(student.class_id) === Number(klass.id)).length;
+                return (
+                  <button
+                    key={klass.id}
+                    type="button"
+                    onClick={() => setOpenClass(open ? null : klass.id)}
+                    className={`rounded-2xl border p-3.5 text-left transition ${
+                      open
+                        ? "border-iris-400/40 bg-iris-500/[0.08]"
+                        : "border-white/8 bg-white/[0.02] hover:border-white/20"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-display text-sm font-semibold text-white">
+                        {klass.title || `${klass.grade} «${klass.letter}»`}
+                      </span>
+                      <Badge tone={open ? "iris" : ""}><Users size={11} /> {count}</Badge>
+                    </div>
+                    <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-mist-500">
+                      <MapPin size={11} /> {klass.school_name || "Школа не указана"}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+
+            {openClass && (
+              <div className="mt-3 rounded-2xl border border-iris-400/25 bg-iris-500/[0.05] p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap size={15} className="text-iris-300" />
+                    <span className="text-xs font-bold text-white">
+                      Ученики класса {classes.find((item) => Number(item.id) === Number(openClass))?.title || ""}
+                    </span>
+                  </div>
+                  <Button size="sm" variant="ghost" icon={X} onClick={() => setOpenClass(null)}>Свернуть</Button>
+                </div>
+                {students.filter((student) => Number(student.class_id) === Number(openClass)).length === 0 ? (
+                  <p className="mt-3 text-[11px] text-mist-500">В этом классе пока нет учеников.</p>
+                ) : (
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {students
+                      .filter((student) => Number(student.class_id) === Number(openClass))
+                      .map((student) => (
+                        <Link
+                          key={student.id}
+                          to={`/app/teacher/students/${student.id}`}
+                          className="flex items-center gap-2.5 rounded-xl border border-white/8 bg-ink-950/30 p-2.5 transition hover:border-iris-400/30"
+                        >
+                          <Avatar emoji={student.avatar || "🎒"} size={30} seed={student.login} />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-semibold text-white">
+                              {student.first_name} {student.last_name}
+                            </p>
+                            <p className="truncate text-[10px] text-mist-500">@{student.login}</p>
+                          </div>
+                          <ArrowRight size={13} className="text-mist-600" />
+                        </Link>
+                      ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </Card>
 
       <Card className="p-4">
         <div className="relative">

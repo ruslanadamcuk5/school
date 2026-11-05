@@ -405,8 +405,10 @@ def teacher_students(teacher_id: int) -> list[dict[str, Any]]:
              JOIN class_students cs ON cs.class_id = sc.id
              JOIN users u ON u.id = cs.student_id
             WHERE sc.teacher_id = ?
+               OR sc.id IN (SELECT tc.class_id FROM teacher_classes tc
+                             WHERE tc.teacher_id = ?)
             ORDER BY sc.grade, sc.letter, u.last_name, u.first_name""",
-        (teacher_id,),
+        (teacher_id, teacher_id),
     )
     return [dict(row) for row in rows]
 

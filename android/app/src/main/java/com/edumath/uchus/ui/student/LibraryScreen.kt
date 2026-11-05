@@ -53,9 +53,10 @@ fun LibraryScreen(
     role: String?,
     onBack: () -> Unit,
     onBook: (Int, Int) -> Unit,
+    onStudent: (Int) -> Unit = {},
 ) {
     when (role) {
-        "teacher", "admin" -> TeacherLibraryScreen(container, onBack, onBook)
+        "teacher", "admin" -> TeacherLibraryScreen(container, onBack, onBook, onStudent)
         "parent" -> ParentLibraryScreen(container, onBack, onBook)
         else -> StudentLibraryScreen(container, onBack, onBook)
     }
