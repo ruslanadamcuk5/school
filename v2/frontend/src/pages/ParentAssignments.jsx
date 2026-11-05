@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CheckCircle2, Clock, Play, Send, Sparkles, Trophy } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Clock, Play, RotateCcw, Send, Sparkles, Trophy } from "lucide-react";
 import {
   Badge,
   Button,
@@ -103,6 +103,7 @@ export function ParentAssignmentsPage() {
   const assignments = assignmentsData?.assignments || [];
 
   const [formOpen, setFormOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [selectedChildIds, setSelectedChildIds] = useState(new Set());
   const [subjectId, setSubjectId] = useState("");
   const [taskType, setTaskType] = useState("test");
@@ -217,6 +218,7 @@ export function ParentAssignmentsPage() {
     }
 
     try {
+      setSubmitting(true);
       await run(() =>
         api.post("/parent/assignments", {
           child_ids: selectedChildren.map((c) => String(c.user.id)),
@@ -241,6 +243,8 @@ export function ParentAssignmentsPage() {
       refreshAssignments();
     } catch (err) {
       toast(err.message || "Не удалось создать задание", "error");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -328,6 +332,7 @@ export function ParentAssignmentsPage() {
           onCreate={createAssignment}
           onClose={() => setFormOpen(false)}
           onReset={resetForm}
+          submitting={submitting}
         />
       ) : (
         <AssignmentList
@@ -377,6 +382,7 @@ function AssignmentForm({
   onCreate,
   onClose,
   onReset,
+  submitting,
 }) {
   const selectedChildren = children.filter((child) => selectedChildIds.has(String(child.user.id)));
   const noChildSelected = selectedChildren.length === 0;
@@ -619,6 +625,20 @@ function AssignmentForm({
             Задание будет создано отдельно для каждого выбранного ребёнка. Дети увидят его в разделе
             «Задания» и смогут ответить текстом, фото или прочитать тему.
           </p>
+        </div>
+
+        <div className="flex flex-col-reverse gap-3 border-t border-white/8 pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-2">
+            <Button variant="ghost" icon={ArrowLeft} onClick={onClose}>
+              Отмена
+            </Button>
+            <Button variant="ghost" icon={RotateCcw} onClick={onReset}>
+              Очистить
+            </Button>
+          </div>
+          <Button icon={Send} onClick={onCreate} disabled={submitting}>
+            {submitting ? "Создаём задание…" : "Создать задание"}
+          </Button>
         </div>
       </div>
     </Card>
