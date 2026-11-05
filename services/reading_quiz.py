@@ -64,11 +64,28 @@ def topic_pages(topic: Any, max_chars: int = 20000) -> list[tuple[int | None, st
         try:
             data = json.loads(cached)
             if isinstance(data, list) and data:
-                return [
+                pages = [
                     (int(item[0]) if item[0] else None, str(item[1]))
                     for item in data
                     if isinstance(item, (list, tuple)) and len(item) == 2
                 ]
+                # Старый кэш мог сохранить глифы вида /uni0421 — декодируем
+                # и обновляем кэш, чтобы текст темы не выглядел иероглифами.
+                cleaned = [
+                    (page, pdf_text.decode_uni_escapes(text)) for page, text in pages
+                ]
+                if cleaned != pages:
+                    execute(
+                        "UPDATE topics SET content_json = ? WHERE slug = ?",
+                        (
+                            json.dumps(
+                                [[page, text] for page, text in cleaned],
+                                ensure_ascii=False,
+                            ),
+                            topic["slug"],
+                        ),
+                    )
+                return cleaned
         except (ValueError, TypeError, IndexError):
             pass
     pages: list[tuple[int | None, str]] = []

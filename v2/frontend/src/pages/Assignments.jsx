@@ -539,6 +539,17 @@ export function AssignmentPage() {
             {current?.question}
           </p>
 
+          {current?.task_type === "read" && current?.textbook_id && (
+            <div className="mt-4">
+              <Link
+                to={`/app/library/-${current.textbook_id}?page=${current.page || 1}`}
+                className="btn btn-ghost btn-sm"
+              >
+                <BookOpen size={15} /> Открыть учебник{current.page ? ` · стр. ${current.page}` : ""}
+              </Link>
+            </div>
+          )}
+
           {current?.content_text && (
             <div className="mt-4 rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.04] p-4 text-sm leading-relaxed text-mist-300">
               {current.content_text}

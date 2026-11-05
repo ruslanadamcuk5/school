@@ -11,6 +11,7 @@ from services import assignment_photos
 from services import assignments as assignments_service
 from services import auth as auth_service
 from services import orgs
+from services import pdf_text
 from services import topics as topics_service
 
 from . import bp
@@ -115,21 +116,43 @@ def _public_questions(tasks: list[dict]) -> list[dict]:
     out = []
     for index, task in enumerate(tasks):
         choices = task.get("choices") or []
+        task_type = task.get("task_type") or (
+            "read" if task.get("answer_type") == "read" else "test"
+        )
+        topic_slug = task.get("topic_slug") or ""
+        content_text = pdf_text.decode_uni_escapes(task.get("content_text") or "")
+        audio_text = pdf_text.decode_uni_escapes(task.get("audio_text") or "")
+        question = pdf_text.decode_uni_escapes(task.get("question", ""))
+        textbook_id = task.get("textbook_id") or 0
+        page = task.get("page") or 0
+        # Старые задания-чтения не хранят пособие/страницу — добираем из темы.
+        if task_type == "read" and topic_slug and not textbook_id:
+            topic = topics_service.get_topic(topic_slug)
+            if topic is not None:
+                try:
+                    textbook_id = int(topic["textbook_id"] or 0)
+                except (KeyError, TypeError, ValueError):
+                    textbook_id = 0
+                try:
+                    page = int(topic["page_start"] or 0)
+                except (KeyError, TypeError, ValueError):
+                    page = 0
         out.append(
             {
                 "index": index,
-                "question": task.get("question", ""),
+                "question": question,
                 "answer_type": task.get("answer_type")
                 or ("choice" if choices else "text"),
-                "task_type": task.get("task_type")
-                or ("read" if task.get("answer_type") == "read" else "test"),
+                "task_type": task_type,
                 "choices": choices,
                 "points": task.get("points", 1),
                 # Для диктанта это текст, который читает синтезатор речи.
                 # Для чтения — текст темы. Поле нужно и веб-, и Android-клиенту.
-                "audio_text": task.get("audio_text") or "",
-                "content_text": task.get("content_text") or "",
-                "topic_slug": task.get("topic_slug") or "",
+                "audio_text": audio_text,
+                "content_text": content_text,
+                "topic_slug": topic_slug,
+                "textbook_id": textbook_id or None,
+                "page": page or None,
             }
         )
     return out

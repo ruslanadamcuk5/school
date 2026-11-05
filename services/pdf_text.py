@@ -26,6 +26,20 @@ _TRANSLATION = str.maketrans(_CP437_TO_CP1251)
 _CONTROL_RUN = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]{3,}")
 _CONTROL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
 _CYRILLIC = re.compile(r"[А-Яа-яЁёІіЎў]")
+_UNI_ESCAPE = re.compile(r"/uni([0-9A-Fa-f]{4})")
+
+
+def decode_uni_escapes(text: str) -> str:
+    """Декодировать глифы вида /uni0421 в символы (С).
+
+    pypdf/PyMuPDF для шрифтов без корректной ToUnicode-таблицы отдают
+    кириллицу последовательностями /uniXXXX. Без этого текст темы выглядит
+    как «иероглифы».
+    """
+    if not text or "/uni" not in text:
+        return text
+    return _UNI_ESCAPE.sub(lambda match: chr(int(match.group(1), 16)), text)
+
 
 
 def repair_text(text: str) -> str:
@@ -120,18 +134,18 @@ def page_text(path: str, page: int) -> str:
         except Exception:  # noqa: BLE001
             text = ""
     if not _looks_broken(text):
-        return normalize_text(repair_text(text))
+        return normalize_text(repair_text(decode_uni_escapes(text)))
 
     doc = _fitz_document(path)
     if doc is None or index >= doc.page_count:
-        return normalize_text(repair_text(text))
+        return normalize_text(repair_text(decode_uni_escapes(text)))
     try:
         fallback = doc[index].get_text("text") or ""
     except Exception:  # noqa: BLE001
         fallback = ""
     if fallback:
         text = fallback
-    return normalize_text(repair_text(text))
+    return normalize_text(repair_text(decode_uni_escapes(text)))
 
 
 def page_count(path: str) -> int:

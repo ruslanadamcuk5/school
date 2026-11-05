@@ -362,6 +362,14 @@ def build_typed_tasks(
         prompt = f"Прочитай тему «{topic['title']}»"
         if description.strip():
             prompt += f". {description.strip()}"
+        try:
+            textbook_id = int(topic["textbook_id"] or 0)
+        except (KeyError, TypeError, ValueError):
+            textbook_id = 0
+        try:
+            page = int(topic["page_start"] or 0)
+        except (KeyError, TypeError, ValueError):
+            page = 0
         return [
             {
                 "question": prompt,
@@ -371,6 +379,8 @@ def build_typed_tasks(
                 "topic_slug": slug,
                 "content_text": content,
                 "audio_text": audio_text.strip() or content or topic["title"],
+                "textbook_id": textbook_id,
+                "page": page,
             }
         ]
 
