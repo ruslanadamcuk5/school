@@ -381,6 +381,7 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
                 container = container,
                 assignmentId = entry.arguments?.getInt("id") ?: 0,
                 onBack = back,
+                onBook = { bookId, page -> nav.navigate("book/$bookId/$page") },
             )
         }
 

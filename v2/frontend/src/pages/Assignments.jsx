@@ -49,6 +49,115 @@ function speak(text) {
   window.speechSynthesis.speak(utterance);
 }
 
+/**
+ * Пособие для задания «прочитать тему»: сразу показывает нужную страницу
+ * учебника, а не пересказ текста. Текст остаётся запасным вариантом —
+ * его можно раскрыть вручную или если у пособия нет страниц.
+ */
+function ReadTextbookViewer({ textbookId, startPage, contentText }) {
+  const firstPage = Math.max(1, Number(startPage) || 1);
+  const [page, setPage] = useState(firstPage);
+  const [src, setSrc] = useState("");
+  const [pageError, setPageError] = useState("");
+  const [showText, setShowText] = useState(false);
+  const { data: info } = useApi(`/books/${textbookId}`, { ttl: 60_000 });
+  const pages = Number(info?.book?.pages || 0);
+
+  useEffect(() => {
+    setPage(Math.max(1, Number(startPage) || 1));
+  }, [textbookId, startPage]);
+
+  useEffect(() => {
+    let alive = true;
+    let url = "";
+    setPageError("");
+    setSrc("");
+    objectUrl(`/books/${textbookId}/page/${page}.png`)
+      .then((next) => {
+        if (!alive) {
+          URL.revokeObjectURL(next);
+          return;
+        }
+        url = next;
+        setSrc(next);
+      })
+      .catch((err) => {
+        if (alive) setPageError(err.message || "Не удалось открыть страницу пособия");
+      });
+    return () => {
+      alive = false;
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [textbookId, page]);
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-2xl border border-iris-400/25 bg-ink-950/70">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/8 bg-iris-500/[0.07] px-3.5 py-2.5">
+        <span className="inline-flex items-center gap-2 text-xs font-bold text-white">
+          <BookOpen size={14} className="text-iris-300" />
+          Пособие · страница {page}{pages > 0 ? ` из ${pages}` : ""}
+        </span>
+        <Link
+          to={`/app/library/-${textbookId}?page=${page}`}
+          className="text-[11px] font-semibold text-iris-300 hover:text-white"
+        >
+          Открыть в библиотеке ↗
+        </Link>
+      </div>
+
+      <div className="max-h-[72vh] overflow-auto bg-ink-950 p-2">
+        {src ? (
+          <img
+            src={src}
+            alt={`Страница ${page} пособия`}
+            className="mx-auto block w-full rounded-lg bg-white"
+          />
+        ) : (
+          <div className="flex min-h-56 items-center justify-center px-4 py-10 text-center text-xs text-mist-500">
+            {pageError || "Загружаем страницу пособия…"}
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between gap-2 border-t border-white/8 px-3 py-2">
+        <Button
+          size="sm"
+          variant="ghost"
+          icon={ChevronLeft}
+          disabled={page <= 1}
+          onClick={() => setPage((value) => Math.max(1, value - 1))}
+        >
+          Назад
+        </Button>
+        {contentText ? (
+          <button
+            type="button"
+            onClick={() => setShowText((value) => !value)}
+            className="text-[11px] font-semibold text-mist-500 hover:text-white"
+          >
+            {showText ? "Скрыть текст" : "Показать текст"}
+          </button>
+        ) : <span />}
+        <Button
+          size="sm"
+          variant="ghost"
+          icon={ChevronRight}
+          disabled={pages > 0 && page >= pages}
+          onClick={() => setPage((value) => (pages > 0 ? Math.min(pages, value + 1) : value + 1))}
+        >
+          Дальше
+        </Button>
+      </div>
+
+      {showText && contentText ? (
+        <div className="border-t border-white/8 bg-cyan-400/[0.04] px-3.5 py-3 text-sm leading-relaxed text-mist-300">
+          {contentText}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function AssignmentsPage() {
   const { data, loading, error, refresh } = useApi("/assignments");
   const [tab, setTab] = useState("active");
@@ -539,22 +648,17 @@ export function AssignmentPage() {
             {current?.question}
           </p>
 
-          {current?.task_type === "read" && current?.textbook_id && (
-            <div className="mt-4">
-              <Link
-                to={`/app/library/-${current.textbook_id}?page=${current.page || 1}`}
-                className="btn btn-ghost btn-sm"
-              >
-                <BookOpen size={15} /> Открыть учебник{current.page ? ` · стр. ${current.page}` : ""}
-              </Link>
-            </div>
-          )}
-
-          {current?.content_text && (
+          {current?.task_type === "read" && current?.textbook_id ? (
+            <ReadTextbookViewer
+              textbookId={current.textbook_id}
+              startPage={current.page}
+              contentText={current.content_text}
+            />
+          ) : current?.content_text ? (
             <div className="mt-4 rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.04] p-4 text-sm leading-relaxed text-mist-300">
               {current.content_text}
             </div>
-          )}
+          ) : null}
 
           {current?.audio_text && (
             <Button variant="ghost" size="sm" icon={Volume2} className="mt-4" onClick={() => speak(current.audio_text)}>

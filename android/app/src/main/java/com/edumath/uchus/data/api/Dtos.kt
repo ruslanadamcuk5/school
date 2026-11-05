@@ -592,6 +592,8 @@ data class QuestionDto(
     @SerializedName("audio_text") val audioText: String? = null,
     @SerializedName("content_text") val contentText: String? = null,
     @SerializedName("topic_slug") val topicSlug: String? = null,
+    @SerializedName("textbook_id") val textbookId: Int? = null,
+    @SerializedName("page") val page: Int? = null,
 )
 
 data class AssignmentsDto(

@@ -15,6 +15,7 @@ import androidx.core.content.FileProvider
 import androidx.exifinterface.media.ExifInterface
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -29,6 +31,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -44,10 +47,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import coil.compose.SubcomposeAsyncImage
 import com.edumath.uchus.core.AppContainer
 import com.edumath.uchus.data.api.ApiJson
 import com.edumath.uchus.data.api.AssignmentDetailDto
@@ -216,6 +221,7 @@ fun AssignmentDetailScreen(
     container: AppContainer,
     assignmentId: Int,
     onBack: () -> Unit,
+    onBook: (Int, Int) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     var submitted by remember { mutableStateOf<SubmitResponse?>(null) }
@@ -249,10 +255,12 @@ fun AssignmentDetailScreen(
                 )
             } else {
                 AssignmentForm(
+                    container = container,
                     data = data,
                     padding = padding,
                     busy = busy,
                     error = error,
+                    onBook = onBook,
                     onSubmit = { answers, photos ->
                         if (!busy) {
                             busy = true
@@ -301,10 +309,12 @@ fun AssignmentDetailScreen(
 
 @Composable
 private fun AssignmentForm(
+    container: AppContainer,
     data: AssignmentDetailDto,
     padding: PaddingValues,
     busy: Boolean,
     error: String?,
+    onBook: (Int, Int) -> Unit,
     onSubmit: (List<String>, List<File>) -> Unit,
 ) {
     val context = LocalContext.current
@@ -416,9 +426,11 @@ private fun AssignmentForm(
         items(questions) { question ->
             val index = question.index
             QuestionCard(
+                container = container,
                 question = question,
                 value = answers.getOrNull(index) ?: "",
                 allowText = allowText,
+                onBook = onBook,
                 onChange = { value -> if (index in answers.indices) answers[index] = value },
                 onSpeak = {
                     val text = question.audioText?.takeIf { it.isNotBlank() }
@@ -515,13 +527,16 @@ private fun taskTypeLabel(type: String): String = when (type) {
 
 @Composable
 private fun QuestionCard(
+    container: AppContainer,
     question: QuestionDto,
     value: String,
     allowText: Boolean,
+    onBook: (Int, Int) -> Unit,
     onChange: (String) -> Unit,
     onSpeak: () -> Unit,
 ) {
     val taskType = question.taskType ?: "test"
+    var showReadText by remember(question.index) { mutableStateOf(false) }
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -534,7 +549,69 @@ private fun QuestionCard(
             }
 
             if (taskType == "read") {
-                if (!question.contentText.isNullOrBlank()) {
+                val textbookId = question.textbookId ?: 0
+                val page = (question.page ?: 0).coerceAtLeast(1)
+                if (textbookId > 0) {
+                    val pageUrl = buildString {
+                        append(container.session.baseUrl.trimEnd('/'))
+                        append("/api/v1/books/")
+                        append(textbookId)
+                        append("/page/")
+                        append(page)
+                        append(".png")
+                    }
+                    SubcomposeAsyncImage(
+                        model = pageUrl,
+                        imageLoader = container.imageLoader,
+                        contentDescription = "Страница $page пособия",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 200.dp, max = 420.dp),
+                        contentScale = ContentScale.Fit,
+                        loading = {
+                            Box(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(180.dp),
+                                contentAlignment = Alignment.Center,
+                            ) { CircularProgressIndicator() }
+                        },
+                        error = {
+                            Box(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    "Не удалось открыть страницу пособия. Проверьте интернет.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        },
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        OutlinedButton(onClick = { onBook(textbookId, page) }) {
+                            Text("Открыть учебник · стр. $page")
+                        }
+                        if (!question.contentText.isNullOrBlank()) {
+                            TextButton(onClick = { showReadText = !showReadText }) {
+                                Text(if (showReadText) "Скрыть текст" else "Текст")
+                            }
+                        }
+                    }
+                    if (showReadText && !question.contentText.isNullOrBlank()) {
+                        Text(
+                            question.contentText ?: "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                } else if (!question.contentText.isNullOrBlank()) {
                     Text(
                         question.contentText ?: "",
                         style = MaterialTheme.typography.bodyMedium,
