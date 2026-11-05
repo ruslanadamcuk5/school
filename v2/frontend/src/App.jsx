@@ -14,6 +14,8 @@ const page = (loader, name) =>
 const StudentDashboard = page(() => import("./pages/Student"), "default");
 const LearnPage = page(() => import("./pages/Learn"), "LearnPage");
 const TopicPage = page(() => import("./pages/Learn"), "TopicPage");
+const QuestsPage = page(() => import("./pages/Quests"), "QuestsPage");
+const QuestPlayerPage = page(() => import("./pages/Quests"), "QuestPlayerPage");
 const PracticePage = page(() => import("./pages/Practice"), "PracticePage");
 const PracticeResult = page(() => import("./pages/Practice"), "PracticeResult");
 const AssignmentsPage = page(() => import("./pages/Assignments"), "AssignmentsPage");
@@ -126,6 +128,22 @@ export default function App() {
           element={
             <RequireRole roles={["student"]}>
               <TopicPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="quests"
+          element={
+            <RequireRole roles={["student"]}>
+              <QuestsPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="quests/:slug"
+          element={
+            <RequireRole roles={["student"]}>
+              <QuestPlayerPage />
             </RequireRole>
           }
         />

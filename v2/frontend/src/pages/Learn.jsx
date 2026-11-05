@@ -765,6 +765,9 @@ export function TopicPage() {
             )}
             {data.can_play && (
               <>
+                <Link to={`/app/quests/${slug}`} className="btn btn-gold btn-lg">
+                  <Gamepad2 size={16} /> 3D-квест
+                </Link>
                 <Button size="lg" icon={Play} loading={pending} onClick={() => start("practice")}>Тренировка</Button>
                 <Button size="lg" variant="ghost" icon={Crown} loading={pending} onClick={() => start("boss")}>Босс</Button>
               </>

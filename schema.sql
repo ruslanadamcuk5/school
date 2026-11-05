@@ -143,6 +143,39 @@ CREATE TABLE IF NOT EXISTS play_sessions (
 
 CREATE INDEX IF NOT EXISTS idx_sessions_learner ON play_sessions(learner_id, started_at);
 
+-- 3D-квесты: сессии и лучший результат по теме.
+CREATE TABLE IF NOT EXISTS quest_runs (
+    run_key      TEXT PRIMARY KEY,
+    learner_id   INTEGER NOT NULL,
+    quest_slug   TEXT    NOT NULL,
+    topic_slug   TEXT    NOT NULL,
+    tasks_json   TEXT    NOT NULL DEFAULT '[]',
+    state_json   TEXT    NOT NULL DEFAULT '{}',
+    status       TEXT    NOT NULL DEFAULT 'active',
+    correct      INTEGER NOT NULL DEFAULT 0,
+    total        INTEGER NOT NULL DEFAULT 5,
+    xp           INTEGER NOT NULL DEFAULT 0,
+    coins        INTEGER NOT NULL DEFAULT 0,
+    started_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+    finished_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_quest_runs_learner ON quest_runs(learner_id, status);
+
+CREATE TABLE IF NOT EXISTS quest_progress (
+    learner_id   INTEGER NOT NULL,
+    quest_slug   TEXT    NOT NULL,
+    topic_slug   TEXT    NOT NULL,
+    attempts     INTEGER NOT NULL DEFAULT 0,
+    completed    INTEGER NOT NULL DEFAULT 0,
+    best_correct INTEGER NOT NULL DEFAULT 0,
+    best_stars   INTEGER NOT NULL DEFAULT 0,
+    best_xp      INTEGER NOT NULL DEFAULT 0,
+    best_time_ms INTEGER NOT NULL DEFAULT 0,
+    updated_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (learner_id, quest_slug)
+);
+
 CREATE TABLE IF NOT EXISTS app_meta (
     key          TEXT PRIMARY KEY,
     value        TEXT

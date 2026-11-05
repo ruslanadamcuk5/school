@@ -59,6 +59,7 @@ def health():
 from . import auth as _auth  # noqa: E402,F401
 from . import content as _content  # noqa: E402,F401
 from . import play as _play  # noqa: E402,F401
+from . import quests as _quests  # noqa: E402,F401
 from . import assignments as _assignments  # noqa: E402,F401
 from . import library as _library  # noqa: E402,F401
 from . import orgs as _orgs  # noqa: E402,F401
