@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Spinner } from "./components/ui";
 import { useSession } from "./lib/hooks";
 import Shell from "./components/Shell";
+import ErrorBoundary from "./components/ErrorBoundary";
 import Landing from "./pages/Landing";
 import { LoginPage, RegisterPage } from "./pages/Auth";
 
@@ -102,8 +103,9 @@ function LibraryEntry() {
 
 export default function App() {
   return (
-    <Suspense fallback={<FullScreenLoader />}>
-      <Routes>
+    <ErrorBoundary>
+      <Suspense fallback={<FullScreenLoader />}>
+        <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
@@ -422,6 +424,7 @@ export default function App() {
         }
       />
       </Routes>
-    </Suspense>
+      </Suspense>
+    </ErrorBoundary>
   );
 }

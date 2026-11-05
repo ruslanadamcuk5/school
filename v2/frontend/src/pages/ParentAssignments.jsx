@@ -127,9 +127,9 @@ export function ParentAssignmentsPage() {
   );
 
   const effectiveGrade = useMemo(() => {
-    if (selectedChildren.length === 0) return "";
-    return String(selectedChildren[0].grade || "");
-  }, [selectedChildren]);
+    const child = selectedChildren[0] || children[0];
+    return child ? String(child.grade || "") : "";
+  }, [selectedChildren, children]);
 
   const topicsBySubject = useMemo(() => {
     const groups = {};
@@ -322,6 +322,7 @@ export function ParentAssignmentsPage() {
           topicsBySubject={topicsBySubject}
           topicsLoading={topicsLoading}
           topicError={topicError}
+          effectiveGrade={effectiveGrade}
           selectedTopicSlugs={selectedTopicSlugs}
           onToggleTopic={toggleTopic}
           onCreate={createAssignment}
@@ -370,6 +371,7 @@ function AssignmentForm({
   topicsBySubject,
   topicsLoading,
   topicError,
+  effectiveGrade,
   selectedTopicSlugs,
   onToggleTopic,
   onCreate,
@@ -637,7 +639,9 @@ function AssignmentList({ assignments, loading, refresh }) {
 
   return (
     <div className="space-y-4">
-      {assignments.map((assignment) => (
+      {assignments.map((assignment) => {
+        const results = assignment.results || [];
+        return (
         <Card key={assignment.id} className="p-5 sm:p-6 hover:border-white/10 transition">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
             <div>
@@ -651,17 +655,17 @@ function AssignmentList({ assignments, loading, refresh }) {
               <Badge tone={assignment.allow_photo ? "iris" : "mist"} size="sm">
                 {assignment.allow_photo ? "Фото" : "Текст"}
               </Badge>
-              <Badge tone={scoreTone(assignment.results?.[0]?.percent || 0)} size="sm">
-                {assignment.results.length} работ
+              <Badge tone={scoreTone(results[0]?.percent || 0)} size="sm">
+                {results.length} работ
               </Badge>
             </div>
           </div>
 
           <div className="space-y-3">
-            {assignment.results.length === 0 ? (
+            {results.length === 0 ? (
               <EmptyState icon="⏳" title="Ещё нет отправленных работ" text="Дети ещё не прислали ответы." />
             ) : (
-              assignment.results.map((result) => (
+              results.map((result) => (
                 <div key={`${result.student_id}-${assignment.id}`} className="rounded-xl border border-white/8 bg-white/[0.02] p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2">
@@ -704,7 +708,8 @@ function AssignmentList({ assignments, loading, refresh }) {
             )}
           </div>
         </Card>
-      ))}
+        );
+      })}
     </div>
   );
 }
