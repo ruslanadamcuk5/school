@@ -1,6 +1,7 @@
 package com.edumath.uchus.ui.common
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -22,6 +23,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,10 +33,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.edumath.uchus.data.api.apiCall
 import com.edumath.uchus.data.cache.JsonCache
+import com.edumath.uchus.ui.theme.SitePalette
 import com.google.gson.Gson
 
 /** Экран с верхней панелью и кнопкой «назад». */
@@ -47,9 +51,22 @@ fun ScreenScaffold(
     content: @Composable (PaddingValues) -> Unit,
 ) {
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text(title, fontWeight = FontWeight.Bold) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
+                    actionIconContentColor = MaterialTheme.colorScheme.onBackground,
+                ),
+                title = {
+                    Text(
+                        title,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                },
                 navigationIcon = {
                     if (onBack != null) {
                         IconButton(onClick = onBack) {
@@ -138,20 +155,22 @@ fun SectionTitle(text: String, trailing: String? = null) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 2.dp),
+            .padding(top = 12.dp, bottom = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
+            text.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = MaterialTheme.typography.labelSmall.letterSpacing,
+            color = SitePalette.Muted,
             modifier = Modifier.weight(1f),
         )
         if (trailing != null) {
             Text(
                 trailing,
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.primary,
             )
         }
     }
@@ -159,11 +178,12 @@ fun SectionTitle(text: String, trailing: String? = null) {
 
 /** Небольшая метка (класс, звёзды, статус). */
 @Composable
-fun Tag(text: String) {
+fun Tag(text: String, tone: Color = MaterialTheme.colorScheme.primary) {
     Surface(
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-        shape = RoundedCornerShape(8.dp),
+        color = tone.copy(alpha = 0.14f),
+        contentColor = tone,
+        shape = RoundedCornerShape(9.dp),
+        modifier = Modifier.border(1.dp, tone.copy(alpha = 0.28f), RoundedCornerShape(9.dp)),
     ) {
         Text(
             text,

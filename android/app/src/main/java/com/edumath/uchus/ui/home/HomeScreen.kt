@@ -1,6 +1,7 @@
 package com.edumath.uchus.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Notifications
@@ -27,8 +29,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,6 +45,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,6 +60,7 @@ import com.edumath.uchus.ui.common.SectionTitle
 import com.edumath.uchus.ui.common.StatPill
 import com.edumath.uchus.ui.common.Tag
 import com.edumath.uchus.ui.pet.PetCompanionCard
+import com.edumath.uchus.ui.theme.SitePalette
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -134,15 +141,25 @@ fun HomeScreen(
     }
 
     Scaffold(
+        containerColor = SitePalette.Ink950,
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = SitePalette.Ink950,
+                    titleContentColor = SitePalette.Text,
+                    actionIconContentColor = SitePalette.Muted,
+                ),
                 title = {
                     Column {
-                        Text("Школьник", fontWeight = FontWeight.Bold)
                         Text(
-                            "Общеобразовательная платформа обучения",
+                            "Школьник",
+                            fontWeight = FontWeight.ExtraBold,
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                        Text(
+                            "Общеобразовательная платформа",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = SitePalette.MutedDim,
                         )
                     }
                 },
@@ -313,28 +330,54 @@ private fun Greeting(session: SessionDto?, isStrict: Boolean) {
         else -> "Семейный профиль"
     }
 
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(emoji, fontSize = if (isStrict) 32.sp else 40.sp)
-        Spacer(Modifier.width(12.dp))
-        Column {
-            Text(
-                "Здравствуйте, $name!",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                Brush.linearGradient(
+                    listOf(
+                        SitePalette.Iris500.copy(alpha = 0.24f),
+                        SitePalette.Ink850,
+                        SitePalette.Cyan400.copy(alpha = 0.10f),
+                    ),
+                ),
+                RoundedCornerShape(24.dp),
             )
-            Text(
-                roleLabel,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            if (!isStrict) {
-                learner?.title?.takeIf { it.isNotBlank() }?.let {
-                    Text(
-                        "🏅 $it",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.SemiBold,
-                    )
+            .border(1.dp, SitePalette.Border, RoundedCornerShape(24.dp))
+            .padding(18.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(54.dp)
+                    .background(SitePalette.Ink950.copy(alpha = 0.55f), RoundedCornerShape(18.dp))
+                    .border(1.dp, SitePalette.Border, RoundedCornerShape(18.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(emoji, fontSize = if (isStrict) 26.sp else 30.sp)
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "Здравствуйте, $name!",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = SitePalette.Text,
+                )
+                Text(
+                    roleLabel.uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = SitePalette.Iris400,
+                )
+                if (!isStrict) {
+                    learner?.title?.takeIf { it.isNotBlank() }?.let {
+                        Text(
+                            "🏅 $it",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = SitePalette.Gold400,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
                 }
             }
         }
@@ -343,27 +386,39 @@ private fun Greeting(session: SessionDto?, isStrict: Boolean) {
 
 @Composable
 private fun HomeCard(item: HomeItem, onClick: () -> Unit) {
-    Card(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .background(SitePalette.Ink850, RoundedCornerShape(20.dp))
+            .border(1.dp, SitePalette.Border, RoundedCornerShape(20.dp))
+            .clickable(onClick = onClick)
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Box(
+            modifier = Modifier
+                .size(46.dp)
+                .background(SitePalette.Iris500.copy(alpha = 0.14f), RoundedCornerShape(15.dp))
+                .border(1.dp, SitePalette.Iris500.copy(alpha = 0.22f), RoundedCornerShape(15.dp)),
+            contentAlignment = Alignment.Center,
         ) {
-            Text(item.emoji, fontSize = 26.sp)
-            Spacer(Modifier.width(14.dp))
-            Column(Modifier.weight(1f)) {
-                Text(item.title, fontWeight = FontWeight.SemiBold)
-                Text(
-                    item.subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Text("→", style = MaterialTheme.typography.titleMedium)
+            Text(item.emoji, fontSize = 22.sp)
         }
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                item.title,
+                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.titleMedium,
+                color = SitePalette.Text,
+            )
+            Text(
+                item.subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = SitePalette.Muted,
+            )
+        }
+        Text("›", style = MaterialTheme.typography.headlineMedium, color = SitePalette.MutedDim)
     }
 }
 

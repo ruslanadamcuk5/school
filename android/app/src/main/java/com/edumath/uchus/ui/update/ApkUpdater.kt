@@ -260,6 +260,7 @@ object UpdateStateStore {
     private const val KEY_PENDING_CODE = "pending_version_code"
     private const val KEY_PENDING_NAME = "pending_version_name"
     private const val KEY_ERROR = "last_error"
+    private const val KEY_DISMISSED_CODE = "dismissed_version_code"
 
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -295,4 +296,12 @@ object UpdateStateStore {
     fun clearError(context: Context) {
         prefs(context).edit().remove(KEY_ERROR).apply()
     }
+
+    /** Версия, которую пользователь отложил: повторно не показываем её. */
+    fun rememberDismissed(context: Context, versionCode: Int) {
+        prefs(context).edit().putInt(KEY_DISMISSED_CODE, versionCode).apply()
+    }
+
+    fun dismissedCode(context: Context): Int =
+        prefs(context).getInt(KEY_DISMISSED_CODE, 0)
 }

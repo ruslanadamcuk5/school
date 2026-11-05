@@ -12,8 +12,8 @@ android {
         applicationId = "com.edumath.uchus"
         minSdk = 24
         targetSdk = 35
-        versionCode = 41
-        versionName = "1.9.26"
+        versionCode = 42
+        versionName = "2.0.0"
 
         vectorDrawables { useSupportLibrary = true }
 
@@ -22,7 +22,7 @@ android {
         val serverUrl = (findProperty("serverUrl") as String?)
             ?.trim()
             ?.takeIf { it.isNotEmpty() }
-            ?: "https://virusadk.alwaysdata.net"
+            ?: "https://school-v2.185.31.40.24.nip.io"
         buildConfigField("String", "DEFAULT_SERVER_URL", "\"$serverUrl\"")
 
         // Web-клиент OAuth из Google Cloud. Именно он передаётся в Credential

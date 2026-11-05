@@ -56,8 +56,17 @@ class SessionStore(private val context: Context) {
     }
 
     suspend fun hydrate(): StoredSession? {
-        val stored = flow.first()
+        var stored = flow.first()
         if (stored != null) {
+            // Старые установки хранят адрес прошлого сайта. Переводим их на
+            // новый сервер v2, сохраняя токен и профиль.
+            val migrated = migrateLegacyBaseUrl(stored.baseUrl)
+            if (migrated != stored.baseUrl) {
+                context.sessionDataStore.edit { prefs ->
+                    prefs[Keys.BASE_URL] = migrated
+                }
+                stored = stored.copy(baseUrl = migrated)
+            }
             token = stored.token
             baseUrl = stored.baseUrl
         }
@@ -65,6 +74,22 @@ class SessionStore(private val context: Context) {
         _current.value = stored
         _loaded.value = true
         return stored
+    }
+
+    /** Адреса прежнего сервера, которые нужно заменить на актуальный. */
+    private fun migrateLegacyBaseUrl(raw: String): String {
+        val normalized = normalizeBaseUrl(raw)
+        val host = normalized
+            .removePrefix("https://")
+            .removePrefix("http://")
+            .substringBefore('/')
+            .substringBefore(':')
+            .lowercase()
+        return if (host == LEGACY_HOST || host == "www.$LEGACY_HOST") {
+            BuildConfig.DEFAULT_SERVER_URL
+        } else {
+            normalized
+        }
     }
 
     /** Идентификатор устройства: к нему привязаны семейные профили. */
@@ -126,6 +151,7 @@ class SessionStore(private val context: Context) {
     }
 
     companion object {
+        private const val LEGACY_HOST = "virusadk.alwaysdata.net"
         private val LOCAL_HOSTS = setOf("localhost", "127.0.0.1", "10.0.2.2")
 
         fun normalizeBaseUrl(raw: String): String {

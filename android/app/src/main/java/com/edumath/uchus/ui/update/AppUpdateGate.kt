@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -36,6 +37,7 @@ import java.util.Locale
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private sealed interface UpdatePhase {
@@ -66,10 +68,39 @@ fun AppUpdateGate(container: AppContainer) {
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
     var update by remember { mutableStateOf<AppVersionDto?>(null) }
-    var dismissed by rememberSaveable { mutableStateOf(false) }
+    var dismissedCode by rememberSaveable {
+        mutableStateOf(UpdateStateStore.dismissedCode(context))
+    }
     var phase by remember { mutableStateOf<UpdatePhase>(UpdatePhase.Idle) }
     var completedVersion by remember { mutableStateOf<String?>(null) }
     var downloadJob by remember { mutableStateOf<Job?>(null) }
+    var lastCheckAt by remember { mutableLongStateOf(0L) }
+
+    /**
+     * Проверка опубликованной версии. Вызывается при запуске, при возврате
+     * в приложение и раз в 10 минут — новая версия появляется без перезапуска.
+     */
+    fun checkForUpdate(force: Boolean) {
+        val now = System.currentTimeMillis()
+        if (!force && now - lastCheckAt < 2 * 60_000L) return
+        lastCheckAt = now
+        scope.launch {
+            val busy = phase is UpdatePhase.Downloading ||
+                phase is UpdatePhase.Verifying ||
+                phase is UpdatePhase.Installing ||
+                phase is UpdatePhase.NeedPermission
+            if (busy) return@launch
+            val info = findUpdate(container) ?: return@launch
+            val skipped = UpdateStateStore.dismissedCode(context)
+            if (skipped >= info.versionCode) {
+                update = null
+                return@launch
+            }
+            if (update?.versionCode != info.versionCode) {
+                update = info
+            }
+        }
+    }
 
     // Итог установки: новая версия уже запущена, а в хранилище остался
     // номер версии, которую устанавливали.
@@ -85,7 +116,15 @@ fun AppUpdateGate(container: AppContainer) {
     }
 
     LaunchedEffect(Unit) {
-        update = findUpdate(container)
+        checkForUpdate(force = true)
+    }
+
+    // Пока приложение открыто, раз в 10 минут проверяем новую версию.
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(10 * 60_000L)
+            checkForUpdate(force = true)
+        }
     }
 
     LaunchedEffect(update) {
@@ -158,6 +197,8 @@ fun AppUpdateGate(container: AppContainer) {
                             "Установка не завершилась. Попробуйте ещё раз."
                         )
                     }
+
+                    phase is UpdatePhase.Idle -> checkForUpdate(force = false)
                 }
             }
         }
@@ -185,7 +226,7 @@ fun AppUpdateGate(container: AppContainer) {
     }
 
     val release = update
-    if (release == null || dismissed) return
+    if (release == null || dismissedCode >= release.versionCode) return
 
     val version = release.versionName?.takeIf { it.isNotBlank() }
         ?: release.versionCode.toString()
@@ -196,7 +237,10 @@ fun AppUpdateGate(container: AppContainer) {
 
     AlertDialog(
         onDismissRequest = {
-            if (!busy) dismissed = true
+            if (!busy) {
+                UpdateStateStore.rememberDismissed(context, release.versionCode)
+                dismissedCode = release.versionCode
+            }
         },
         title = {
             Text(
@@ -348,7 +392,8 @@ fun AppUpdateGate(container: AppContainer) {
                         if (phase is UpdatePhase.Downloading) {
                             downloadJob?.cancel()
                         }
-                        dismissed = true
+                        UpdateStateStore.rememberDismissed(context, release.versionCode)
+                        dismissedCode = release.versionCode
                     },
                 ) {
                     Text(

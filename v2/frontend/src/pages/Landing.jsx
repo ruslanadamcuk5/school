@@ -6,12 +6,14 @@ import {
   BookOpen,
   Brain,
   CheckCircle2,
+  Download,
   Gamepad2,
   GraduationCap,
   HeartHandshake,
   MapPin,
   Menu,
   ShieldCheck,
+  Smartphone,
   Sparkles,
   Star,
   Trophy,
@@ -41,6 +43,7 @@ function Nav() {
     ["#subjects", "Предметы"],
     ["#roles", "Роли"],
     ["#how", "Как это работает"],
+    ["#android", "Приложение"],
   ];
 
   return (
@@ -266,6 +269,10 @@ export default function Landing() {
   const { data } = useApi("/public/landing", { base: "/api/v2", ttl: 60_000 });
   const stats = data?.stats || {};
   const subjects = data?.subjects || [];
+  const { data: appInfo } = useApi("/app/version", { base: "/api/v1", ttl: 60_000 });
+  const app = appInfo?.ok ? appInfo : null;
+  const appSize = app?.size ? `${Math.round(app.size / (1024 * 1024))} МБ` : "";
+  const appUrl = app?.download_url || "/download/android";
 
   return (
     <div className="relative z-10">
@@ -471,6 +478,102 @@ export default function Landing() {
                   <p className="mt-2 text-sm leading-relaxed text-mist-500">{step.text}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* android app */}
+        <section id="android" className="px-5 py-24 lg:px-8">
+          <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[32px] border border-white/10 bg-gradient-to-br from-ink-900 via-ink-900/70 to-iris-600/15 p-7 sm:p-10 lg:p-14">
+            <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-iris-500/20 blur-3xl" />
+            <div className="relative grid items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
+              <div>
+                <Badge tone="iris"><Smartphone size={13} /> Android-приложение</Badge>
+                <h2 className="mt-5 font-display text-3xl font-semibold leading-tight text-white sm:text-[2.6rem]">
+                  Школьник всегда
+                  <br />
+                  <span className="grad-text">под рукой.</span>
+                </h2>
+                <p className="mt-4 max-w-xl text-[0.98rem] leading-relaxed text-mist-300">
+                  Темы, тренировки, задания, дневник и связь с учителем — в приложении
+                  с тем же дизайном, что и сайт. Один вход для ученика, учителя,
+                  родителя и администратора: логин и пароль те же, что здесь.
+                </p>
+                <ul className="mt-6 grid gap-2.5 text-sm text-mist-300 sm:grid-cols-2">
+                  {[
+                    "Все роли и разделы сайта",
+                    "Работает на Android 7.0+",
+                    "Обновление прямо в приложении",
+                    "Профиль и данные сохраняются",
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-2">
+                      <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-400" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-8 flex flex-wrap items-center gap-3">
+                  <a href={appUrl} download>
+                    <Button size="lg" icon={Download}>Скачать для Android</Button>
+                  </a>
+                  {app ? (
+                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-xs font-semibold text-mist-400">
+                      Версия {app.version_name}
+                      {appSize ? ` · ${appSize}` : ""}
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-4 max-w-lg text-xs leading-relaxed text-mist-500">
+                  Обновления приходят внутри приложения: когда на сайте появляется
+                  новая версия, приложение предложит обновиться, скачает файл и
+                  установит его в своём окне. Скачивать заново с сайта не нужно.
+                </p>
+              </div>
+
+              <div className="mx-auto w-full max-w-[290px]">
+                <div className="rounded-[38px] border border-white/12 bg-ink-950/80 p-3 shadow-[0_30px_80px_-20px_rgba(124,92,255,0.45)]">
+                  <div className="overflow-hidden rounded-[28px] border border-white/8 bg-gradient-to-b from-ink-900 to-ink-950">
+                    <div className="flex items-center justify-between px-5 pt-4 text-[10px] font-semibold text-mist-600">
+                      <span>9:41</span>
+                      <span className="flex gap-1"><span>●●●</span><span>▮</span></span>
+                    </div>
+                    <div className="px-5 pb-6 pt-5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-iris-500/20 text-base">📚</div>
+                        <div>
+                          <p className="font-display text-sm font-semibold text-white">Школьник</p>
+                          <p className="text-[9px] uppercase tracking-wider text-iris-400">Учёба, которая вдохновляет</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 rounded-2xl border border-white/8 bg-gradient-to-br from-iris-500/25 to-cyan-500/10 p-4">
+                        <p className="text-[11px] text-mist-400">Здравствуйте, Маша!</p>
+                        <p className="mt-1 font-display text-lg font-semibold text-white">Математика · 5 класс</p>
+                        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+                          <div className="h-full w-[68%] rounded-full bg-gradient-to-r from-iris-400 to-cyan-400" />
+                        </div>
+                        <p className="mt-2 text-[10px] text-mist-500">68% темы пройдено · 12 заданий</p>
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        {[
+                          ["📝", "Работы", "3 новых"],
+                          ["🏆", "Достижения", "8 наград"],
+                          ["📖", "Библиотека", "Учебники"],
+                          ["💬", "Чат", "С учителем"],
+                        ].map(([emoji, title, sub]) => (
+                          <div key={title} className="rounded-xl border border-white/8 bg-white/[0.03] p-2.5">
+                            <p className="text-sm">{emoji}</p>
+                            <p className="mt-1 text-[11px] font-semibold text-white">{title}</p>
+                            <p className="text-[9px] text-mist-600">{sub}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-3 flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 text-[10px] text-mist-500">
+                        <span>Главная</span><span>Темы</span><span>Работы</span><span className="text-iris-400">Профиль</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>

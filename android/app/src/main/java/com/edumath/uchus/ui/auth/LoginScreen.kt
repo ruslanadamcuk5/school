@@ -1,7 +1,10 @@
 package com.edumath.uchus.ui.auth
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -17,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -39,6 +43,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -47,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.edumath.uchus.data.api.LearnerDto
 import com.edumath.uchus.ui.common.ErrorBox
+import com.edumath.uchus.ui.theme.SitePalette
 import kotlinx.coroutines.launch
 
 @Composable
@@ -92,18 +98,47 @@ fun LoginScreen(vm: AuthViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(SitePalette.Ink950, SitePalette.Ink900, SitePalette.Ink950),
+                ),
+            )
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 24.dp),
+            .padding(horizontal = 20.dp, vertical = 28.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("📚 Учусь", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(SitePalette.Iris500.copy(alpha = 0.16f), RoundedCornerShape(18.dp))
+                    .border(1.dp, SitePalette.Iris500.copy(alpha = 0.28f), RoundedCornerShape(18.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("📚", fontSize = 26.sp)
+            }
+            Spacer(Modifier.width(14.dp))
+            Column {
+                Text(
+                    "Школьник",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = SitePalette.Text,
+                )
+                Text(
+                    "Учёба, которая вдохновляет",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = SitePalette.Iris400,
+                )
+            }
+        }
         Text(
-            "Школьная платформа: темы, тренировки, работы и библиотека.",
+            "Темы, тренировки, задания, библиотека и помощь близких — в одном приложении.",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = SitePalette.Muted,
         )
 
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(8.dp))
 
         OutlinedTextField(
             value = state.server,
@@ -113,9 +148,9 @@ fun LoginScreen(vm: AuthViewModel) {
             modifier = Modifier.fillMaxWidth(),
         )
         Text(
-            "Например: https://virusadk.alwaysdata.net",
+            "Например: https://school-v2.185.31.40.24.nip.io",
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = SitePalette.MutedDim,
         )
 
         OutlinedTextField(
