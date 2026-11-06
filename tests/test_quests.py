@@ -246,6 +246,43 @@ class QuestApiTest(unittest.TestCase):
         second_questions = [task["question"] for task in second["tasks"]]
         self.assertNotEqual(first_questions, second_questions)
 
+    def test_start_does_not_wait_for_ai(self):
+        """Запуск квеста не ходит в сеть к модели, даже если ИИ включён."""
+        from unittest import mock
+
+        from services import ai as ai_service
+
+        subject = query_one("SELECT id FROM subjects WHERE slug = 'russian_lang'")
+        if subject is None:
+            execute(
+                """INSERT INTO subjects (name, slug, icon)
+                   VALUES ('Русский язык', 'russian_lang', '📕')"""
+            )
+            subject = query_one("SELECT id FROM subjects WHERE slug = 'russian_lang'")
+        execute(
+            """INSERT OR IGNORE INTO topics
+               (slug, title, grade, subject_id, source, kind, description)
+               VALUES ('noun_ai_test', 'Имя существительное', 3, ?, 'manual',
+                       'reading', ?)""",
+            (
+                subject["id"],
+                "Имя существительное обозначает предмет. Одушевлённые "
+                "существительные отвечают на вопрос кто. Неодушевлённые — "
+                "на вопрос что. Собственные имена пишутся с большой буквы. "
+                "В русском языке шесть падежей. Род определяют по окончанию.",
+            ),
+        )
+
+        def explode(*args, **kwargs):
+            raise AssertionError("запуск квеста не должен ждать ответ ИИ")
+
+        with mock.patch.object(ai_service, "is_enabled", return_value=True), \
+                mock.patch.object(ai_service, "chat", side_effect=explode):
+            response = self.post("/api/v1/quests/noun_ai_test/start")
+
+        self.assertEqual(response.status_code, 200, response.get_data(as_text=True))
+        self.assertEqual(response.get_json()["total"], 5)
+
     def test_resume_active_run(self):
         first = self.post("/api/v1/quests/mult_div_table/start").get_json()
         detail = self.get("/api/v1/quests/mult_div_table").get_json()

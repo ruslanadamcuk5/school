@@ -288,8 +288,14 @@ def questions(
     text: str = "",
     script: str = "cyr",
     user_id: int | None = None,
+    allow_ai: bool = True,
 ) -> list[dict[str, Any]]:
-    """Вопросы по теме из кэша или от модели. Ошибки не ломают тест."""
+    """Вопросы по теме из кэша или от модели. Ошибки не ломают тест.
+
+    `allow_ai=False` — только готовый кэш, без обращения к модели. Нужно
+    там, где ответ должен прийти мгновенно (например, запуск 3D-квеста):
+    синхронный запрос к ИИ занимает десятки секунд.
+    """
     if not topic or count <= 0:
         return []
     slug = _field(topic, "slug")
@@ -298,6 +304,8 @@ def questions(
     cached = _load_cache(slug)
     if cached:
         return _to_tasks(cached[:count])
+    if not allow_ai:
+        return []
     if not ai_service.is_enabled():
         return []
 

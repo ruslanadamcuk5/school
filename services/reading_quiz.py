@@ -320,12 +320,18 @@ def _excerpt(pages: list[tuple[int | None, str]], limit: int = 6000) -> str:
 
 
 def build_questions(
-    topic: Any, count: int = 5, *, user_id: int | None = None
+    topic: Any,
+    count: int = 5,
+    *,
+    user_id: int | None = None,
+    allow_ai: bool = True,
 ) -> list[dict[str, Any]]:
     """Сгенерировать до `count` заданий по теме.
 
     Сначала — вопросы по теме от ИИ (если он настроен), затем — пропущенные
     слова по читаемому тексту пособия. Битый текст сканов не используется.
+    При `allow_ai=False` берутся только уже сохранённые вопросы ИИ, без
+    сетевого запроса к модели.
     """
     if not topic or count <= 0:
         return []
@@ -344,6 +350,7 @@ def build_questions(
         text=_excerpt(readable_pages),
         script=script,
         user_id=user_id,
+        allow_ai=allow_ai,
     ))
     # Если текстовый слой целиком «грязный» (скан, сбитая кодировка), всё
     # равно пробуем cloze: отдельные предложения могут быть читаемыми.

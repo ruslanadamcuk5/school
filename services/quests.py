@@ -488,20 +488,59 @@ def _fallback_reading_tasks(
             solution=f"Тема «{title}» относится к предмету «{subject_name}».",
             difficulty=1,
         ))
+        candidates.append(make_task(
+            f"Какой школьный предмет изучает тему «{title}»?",
+            subject_name,
+            answer_type="choice",
+            choices=shuffle_options(list(choices)),
+            solution=f"Это тема по предмету «{subject_name}».",
+            difficulty=1,
+        ))
 
+    if title and 1 <= grade <= 4:
+        grades = sorted({
+            str(grade),
+            *[str(item) for item in rng.sample([1, 2, 3, 4], 3)],
+        })
+        candidates.append(make_task(
+            f"В каком классе проходят тему «{title}»?",
+            str(grade),
+            answer_type="choice",
+            choices=shuffle_options(grades),
+            solution=f"Тема «{title}» из программы {grade} класса.",
+            difficulty=1,
+        ))
+
+    rng.shuffle(candidates)
     tasks: list[dict[str, Any]] = []
-    while candidates and len(tasks) < needed:
-        base = dict(candidates[len(tasks) % len(candidates)])
+
+    def add(base: dict[str, Any], *, repeat: bool) -> None:
         question = str(base.get("question") or "")
-        if question.casefold() in used_questions:
-            # Повторяем вопрос с другим порядком вариантов: так задание
-            # остаётся решаемым, но не выглядит точной копией.
+        key = question.casefold()
+        if repeat:
+            # Вопрос повторяется, но с другим порядком вариантов: так
+            # задание остаётся решаемым и не выглядит точной копией.
             base["choices"] = shuffle_options(list(base.get("choices") or []))
         else:
-            used_questions.add(question.casefold())
-        base["generator"] = "reading_fallback"
-        base["method"] = None
-        tasks.append(base)
+            if key in used_questions:
+                return
+            used_questions.add(key)
+        tasks.append({
+            **base,
+            "generator": "reading_fallback",
+            "method": None,
+        })
+
+    for base in candidates:
+        if len(tasks) >= needed:
+            break
+        add(dict(base), repeat=False)
+
+    # Если разных вопросов меньше, чем нужно станций, повторяем их.
+    index = 0
+    while candidates and len(tasks) < needed:
+        add(dict(candidates[index % len(candidates)]), repeat=True)
+        index += 1
     return tasks
 
 
@@ -518,8 +557,10 @@ def _reading_tasks(
         try:
             # Берём с запасом: из большого пула каждый запуск выбирает свои
             # пять вопросов, поэтому прохождение не повторяется.
+            # allow_ai=False — запуск квеста не должен ждать модель: берём
+            # только сохранённый кэш, cloze и офлайн-фолбэк.
             pool = reading_quiz.build_questions(
-                row, QUEST_LENGTH * 4, user_id=user_id
+                row, QUEST_LENGTH * 4, user_id=user_id, allow_ai=False
             )
         except Exception:  # noqa: BLE001 - квест не должен падать из-за PDF/ИИ
             pool = []
