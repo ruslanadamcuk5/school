@@ -133,7 +133,11 @@ def spa(full_path: str, request: Request):
 
     index = FRONTEND_DIST / "index.html"
     if index.is_file():
-        return FileResponse(index)
+        # HTML не кэшируем: после обновления интерфейса WebView должен
+        # сразу получить ссылки на новые файлы с хешами в именах.
+        return FileResponse(
+            index, headers={"Cache-Control": "no-cache, must-revalidate"}
+        )
 
     return JSONResponse(
         {

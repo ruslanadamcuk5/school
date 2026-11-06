@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Component, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import * as THREE from "three";
 import {
@@ -185,6 +186,21 @@ export function QuestPlayerPage() {
   const [result, setResult] = useState(null);
   const [starting, setStarting] = useState(false);
   const closingTimer = useRef(null);
+  // В WebView на некоторых устройствах WebGL недоступен. Тогда показываем
+  // те же станции списком, чтобы задания всё равно открывались.
+  const [webglReady] = useState(() => {
+    if (typeof document === "undefined") return false;
+    try {
+      const canvas = document.createElement("canvas");
+      return Boolean(
+        canvas.getContext("webgl2") ||
+        canvas.getContext("webgl") ||
+        canvas.getContext("experimental-webgl"),
+      );
+    } catch {
+      return false;
+    }
+  });
 
   const load = useCallback(async ({ restart = false } = {}) => {
     setLoading(true);
@@ -365,12 +381,20 @@ export function QuestPlayerPage() {
 
       <div className="grid gap-4 xl:grid-cols-[1fr_300px]">
         <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#0a1024]">
-          <QuestScene
-            sceneApiRef={sceneRef}
-            stations={stations}
-            paused={paused || Boolean(result)}
-            onNear={openStation}
-          />
+          {webglReady ? (
+            <QuestSceneBoundary
+              fallback={<StationFallback stations={stations} tasks={tasks} onOpen={openStation} />}
+            >
+              <QuestScene
+                sceneApiRef={sceneRef}
+                stations={stations}
+                paused={paused || Boolean(result)}
+                onNear={openStation}
+              />
+            </QuestSceneBoundary>
+          ) : (
+            <StationFallback stations={stations} tasks={tasks} onOpen={openStation} />
+          )}
 
           <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-4">
             <div className="pointer-events-auto rounded-2xl border border-white/10 bg-ink-950/70 px-3.5 py-2.5 backdrop-blur">
@@ -391,7 +415,7 @@ export function QuestPlayerPage() {
                 <button
                   key={station.key || index}
                   type="button"
-                  onClick={() => sceneRef.current?.goTo(index)}
+                  onClick={() => openStation(index)}
                   disabled={station.done}
                   className={`flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-2 text-[10px] font-bold transition ${
                     station.done
@@ -430,7 +454,7 @@ export function QuestPlayerPage() {
                 <button
                   key={station.key || index}
                   type="button"
-                  onClick={() => sceneRef.current?.goTo(index)}
+                  onClick={() => openStation(index)}
                   disabled={station.done || Boolean(result)}
                   className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition ${
                     station.done
@@ -447,7 +471,9 @@ export function QuestPlayerPage() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-bold text-white">{station.title}</p>
                     <p className="truncate text-[10px] text-mist-500">
-                      {station.done ? (station.correct ? "пройдена" : "засчитана") : station.prompt}
+                      {station.done
+                        ? (station.correct ? "пройдена" : "засчитана")
+                        : (tasks[index]?.question || station.prompt)}
                     </p>
                   </div>
                   {station.done ? (
@@ -463,8 +489,8 @@ export function QuestPlayerPage() {
           <Card className="p-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-mist-500">Подсказка</p>
             <p className="mt-2 text-xs leading-relaxed text-mist-400">
-              Подойдите к станции — или нажмите на неё на карте: герой сам дойдёт.
-              Задание открывается рядом со станцией. На ответ даётся две попытки.
+              Подойдите к станции или нажмите на неё на карте — задание откроется сразу.
+              На ответ даётся две попытки.
             </p>
             {run.quest.page_start ? (
               <Link to={`/app/learn/${run.quest.slug}`} className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-bold text-iris-300 hover:text-white">
@@ -475,7 +501,7 @@ export function QuestPlayerPage() {
         </div>
       </div>
 
-      {modal != null && (
+      {modal != null && createPortal(
         <TaskModal
           task={tasks[modal]}
           index={modal}
@@ -486,16 +512,18 @@ export function QuestPlayerPage() {
           }}
           onSubmit={submitAnswer}
           onNext={nextStation}
-        />
+        />,
+        document.body,
       )}
 
-      {result && (
+      {result && createPortal(
         <ResultOverlay
           result={result}
           onRestart={restart}
           restarting={starting}
           onExit={() => navigate("/app/quests")}
-        />
+        />,
+        document.body,
       )}
     </div>
   );
@@ -506,7 +534,8 @@ function TaskModal({ task, index, total, onClose, onSubmit, onNext }) {
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState(null);
-  const station = task.station;
+  if (!task) return null;
+  const station = task.station || {};
   const choices = task.choices || [];
 
   const send = async (answer) => {
@@ -874,6 +903,66 @@ function buildStation(theme, index) {
   group.add(light);
 
   return { group, ring, ringMaterial, inner, light, label, ornament, baseColor: new THREE.Color(color) };
+}
+
+function StationFallback({ stations, tasks, onOpen }) {
+  return (
+    <div className="flex h-[62vh] min-h-[430px] w-full flex-col gap-2 overflow-y-auto bg-[#0a1024] p-4">
+      <p className="mb-1 text-xs leading-relaxed text-mist-400">
+        3D-сцена недоступна на этом устройстве. Откройте задание станции:
+      </p>
+      {stations.map((station, index) => (
+        <button
+          key={station.key || index}
+          type="button"
+          disabled={station.done}
+          onClick={() => onOpen(index)}
+          className={`flex items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+            station.done
+              ? "border-emerald-400/20 bg-emerald-400/[0.06]"
+              : "border-white/10 bg-white/[0.03] hover:border-iris-400/40 hover:bg-iris-500/10"
+          }`}
+        >
+          <span
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base"
+            style={{ background: `${station.color || "#8b5cf6"}22` }}
+          >
+            {station.done ? (station.correct ? "✓" : "•") : station.icon}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-bold text-white">{station.title}</p>
+            <p className="line-clamp-2 text-[11px] leading-snug text-mist-400">
+              {station.done
+                ? (station.correct ? "Пройдена" : "Засчитана")
+                : (tasks[index]?.question || station.prompt)}
+            </p>
+          </div>
+          {!station.done ? (
+            <span className="shrink-0 text-[10px] font-bold text-iris-300">Открыть</span>
+          ) : null}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+class QuestSceneBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { failed: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch(error) {
+    console.error("3D-сцена квеста недоступна", error);
+  }
+
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
 }
 
 function QuestScene({ stations, paused, onNear, sceneApiRef }) {
