@@ -74,7 +74,8 @@ function RequireAuth() {
 
 function RequireRole({ roles, children }) {
   const { session } = useSession();
-  const role = session?.user?.role;
+  // Семейный профиль ребёнка входит по learner-токену без аккаунта user.
+  const role = session?.user?.role || (session?.learner ? "student" : undefined);
   if (!roles.includes(role)) {
     const home = {
       student: "/app",

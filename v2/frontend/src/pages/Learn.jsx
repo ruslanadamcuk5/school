@@ -763,11 +763,13 @@ export function TopicPage() {
                 <BookOpen size={16} /> Учебники
               </Link>
             )}
+            {(data.can_quest || data.can_play) && (
+              <Link to={`/app/quests/${slug}`} className="btn btn-gold btn-lg">
+                <Gamepad2 size={16} /> 3D-квест
+              </Link>
+            )}
             {data.can_play && (
               <>
-                <Link to={`/app/quests/${slug}`} className="btn btn-gold btn-lg">
-                  <Gamepad2 size={16} /> 3D-квест
-                </Link>
                 <Button size="lg" icon={Play} loading={pending} onClick={() => start("practice")}>Тренировка</Button>
                 <Button size="lg" variant="ghost" icon={Crown} loading={pending} onClick={() => start("boss")}>Босс</Button>
               </>
@@ -857,6 +859,25 @@ export function TopicPage() {
           </div>
 
           <div className="space-y-5">
+            {(data.can_quest || data.can_play) && (
+              <Card className="relative overflow-hidden border-amber-300/20 p-5" style={{ background: "linear-gradient(145deg, rgba(251,191,36,.10), rgba(255,255,255,.018))" }}>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-amber-300/25 bg-amber-300/10 text-lg">🎮</span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-white">3D-квест по теме</p>
+                    <p className="text-[11px] text-mist-400">5 станций · около 10 минут</p>
+                  </div>
+                </div>
+                <p className="mt-3 text-[11px] leading-relaxed text-mist-500">
+                  Пройди пять станций и закрепи тему. Вопросы и порядок заданий
+                  каждый раз новые, а объяснение появляется прямо в игре.
+                </p>
+                <Link to={`/app/quests/${slug}`} className="btn btn-gold mt-4 w-full justify-center">
+                  <Gamepad2 size={15} /> Начать квест
+                </Link>
+              </Card>
+            )}
+
             <Card className="p-5">
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-mist-500">Прогресс темы</p>
               <div className="mt-4 flex items-center gap-4">

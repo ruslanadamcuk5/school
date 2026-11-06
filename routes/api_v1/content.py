@@ -13,6 +13,7 @@ from services import ai as ai_service
 from services import library as library_service
 from services import orgs
 from services import progress as progress_service
+from services import quests as quests_service
 from services import reading_quiz
 from services import rewards as rewards_service
 from services import rounds as rounds_service
@@ -340,6 +341,7 @@ def topic_detail(slug: str):
                 "videos": video_payload["youtube_videos"],
                 "videos_stale": video_payload["youtube_stale"],
                 "can_play": True,
+                "can_quest": True,
                 "can_quiz": True,
                 "ai_available": _ai_available(),
             }
@@ -391,6 +393,7 @@ def topic_detail(slug: str):
             "videos": video_payload["youtube_videos"],
             "videos_stale": video_payload["youtube_stale"],
             "can_play": False,
+            "can_quest": quests_service.topic_can_quest(dict(row)),
             "can_quiz": True,
             "can_read": True,
             "ai_available": _ai_available(),

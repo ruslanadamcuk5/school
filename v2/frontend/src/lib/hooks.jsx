@@ -22,6 +22,20 @@ import {
 /* ------------------------------------------------------------------ session */
 const SessionContext = createContext(null);
 
+/**
+ * Данные текущей сессии. Нативный API v2 обслуживает аккаунты, а v1 умеет
+ * ещё и семейные профили детей (в Android у них отдельный Bearer-токен).
+ * Поэтому пробуем v2 и при отказе переходим на v1.
+ */
+async function sessionInfo() {
+  try {
+    return await request("/auth/me", { base: "/api/v2" });
+  } catch (error) {
+    if (![401, 403].includes(error?.status)) throw error;
+    return request("/auth/me", { base: "/api/v1" });
+  }
+}
+
 export function SessionProvider({ children }) {
   const [session, setSession] = useState(() => loadSession());
   const [ready, setReady] = useState(false);
@@ -32,7 +46,7 @@ export function SessionProvider({ children }) {
       setReady(true);
       return undefined;
     }
-    request("/auth/me", { base: "/api/v2" })
+    sessionInfo()
       .then((data) => {
         if (!alive) return;
         const next = { user: data.user, learner: data.learner, theme: data.theme };
@@ -80,7 +94,7 @@ export function SessionProvider({ children }) {
   }, []);
 
   const refreshSession = useCallback(async () => {
-    const data = await request("/auth/me", { base: "/api/v2" });
+    const data = await sessionInfo();
     const next = { user: data.user, learner: data.learner, theme: data.theme };
     setSession(next);
     saveSession(next);

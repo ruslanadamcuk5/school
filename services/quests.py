@@ -19,7 +19,7 @@ from typing import Any
 
 from content.answer import check_answer, expected_display
 from content.curriculum import topic_by_slug as curriculum_topic
-from content.generators import generators_for_topic, get_generator
+from content.generators import generators_for_topic, get_generator, shuffle_options
 from database import execute, query_all, query_one
 from services import progress as progress_service
 
@@ -150,9 +150,14 @@ def _db_topic(slug: str, grade: int, subject_id: int) -> dict | None:
     methods: list[dict] = []
     try:
         raw = json.loads(data.get("content_json") or "{}")
-        methods = raw.get("methods") or []
+        # Для тем-чтения content_json — список страниц [(номер, текст)],
+        # а способы объяснения есть только у практических тем.
+        methods = raw.get("methods") or [] if isinstance(raw, dict) else []
     except (TypeError, ValueError):
         methods = []
+    subject = query_one(
+        "SELECT name, slug FROM subjects WHERE id = ?", (data.get("subject_id"),)
+    )
     return {
         "slug": data["slug"],
         "title": data["title"],
@@ -163,39 +168,64 @@ def _db_topic(slug: str, grade: int, subject_id: int) -> dict | None:
         "part": int(data.get("part") or 1),
         "page_start": int(data.get("page_start") or 1),
         "page_end": int(data.get("page_end") or data.get("page_start") or 1),
+        "subject_id": data.get("subject_id"),
+        "subject_name": (subject["name"] if subject else ""),
+        "subject_slug": (subject["slug"] if subject else ""),
+        "kind": data.get("kind") or "reading",
+        "source": data.get("source") or "manual",
+        "content_json": data.get("content_json"),
         "generators": generators_for_topic(data["slug"]),
         "methods": methods,
     }
 
 
+def topic_can_quest(topic: dict | Any) -> bool:
+    """Может ли по теме собраться квест.
+
+    Для 1–4 классов подходит любая загруженная тема: задания собираются из
+    текста пособия, вопросов ИИ или офлайн-фолбэка. Для старших классов —
+    только темы с проверенными генераторами.
+    """
+    try:
+        grade = int(topic["grade"])
+    except (KeyError, TypeError, ValueError, IndexError):
+        return False
+    if 1 <= grade <= 4:
+        return True
+    return bool(generators_for_topic(str(topic["slug"])))
+
+
 def _topics_for(grade: int, subject_id: int) -> list[dict]:
-    """Практические темы предмета, для которых есть генераторы заданий."""
+    """Все темы предмета, по которым можно провести квест."""
     subject = _subject_row(subject_id)
     is_math = bool(subject and subject.get("slug") == "math")
+    topics: list[dict] = []
+    seen: set[str] = set()
 
     if is_math:
         from content.curriculum import topics_for_grade
 
-        topics = []
         for topic in topics_for_grade(grade):
             keys = [k for k in topic["generators"] if get_generator(k)]
             if keys:
                 topics.append({**topic, "generators": keys})
-        return topics
+                seen.add(topic["slug"])
 
-    # Другие предметы: темы из базы, у которых уже есть генераторы.
+    # Темы из загруженных пособий: для 1–4 классов — любые, для остальных —
+    # только те, где уже есть генераторы заданий.
     rows = query_all(
         """SELECT slug FROM topics
-            WHERE grade = ? AND subject_id = ? AND kind = 'practice'
+            WHERE grade = ? AND subject_id = ?
             ORDER BY page_start, id""",
         (grade, subject_id),
     )
-    topics = []
     for row in rows:
-        if generators_for_topic(row["slug"]):
-            topic = _db_topic(row["slug"], grade, subject_id)
-            if topic:
-                topics.append(topic)
+        if row["slug"] in seen:
+            continue
+        topic = _db_topic(row["slug"], grade, subject_id)
+        if topic and topic_can_quest(topic):
+            topics.append(topic)
+            seen.add(row["slug"])
     return topics
 
 
@@ -298,9 +328,6 @@ def list_quests(learner: dict, subject_id: int | None = None) -> dict[str, Any]:
 
     subject_id = int(subject["id"])
     topics = _topics_for(grade, subject_id)
-    visible = _visible_slugs(learner, subject_id, grade)
-    if visible:
-        topics = [topic for topic in topics if topic["slug"] in visible]
 
     books = _books(grade, subject_id)
     progress = _progress_map(int(learner["id"]))
@@ -346,13 +373,11 @@ def _find_topic(learner: dict, slug: str) -> tuple[dict, int, list[dict]]:
     if topic is None:
         raise QuestError(404, "not_found", "Квест не найден")
     keys = [key for key in topic.get("generators", []) if get_generator(key)]
-    if not keys:
-        raise QuestError(404, "not_found", "Для этой темы ещё нет заданий квеста")
     topic = {**topic, "generators": keys}
-
-    visible = _visible_slugs(learner, subject_id, grade)
-    if visible and slug not in visible:
-        raise QuestError(403, "forbidden", "Эта тема не включена в ваш курс")
+    if not keys and not topic_can_quest(topic):
+        raise QuestError(404, "not_found", "Для этой темы ещё нет заданий квеста")
+    # Квест открыт для любой темы своего класса: темы загруженных пособий
+    # видны ученику, даже если курс ещё не включил их в программу.
     return topic, subject_id, _books(grade, subject_id)
 
 
@@ -376,10 +401,174 @@ def quest_detail(learner: dict, slug: str) -> dict[str, Any]:
 
 
 # ------------------------------------------------------------------ задания
-def _build_tasks(topic: dict, seed: str) -> list[dict[str, Any]]:
-    """Собрать пять разных заданий по генераторам темы."""
+def _fallback_reading_tasks(
+    topic: dict,
+    seed: str,
+    needed: int,
+    used_questions: set[str],
+) -> list[dict[str, Any]]:
+    """Простые офлайн-вопросы, если текста и ИИ-вопросов совсем нет.
+
+    Они не заменяют предметные задания, но позволяют открыть квест по любой
+    загруженной теме (например, по скану без текстового слоя) и не показывают
+    ребёнку ошибку «квест не сформирован».
+    """
+    from content.generators.base import task as make_task
+
+    if needed <= 0:
+        return []
+    rng = random.Random(f"{seed}:fallback")
+    subject_id = topic.get("subject_id")
+    grade = int(topic.get("grade") or 3)
+    slug = topic.get("slug") or ""
+    rows = query_all(
+        """SELECT title, description FROM topics
+            WHERE subject_id = ? AND grade = ? AND slug <> ?
+            ORDER BY id""",
+        (subject_id, grade, slug),
+    )
+    titles = [str(row["title"]) for row in rows if str(row["title"] or "").strip()]
+    descriptions = [
+        str(row["description"]) for row in rows
+        if len(str(row["description"] or "").strip()) >= 20
+    ]
+    subject_name = str(topic.get("subject_name") or "").strip()
+    subject_rows = query_all(
+        """SELECT name FROM subjects
+            WHERE COALESCE(name, '') <> '' AND name <> ?
+            ORDER BY name""",
+        (subject_name,),
+    )
+    subjects = [str(row["name"]) for row in subject_rows]
+
+    candidates: list[dict[str, Any]] = []
+    title = str(topic.get("title") or "").strip()
+    title_prompts = (
+        "Как называется тема урока?",
+        "Выбери название темы, которую сейчас изучаем.",
+        "Какая тема открыта перед тобой?",
+    )
+    if title and len(titles) >= 3:
+        for prompt in title_prompts:
+            choices = shuffle_options(
+                [title, *rng.sample(titles, min(3, len(titles)))]
+            )
+            candidates.append(make_task(
+                prompt,
+                title,
+                answer_type="choice",
+                choices=choices,
+                solution=f"Это тема «{title}».",
+                difficulty=1,
+            ))
+
+    description = str(topic.get("description") or "").strip()
+    if len(description) >= 20 and len(descriptions) >= 3:
+        choices = shuffle_options(
+            [description[:180], *[item[:180] for item in rng.sample(descriptions, 3)]]
+        )
+        candidates.append(make_task(
+            f"Какое описание подходит теме «{title}»?",
+            description[:180],
+            answer_type="choice",
+            choices=choices,
+            solution=f"Это описание темы «{title}».",
+            difficulty=1,
+        ))
+
+    if subject_name and len(subjects) >= 3 and title:
+        choices = shuffle_options(
+            [subject_name, *rng.sample(subjects, min(3, len(subjects)))]
+        )
+        candidates.append(make_task(
+            f"К какому предмету относится тема «{title}»?",
+            subject_name,
+            answer_type="choice",
+            choices=choices,
+            solution=f"Тема «{title}» относится к предмету «{subject_name}».",
+            difficulty=1,
+        ))
+
+    tasks: list[dict[str, Any]] = []
+    while candidates and len(tasks) < needed:
+        base = dict(candidates[len(tasks) % len(candidates)])
+        question = str(base.get("question") or "")
+        if question.casefold() in used_questions:
+            # Повторяем вопрос с другим порядком вариантов: так задание
+            # остаётся решаемым, но не выглядит точной копией.
+            base["choices"] = shuffle_options(list(base.get("choices") or []))
+        else:
+            used_questions.add(question.casefold())
+        base["generator"] = "reading_fallback"
+        base["method"] = None
+        tasks.append(base)
+    return tasks
+
+
+def _reading_tasks(
+    topic: dict, seed: str, user_id: int | None = None
+) -> list[dict[str, Any]]:
+    """Задания по тексту темы: ИИ-вопросы, cloze и офлайн-фолбэк."""
+    from services import reading_quiz, topics as topics_service
+
     rng = random.Random(seed)
-    keys = topic["generators"]
+    row = topics_service.get_topic(topic["slug"])
+    pool: list[dict[str, Any]] = []
+    if row is not None:
+        try:
+            # Берём с запасом: из большого пула каждый запуск выбирает свои
+            # пять вопросов, поэтому прохождение не повторяется.
+            pool = reading_quiz.build_questions(
+                row, QUEST_LENGTH * 4, user_id=user_id
+            )
+        except Exception:  # noqa: BLE001 - квест не должен падать из-за PDF/ИИ
+            pool = []
+
+    unique: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in pool:
+        question = str(item.get("question") or "").strip()
+        if not question:
+            continue
+        key = question.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(item)
+    rng.shuffle(unique)
+
+    tasks: list[dict[str, Any]] = []
+    for item in unique[:QUEST_LENGTH]:
+        tasks.append({
+            **item,
+            "generator": item.get("generator") or "reading",
+            "method": None,
+        })
+
+    if len(tasks) < QUEST_LENGTH:
+        tasks.extend(_fallback_reading_tasks(
+            topic,
+            seed,
+            QUEST_LENGTH - len(tasks),
+            {str(task.get("question") or "").casefold() for task in tasks},
+        ))
+    return tasks[:QUEST_LENGTH]
+
+
+def _build_tasks(
+    topic: dict, seed: str, user_id: int | None = None
+) -> list[dict[str, Any]]:
+    """Собрать пять разных заданий по теме.
+
+    Если у темы есть проверенные генераторы (математика), задания берутся из
+    них. Иначе — из текста загруженного пособия, ИИ-вопросов и офлайн-фолбэка.
+    """
+    keys = [key for key in topic.get("generators", []) if get_generator(key)]
+    if not keys:
+        return _reading_tasks(topic, seed, user_id)
+
+    rng = random.Random(seed)
+    rng.shuffle(keys)
     methods = [method["slug"] for method in topic.get("methods", [])]
     tasks: list[dict[str, Any]] = []
     used_questions: set[str] = set()
@@ -518,7 +707,9 @@ def start_run(learner: dict, slug: str) -> dict[str, Any]:
     )
 
     seed = f"{slug}:{learner_id}:{secrets.token_hex(8)}"
-    tasks = _build_tasks(topic, seed)
+    tasks = _build_tasks(
+        topic, seed, int(learner["user_id"]) if learner.get("user_id") else None
+    )
     if len(tasks) < QUEST_LENGTH:
         raise QuestError(500, "no_tasks", "Не удалось собрать задания квеста")
 

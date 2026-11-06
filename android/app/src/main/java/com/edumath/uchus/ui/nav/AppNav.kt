@@ -59,6 +59,7 @@ import com.edumath.uchus.ui.student.LibraryScreen
 import com.edumath.uchus.ui.student.MapScreen
 import com.edumath.uchus.ui.student.PlayScreen
 import com.edumath.uchus.ui.student.ProfileScreen
+import com.edumath.uchus.ui.student.QuestScreen
 import com.edumath.uchus.ui.student.QuizScreen
 import com.edumath.uchus.ui.student.ReadScreen
 import com.edumath.uchus.ui.student.ReaderScreen
@@ -267,10 +268,20 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
                 onPlay = { topic, mode ->
                     nav.navigate("play/${Uri.encode(topic)}/${Uri.encode(mode)}")
                 },
+                onQuest = { nav.navigate("quest/${Uri.encode(it)}") },
                 onQuiz = { nav.navigate("quiz/${Uri.encode(it)}") },
                 onRead = { nav.navigate("read/${Uri.encode(it)}") },
                 onBook = openBook,
                 onTopic = { nav.navigate("topic/${Uri.encode(it)}") },
+            )
+        }
+
+        composable("quest/{slug}") { entry ->
+            val slug = Uri.decode(entry.arguments?.getString("slug") ?: "")
+            QuestScreen(
+                container = container,
+                slug = slug,
+                onBack = back,
             )
         }
 

@@ -311,6 +311,7 @@ data class TopicDetailDto(
     @SerializedName("videos") val videos: List<TopicVideoDto> = emptyList(),
     @SerializedName("videos_stale") val videosStale: Boolean = false,
     @SerializedName("can_play") val canPlay: Boolean = false,
+    @SerializedName("can_quest") val canQuest: Boolean = false,
     @SerializedName("can_quiz") val canQuiz: Boolean = false,
     @SerializedName("can_read") val canRead: Boolean = false,
 )

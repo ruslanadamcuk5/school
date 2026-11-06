@@ -62,7 +62,6 @@ const NAV = {
   student: [
     { to: "/app", label: "Обзор", icon: "home", end: true },
     { to: "/app/learn", label: "Предметы", icon: "learn" },
-    { to: "/app/quests", label: "Квесты", icon: "quests" },
     { to: "/app/assignments", label: "Задания", icon: "assignments" },
     { to: "/app/library", label: "Библиотека", icon: "library" },
     { to: "/app/shop", label: "Магазин", icon: "shop" },

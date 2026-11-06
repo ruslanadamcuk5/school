@@ -85,6 +85,7 @@ fun TopicScreen(
     slug: String,
     onBack: () -> Unit,
     onPlay: (String, String) -> Unit,
+    onQuest: (String) -> Unit,
     onQuiz: (String) -> Unit,
     onRead: (String) -> Unit,
     onBook: (Int, Int) -> Unit,
@@ -188,6 +189,15 @@ fun TopicScreen(
 
                     if (message != null) {
                         item { InfoBox(message!!) }
+                    }
+
+                    if (data.canQuest || data.canPlay) {
+                        item {
+                            Button(
+                                onClick = { onQuest(slug) },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) { Text("🎮  3D-квест по теме") }
+                        }
                     }
 
                     if (data.canPlay) {

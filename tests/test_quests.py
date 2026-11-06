@@ -178,6 +178,74 @@ class QuestApiTest(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 404)
 
+    def test_reading_topic_gets_quest_without_generators(self):
+        """Любая загруженная тема 1–4 класса получает квест по тексту."""
+        subject = query_one(
+            "SELECT id FROM subjects WHERE slug = 'russian_lang'"
+        )
+        if subject is None:
+            execute(
+                """INSERT INTO subjects (name, slug, icon)
+                   VALUES ('Русский язык', 'russian_lang', '📕')"""
+            )
+            subject = query_one(
+                "SELECT id FROM subjects WHERE slug = 'russian_lang'"
+            )
+        subject_id = subject["id"]
+        description = (
+            "Имя существительное обозначает предмет и отвечает на вопросы кто "
+            "или что. Имена существительные бывают одушевлённые и "
+            "неодушевлённые. Собственные имена пишутся с большой буквы. "
+            "Нарицательные существительные называют предметы и явления. "
+            "Род существительного определяют по окончанию. "
+            "Число показывает, один предмет или несколько. "
+            "Падеж помогает понять связь слов в предложении. "
+            "В русском языке шесть падежей. "
+            "Именительный падеж отвечает на вопросы кто или что. "
+            "Родительный падеж отвечает на вопросы кого или чего. "
+            "Дательный падеж отвечает на вопросы кому или чему. "
+            "Винительный падеж отвечает на вопросы кого или что. "
+            "Творительный падеж отвечает на вопросы кем или чем. "
+            "Предложный падеж отвечает на вопросы о ком или о чём."
+        )
+        execute(
+            """INSERT INTO topics
+               (slug, title, grade, subject_id, source, kind, description)
+               VALUES ('noun_test', 'Имя существительное', 3, ?, 'manual',
+                       'reading', ?)""",
+            (subject_id, description),
+        )
+
+        detail = self.get("/api/v1/topics/noun_test").get_json()
+        self.assertTrue(detail["can_quest"], detail)
+        self.assertFalse(detail["can_play"])
+
+        first = self.post("/api/v1/quests/noun_test/start")
+        self.assertEqual(first.status_code, 200, first.get_data(as_text=True))
+        run = first.get_json()
+        self.assertEqual(run["total"], 5)
+        self.assertEqual(len(run["tasks"]), 5)
+        for task in run["tasks"]:
+            self.assertNotIn("answer", task)
+            self.assertNotIn("solution", task)
+
+        # Правильные ответы хранятся на сервере и проверяются там же.
+        tasks = json.loads(query_one(
+            "SELECT tasks_json FROM quest_runs WHERE run_key = ?", (run["run_id"],)
+        )["tasks_json"])
+        for index, task in enumerate(tasks):
+            checked = self.post(
+                f"/api/v1/quests/runs/{run['run_id']}/check",
+                {"station": index, "answer": task["answer"]},
+            ).get_json()
+            self.assertTrue(checked["correct"], checked)
+
+        # Новый запуск собирает другой набор вопросов из текста темы.
+        second = self.post("/api/v1/quests/noun_test/start").get_json()
+        first_questions = [task["question"] for task in run["tasks"]]
+        second_questions = [task["question"] for task in second["tasks"]]
+        self.assertNotEqual(first_questions, second_questions)
+
     def test_resume_active_run(self):
         first = self.post("/api/v1/quests/mult_div_table/start").get_json()
         detail = self.get("/api/v1/quests/mult_div_table").get_json()
