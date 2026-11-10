@@ -675,4 +675,26 @@ interface ApiService {
 
     @PUT("profile/education")
     suspend fun saveEducation(@Body body: EducationRequest): EducationProfileDto
+
+    // ---------------------------------------------------------- школьная психология
+    @GET("psychology/tests")
+    suspend fun psychTests(): PsychTestsDto
+
+    @GET("psychology/tests/{slug}")
+    suspend fun psychTest(@Path("slug") slug: String): PsychTestDetailDto
+
+    @POST("psychology/tests/{slug}")
+    suspend fun psychSubmit(
+        @Path("slug") slug: String,
+        @Body body: PsychAnswerRequest,
+    ): PsychResultResponseDto
+
+    @GET("psychology/results/{id}")
+    suspend fun psychResult(@Path("id") id: Int): PsychResultResponseDto
+
+    @GET("psychology/parent/overview")
+    suspend fun psychParent(): PsychParentDto
+
+    @GET("psychology/parent/results/{id}")
+    suspend fun psychParentResult(@Path("id") id: Int): PsychResultResponseDto
 }

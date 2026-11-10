@@ -455,6 +455,7 @@ private fun homeItems(
     }
     "parent" -> buildList {
         add(HomeItem("parent", "👨‍👩‍👧", "Дети", "Успеваемость и прогресс"))
+        add(HomeItem("psychology", "🧠", "Школьная психология", "Результаты тестов и рекомендации"))
         add(HomeItem("parent_map", "🗺", "Карта детей", "Где сейчас и трек за день"))
         add(HomeItem("assignments", "📝", "Задания", "Назначить и проверить"))
         add(HomeItem("library", "📚", "Библиотека", "Книги ребёнка"))
@@ -480,6 +481,7 @@ private fun homeItems(
             )
         )
         add(HomeItem("location", "📍", "Геолокация", "Передача позиции родителям"))
+        add(HomeItem("psychology", "🧠", "Школьная психология", "Тесты, результаты и рекомендации"))
         add(
             HomeItem(
                 "profile",

@@ -979,3 +979,27 @@ CREATE TABLE IF NOT EXISTS remote_commands (
 
 CREATE INDEX IF NOT EXISTS idx_remote_commands_session
     ON remote_commands(session_id, id);
+
+-- Школьная психология: пройденные тесты и сохранённые заключения.
+-- Вопросы и интерпретации живут в services/psychology_catalog.py, а здесь
+-- хранится только история конкретного ребёнка.
+CREATE TABLE IF NOT EXISTS psych_results (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    learner_id    INTEGER NOT NULL,
+    user_id       INTEGER,
+    test_slug     TEXT    NOT NULL,
+    test_title    TEXT    NOT NULL DEFAULT '',
+    category      TEXT    NOT NULL DEFAULT '',
+    grade         INTEGER NOT NULL DEFAULT 3,
+    answers_json  TEXT    NOT NULL DEFAULT '{}',
+    scores_json   TEXT    NOT NULL DEFAULT '{}',
+    result_json   TEXT    NOT NULL DEFAULT '{}',
+    ai_summary    TEXT    NOT NULL DEFAULT '',
+    ai_model      TEXT    NOT NULL DEFAULT '',
+    created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_psych_results_learner
+    ON psych_results(learner_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_psych_results_slug
+    ON psych_results(test_slug, created_at);

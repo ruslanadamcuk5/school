@@ -33,6 +33,10 @@ const ParentHelp = page(() => import("./pages/Parent"), "ParentHelp");
 const ParentLibrary = page(() => import("./pages/Parent"), "ParentLibrary");
 const ParentMap = page(() => import("./pages/Parent"), "ParentMap");
 const ParentAssignments = page(() => import("./pages/ParentAssignments"), "ParentAssignmentsPage");
+const PsychologyPage = page(() => import("./pages/Psychology"), "PsychologyStudent");
+const PsychologyTestPage = page(() => import("./pages/Psychology"), "PsychologyTest");
+const PsychologyResultPage = page(() => import("./pages/Psychology"), "PsychologyResult");
+const ParentPsychologyPage = page(() => import("./pages/Psychology"), "ParentPsychology");
 const TeacherAssignments = page(() => import("./pages/Teacher"), "TeacherAssignments");
 const TeacherClass = page(() => import("./pages/Teacher"), "TeacherClass");
 const TeacherClasses = page(() => import("./pages/Teacher"), "TeacherClasses");
@@ -196,6 +200,30 @@ export default function App() {
         />
 
         <Route path="schedule" element={<SchedulePage />} />
+        <Route
+          path="psychology"
+          element={
+            <RequireRole roles={["student"]}>
+              <PsychologyPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="psychology/test/:slug"
+          element={
+            <RequireRole roles={["student"]}>
+              <PsychologyTestPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="psychology/result/:id"
+          element={
+            <RequireRole roles={["student"]}>
+              <PsychologyResultPage audience="student" />
+            </RequireRole>
+          }
+        />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="profile" element={<ProfilePage />} />
 
@@ -244,6 +272,22 @@ export default function App() {
           element={
             <RequireRole roles={["parent"]}>
               <ParentAssignments />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="parent/psychology"
+          element={
+            <RequireRole roles={["parent"]}>
+              <ParentPsychologyPage />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="parent/psychology/result/:id"
+          element={
+            <RequireRole roles={["parent"]}>
+              <PsychologyResultPage audience="parent" />
             </RequireRole>
           }
         />

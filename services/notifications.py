@@ -25,6 +25,8 @@ KIND_MESSAGE = "message"
 KIND_REMINDER = "reminder"
 KIND_LIBRARY_NEW = "library_new"
 KIND_LIBRARY_READ = "library_unread"
+KIND_PSYCH_RESULT = "psych_result"
+KIND_PSYCH_RECOMMENDATION = "psych_recommendation"
 
 ROLE_LABEL = {
     "teacher": "учителя",

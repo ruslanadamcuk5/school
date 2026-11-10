@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-do
 import {
   Bell,
   BookOpen,
+  Brain,
   CalendarDays,
   ChevronRight,
   ClipboardList,
@@ -43,6 +44,7 @@ const ICONS = {
   schedule: CalendarDays,
   map: Map,
   help: LifeBuoy,
+  brain: Brain,
   children: Users,
   classes: GraduationCap,
   students: Users,
@@ -67,9 +69,11 @@ const NAV = {
     { to: "/app/shop", label: "Магазин", icon: "shop" },
     { to: "/app/pet", label: "Питомец", icon: "pet" },
     { to: "/app/schedule", label: "Расписание", icon: "schedule" },
+    { to: "/app/psychology", label: "Школьная психология", icon: "brain" },
   ],
   parent: [
     { to: "/app/parent", label: "Обзор семьи", icon: "home", end: true },
+    { to: "/app/parent/psychology", label: "Школьная психология", icon: "brain" },
     { to: "/app/parent/map", label: "Карта", icon: "map" },
     { to: "/app/parent/help", label: "Помощь", icon: "help" },
     { to: "/app/parent/library", label: "Библиотека", icon: "library" },

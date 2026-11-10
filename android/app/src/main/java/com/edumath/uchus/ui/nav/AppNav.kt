@@ -51,6 +51,9 @@ import com.edumath.uchus.ui.parent.ParentCreateAssignmentScreen
 import com.edumath.uchus.ui.parent.ParentMapScreen
 import com.edumath.uchus.ui.parent.ParentScreen
 import com.edumath.uchus.ui.parent.RemoteHelpScreen
+import com.edumath.uchus.ui.psychology.PsychologyResultScreen
+import com.edumath.uchus.ui.psychology.PsychologyScreen
+import com.edumath.uchus.ui.psychology.PsychologyTestScreen
 import com.edumath.uchus.ui.remote.RemoteHelpGate
 import com.edumath.uchus.ui.sound.SoundAlertGate
 import com.edumath.uchus.ui.student.AssignmentDetailScreen
@@ -119,6 +122,7 @@ private val homeRoutes = setOf(
     "parent",
     "parent_map",
     "location",
+    "psychology",
     "admin/0",
     "admin/1",
     "admin/2",
@@ -231,6 +235,47 @@ private fun LoggedInNav(container: AppContainer, stored: StoredSession) {
                 container = container,
                 onBack = back,
                 onOpenAssignment = { id -> nav.navigate("assignment/$id") },
+            )
+        }
+
+        composable("psychology") {
+            val parentMode = session?.user?.role == "parent"
+            PsychologyScreen(
+                container = container,
+                session = session,
+                parent = parentMode,
+                onBack = back,
+                onOpenTest = { slug -> nav.navigate("psych_test/${Uri.encode(slug)}") },
+                onOpenResult = { id ->
+                    nav.navigate("psych_result/$id/${if (parentMode) 1 else 0}")
+                },
+            )
+        }
+
+        composable("psych_test/{slug}") { entry ->
+            val slug = Uri.decode(entry.arguments?.getString("slug") ?: "")
+            PsychologyTestScreen(
+                container = container,
+                slug = slug,
+                onBack = back,
+                onResult = { id -> nav.navigate("psych_result/$id/0") },
+            )
+        }
+
+        composable(
+            route = "psych_result/{id}/{parent}",
+            arguments = listOf(
+                navArgument("id") { type = NavType.IntType },
+                navArgument("parent") { type = NavType.IntType },
+            ),
+        ) { entry ->
+            val parentMode = (entry.arguments?.getInt("parent") ?: 0) == 1
+            PsychologyResultScreen(
+                container = container,
+                resultId = entry.arguments?.getInt("id") ?: 0,
+                parent = parentMode,
+                onBack = back,
+                onRetake = { slug -> nav.navigate("psych_test/${Uri.encode(slug)}") },
             )
         }
 

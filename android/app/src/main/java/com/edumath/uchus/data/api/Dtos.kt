@@ -2238,3 +2238,179 @@ data class EducationRequest(
     @SerializedName("class_ids") val classIds: List<Int>? = null,
     @SerializedName("subjects_by_class") val subjectsByClass: Map<String, List<Int>>? = null,
 )
+
+// ---------------------------------------------------------- школьная психология
+
+data class PsychBandDto(
+    @SerializedName("key") val key: String? = null,
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("age") val age: String? = null,
+    @SerializedName("note") val note: String? = null,
+    @SerializedName("grades") val grades: List<Int> = emptyList(),
+)
+
+data class PsychLatestDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("created_at") val createdAt: String? = null,
+    @SerializedName("headline") val headline: String? = null,
+    @SerializedName("percent") val percent: Int = 0,
+    @SerializedName("category_title") val categoryTitle: String? = null,
+    @SerializedName("ai") val ai: Boolean = false,
+)
+
+data class PsychTestDto(
+    @SerializedName("slug") val slug: String? = null,
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("subtitle") val subtitle: String? = null,
+    @SerializedName("description") val description: String? = null,
+    @SerializedName("category") val category: String? = null,
+    @SerializedName("category_title") val categoryTitle: String? = null,
+    @SerializedName("category_icon") val categoryIcon: String? = null,
+    @SerializedName("category_color") val categoryColor: String? = null,
+    @SerializedName("duration") val duration: String? = null,
+    @SerializedName("questions") val questions: Int = 0,
+    @SerializedName("grades") val grades: List<Int> = emptyList(),
+    @SerializedName("band") val band: String? = null,
+    @SerializedName("source") val source: String? = null,
+    @SerializedName("completed") val completed: Boolean = false,
+    @SerializedName("attempts") val attempts: Int = 0,
+    @SerializedName("latest") val latest: PsychLatestDto? = null,
+)
+
+data class PsychHistoryDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("test_slug") val testSlug: String? = null,
+    @SerializedName("test_title") val testTitle: String? = null,
+    @SerializedName("category") val category: String? = null,
+    @SerializedName("category_title") val categoryTitle: String? = null,
+    @SerializedName("created_at") val createdAt: String? = null,
+    @SerializedName("headline") val headline: String? = null,
+)
+
+data class PsychTestsDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("grade") val grade: Int = 0,
+    @SerializedName("band") val band: PsychBandDto? = null,
+    @SerializedName("tests") val tests: List<PsychTestDto> = emptyList(),
+    @SerializedName("history") val history: List<PsychHistoryDto> = emptyList(),
+    @SerializedName("disclaimer") val disclaimer: String? = null,
+    @SerializedName("source") val source: String? = null,
+)
+
+data class PsychQuestionDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("text") val text: String? = null,
+    @SerializedName("options") val options: List<String> = emptyList(),
+)
+
+data class PsychTestDetailDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("test") val test: PsychTestDto? = null,
+    @SerializedName("questions") val questions: List<PsychQuestionDto> = emptyList(),
+    @SerializedName("latest_result_id") val latestResultId: Int? = null,
+    @SerializedName("disclaimer") val disclaimer: String? = null,
+)
+
+data class PsychScaleDto(
+    @SerializedName("key") val key: String? = null,
+    @SerializedName("label") val label: String? = null,
+    @SerializedName("icon") val icon: String? = null,
+    @SerializedName("percent") val percent: Int = 0,
+    @SerializedName("level") val level: String? = null,
+    @SerializedName("level_label") val levelLabel: String? = null,
+    @SerializedName("good_high") val goodHigh: Boolean = true,
+    @SerializedName("text") val text: String? = null,
+    @SerializedName("advice") val advice: List<String> = emptyList(),
+    @SerializedName("title") val title: String? = null,
+)
+
+data class PsychRecommendationDto(
+    @SerializedName("kind") val kind: String? = null,
+    @SerializedName("scale") val scale: String? = null,
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("text") val text: String? = null,
+    @SerializedName("advice") val advice: List<String> = emptyList(),
+    @SerializedName("percent") val percent: Int = 0,
+    @SerializedName("level") val level: String? = null,
+    @SerializedName("result_id") val resultId: Int = 0,
+    @SerializedName("test_title") val testTitle: String? = null,
+    @SerializedName("category") val category: String? = null,
+    @SerializedName("created_at") val createdAt: String? = null,
+)
+
+data class PsychAiDto(
+    @SerializedName("text") val text: String? = null,
+    @SerializedName("model") val model: String? = null,
+)
+
+data class PsychResultDataDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("test_slug") val testSlug: String? = null,
+    @SerializedName("test_title") val testTitle: String? = null,
+    @SerializedName("test_subtitle") val testSubtitle: String? = null,
+    @SerializedName("category") val category: String? = null,
+    @SerializedName("category_title") val categoryTitle: String? = null,
+    @SerializedName("category_icon") val categoryIcon: String? = null,
+    @SerializedName("category_color") val categoryColor: String? = null,
+    @SerializedName("description") val description: String? = null,
+    @SerializedName("duration") val duration: String? = null,
+    @SerializedName("source") val source: String? = null,
+    @SerializedName("grade") val grade: Int = 0,
+    @SerializedName("band") val band: String? = null,
+    @SerializedName("headline") val headline: String? = null,
+    @SerializedName("summary") val summary: String? = null,
+    @SerializedName("overall") val overall: Int = 0,
+    @SerializedName("scales") val scales: List<PsychScaleDto> = emptyList(),
+    @SerializedName("recommendations") val recommendations: List<PsychRecommendationDto> = emptyList(),
+    @SerializedName("disclaimer") val disclaimer: String? = null,
+    @SerializedName("created_at") val createdAt: String? = null,
+    @SerializedName("audience") val audience: String? = null,
+    @SerializedName("learner_name") val learnerName: String? = null,
+    @SerializedName("learner") val learner: LearnerDto? = null,
+    @SerializedName("ai") val ai: PsychAiDto? = null,
+)
+
+data class PsychResultResponseDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("result") val result: PsychResultDataDto? = null,
+    @SerializedName("ai_error") val aiError: String? = null,
+)
+
+data class PsychAnswerRequest(
+    @SerializedName("answers") val answers: Map<String, Int>,
+)
+
+data class PsychChildStatsDto(
+    @SerializedName("tests") val tests: Int = 0,
+    @SerializedName("strengths") val strengths: Int = 0,
+    @SerializedName("attention") val attention: Int = 0,
+    @SerializedName("last_at") val lastAt: String? = null,
+)
+
+data class PsychResultCardDto(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("test_slug") val testSlug: String? = null,
+    @SerializedName("test_title") val testTitle: String? = null,
+    @SerializedName("category") val category: String? = null,
+    @SerializedName("category_title") val categoryTitle: String? = null,
+    @SerializedName("created_at") val createdAt: String? = null,
+    @SerializedName("headline") val headline: String? = null,
+    @SerializedName("percent") val percent: Int = 0,
+    @SerializedName("has_ai") val hasAi: Boolean = false,
+)
+
+data class PsychChildDto(
+    @SerializedName("learner") val learner: LearnerDto? = null,
+    @SerializedName("user") val user: UserDto? = null,
+    @SerializedName("grade") val grade: Int = 0,
+    @SerializedName("stats") val stats: PsychChildStatsDto? = null,
+    @SerializedName("results") val results: List<PsychResultCardDto> = emptyList(),
+    @SerializedName("recommendations") val recommendations: List<PsychRecommendationDto> = emptyList(),
+)
+
+data class PsychParentDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("children") val children: List<PsychChildDto> = emptyList(),
+    @SerializedName("disclaimer") val disclaimer: String? = null,
+    @SerializedName("source") val source: String? = null,
+)

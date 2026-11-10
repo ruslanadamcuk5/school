@@ -5,6 +5,7 @@ import {
   BookOpen,
   CheckCheck,
   ClipboardList,
+  Compass,
   Gift,
   Info,
   Sparkles,
@@ -23,9 +24,14 @@ const KIND = {
   gift: { icon: Gift, tone: "gold", label: "Подарок" },
   badge: { icon: Trophy, tone: "gold", label: "Награда" },
   message: { icon: Info, tone: "iris", label: "Сообщение" },
+  psych_result: { icon: Sparkles, tone: "iris", label: "Психология" },
+  psych_recommendation: { icon: Compass, tone: "gold", label: "Рекомендации" },
 };
 
 function targetLink(item) {
+  if (item.kind === "psych_result" || item.kind === "psych_recommendation") {
+    return item.link && String(item.link).startsWith("/app/") ? item.link : null;
+  }
   if (item.assignment_id) return `/app/assignments/${item.assignment_id}`;
   if (item.kind === "library_recommendation") return "/app/library";
   if (item.kind === "gift") return "/app/shop";
