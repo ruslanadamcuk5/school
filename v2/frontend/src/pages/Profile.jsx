@@ -284,8 +284,14 @@ function EducationCard({ role, refreshSession }) {
   // возвращает полный список городов и предметов.
   const { data: catalog } = useApi(catalogPath, { ttl: 60_000 });
   const cities = catalog?.cities || [];
-  const schools = catalog?.schools || [];
-  const catalogClasses = catalog?.classes || [];
+  // Каталог может ещё хранить ответ для прошлого города/школы: фильтруем
+  // локально, чтобы в списке не мелькали чужие школы и классы.
+  const schools = (catalog?.schools || []).filter(
+    (school) => !cityId || String(school.city_id) === String(cityId)
+  );
+  const catalogClasses = (catalog?.classes || []).filter(
+    (klass) => !schoolId || String(klass.school_id) === String(schoolId)
+  );
   // Старые классы учителя могли быть из другой школы: показываем их, если
   // они уже выбраны, чтобы их можно было снять или сохранить без потери.
   const savedSelected = (data?.classes || []).filter((klass) =>
