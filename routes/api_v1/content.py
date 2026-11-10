@@ -249,6 +249,13 @@ def map_view():
     if not subjects:
         fail(503, "no_subjects", "На сервере ещё не настроены предметы")
 
+    # Предмет без единой темы для класса не показываем: иначе ученик видит
+    # пустые разделы, в которые невозможно зайти.
+    counts = _subject_counts(grade)
+    available = [s for s in subjects if counts.get(int(s["id"]), 0) > 0]
+    if available:
+        subjects = available
+
     requested = (request.args.get("subject") or "").strip()
     subject = next((s for s in subjects if s["slug"] == requested), None)
     if subject is None:
@@ -263,7 +270,6 @@ def map_view():
     else:
         cards = _reading_cards(profile, int(subject["id"]), grade, visible)
 
-    counts = _subject_counts(grade)
     daily = rewards_service.daily_status(profile["id"])
     return jsonify(
         {

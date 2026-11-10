@@ -424,6 +424,225 @@ def explain_topic(
     return text, None
 
 
+# ------------------------------------------------- варианты «как рассуждать»
+# Кэш вариантов хранится в той же таблице, что и полное объяснение, но под
+# отдельным ключом. Так не нужна миграция, а полное объяснение и варианты
+# обновляются независимо друг от друга.
+REASONING_SUFFIX = "#reasoning"
+
+_REASONING_SYSTEM = (
+    "Ты — опытный методист и учитель школы Беларуси. Ты умеешь объяснять одну "
+    "и ту же тему несколькими разными способами: через рисунок, через правило, "
+    "через жизненный пример, через пошаговый алгоритм. Пиши по-русски, простым "
+    "и дружелюбным языком, без приветствий и воды. Ответ — только валидный JSON."
+)
+
+_REASONING_TEMPLATE = """Тема: {title}
+Предмет: {subject}
+Класс: {grade}
+Кратко из учебника: {description}{pages}{extra}
+
+Придумай 3 РАЗНЫХ варианта объяснения этой темы ученику {grade} класса.
+Каждый вариант — отдельный подход к рассуждению, а не пересказ одного и того же.
+
+Для каждого варианта верни:
+- title — короткое название подхода (до 60 символов), например «Через рисунок», «По шагам», «Через жизненный пример»;
+- idea — 1–2 предложения: главная мысль подхода;
+- steps — массив из 3–5 пунктов: конкретные шаги рассуждения, каждый по 1–2 предложения;
+- example — короткий разбор конкретного примера именно по этому подходу;
+- tip — одна подсказка, как не ошибиться.
+
+Пиши так, чтобы ученик {grade} класса понял без помощи взрослого. Не используй
+сложные термины без пояснения. Не добавляй лишних полей.
+
+Верни ТОЛЬКО валидный JSON без markdown-обёртки:
+{{"variants": [{{"title": "…", "idea": "…", "steps": ["…", "…"], "example": "…", "tip": "…"}}]}}"""
+
+
+def _reasoning_prompt(info: dict[str, Any]) -> str:
+    pages = ""
+    if info.get("page_start"):
+        pages = f"\nСтраницы пособия: {info['page_start']}"
+        if info.get("page_end") and info["page_end"] != info["page_start"]:
+            pages += f"–{info['page_end']}"
+    return _REASONING_TEMPLATE.format(
+        title=info.get("title") or info.get("slug"),
+        subject=info.get("subject") or "школьный предмет",
+        grade=info.get("grade") or "",
+        description=info.get("description") or "нет описания",
+        pages=pages,
+        extra=f"\nДополнительно: {info['extra']}" if info.get("extra") else "",
+    )
+
+
+def _text_value(value: Any, limit: int = 2000) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, (list, tuple)):
+        value = " ".join(str(item) for item in value)
+    text = re.sub(r"\s+", " ", str(value)).strip()
+    return text[:limit]
+
+
+def _normalize_variant(item: Any, index: int) -> dict[str, Any] | None:
+    if not isinstance(item, dict):
+        return None
+    steps_raw = item.get("steps") or item.get("points") or []
+    if isinstance(steps_raw, str):
+        steps_raw = [steps_raw]
+    steps: list[str] = []
+    if isinstance(steps_raw, (list, tuple)):
+        for step in steps_raw:
+            if isinstance(step, dict):
+                step = (
+                    step.get("text")
+                    or step.get("step")
+                    or step.get("description")
+                    or step.get("title")
+                )
+            text = _text_value(step, 600)
+            if text:
+                steps.append(text)
+    if not steps:
+        # Модель иногда кладёт шаги в один текст с переводами строк.
+        raw_steps = _text_value(item.get("steps") or "", 1600)
+        steps = [part.strip(" -•\t") for part in raw_steps.split("\n") if part.strip()]
+    title = _text_value(item.get("title"), 120) or f"Вариант {index}"
+    idea = _text_value(item.get("idea") or item.get("summary"), 800)
+    example = _text_value(item.get("example") or item.get("sample"), 1200)
+    tip = _text_value(item.get("tip") or item.get("hint"), 600)
+    if not (idea or example or steps):
+        return None
+    return {
+        "title": title,
+        "idea": idea,
+        "steps": steps[:6],
+        "example": example,
+        "tip": tip,
+    }
+
+
+def _variants_from_text(text: str) -> list[dict[str, Any]]:
+    """Запасной разбор, если модель ответила текстом вместо JSON."""
+    raw = (text or "").strip()
+    if not raw:
+        return []
+    parts = re.split(r"\n(?=#{2,4}\s+)", raw)
+    variants: list[dict[str, Any]] = []
+    for part in parts:
+        lines = [line.strip() for line in part.splitlines() if line.strip()]
+        if not lines:
+            continue
+        title = re.sub(r"^#{2,4}\s*", "", lines[0]).strip() or f"Вариант {len(variants) + 1}"
+        body = lines[1:]
+        steps: list[str] = []
+        paragraphs: list[str] = []
+        for line in body:
+            bullet = re.sub(r"^[-*•]\s+|^\d+[.)]\s+", "", line).strip()
+            if re.match(r"^[-*•]\s+|^\d+[.)]\s+", line):
+                if bullet:
+                    steps.append(bullet)
+            elif len(line) > 40 or not paragraphs:
+                paragraphs.append(line)
+        idea = _text_value(" ".join(paragraphs[:2]), 800)
+        if not steps and paragraphs[2:]:
+            steps = [_text_value(item, 600) for item in paragraphs[2:6]]
+        variant = _normalize_variant(
+            {"title": title, "idea": idea, "steps": steps}, len(variants) + 1
+        )
+        if variant:
+            variants.append(variant)
+    if not variants:
+        paragraphs = [p.strip() for p in re.split(r"\n{2,}", raw) if p.strip()]
+        variant = _normalize_variant(
+            {
+                "title": "Объяснение по шагам",
+                "idea": paragraphs[0] if paragraphs else raw,
+                "steps": paragraphs[1:6],
+            },
+            1,
+        )
+        if variant:
+            variants.append(variant)
+    return variants[:4]
+
+
+def cached_reasoning(slug: str) -> dict[str, Any] | None:
+    cached = cached_explanation(f"{slug}{REASONING_SUFFIX}")
+    if not cached or not cached.get("content"):
+        return None
+    try:
+        data = json.loads(cached["content"])
+    except ValueError:
+        return None
+    raw_variants = data.get("variants") if isinstance(data, dict) else data
+    if not isinstance(raw_variants, (list, tuple)):
+        return None
+    variants = [
+        variant
+        for index, item in enumerate(raw_variants, start=1)
+        if (variant := _normalize_variant(item, index)) is not None
+    ]
+    if not variants:
+        return None
+    return {
+        "variants": variants,
+        "model": cached.get("model"),
+        "created_at": cached.get("created_at"),
+    }
+
+
+def reasoning_variants(
+    info: dict[str, Any], *, force: bool = False, user_id: int | None = None
+) -> tuple[list[dict[str, Any]], str | None]:
+    """Несколько способов объяснить тему. Возвращает (варианты, ошибка)."""
+    slug = info["slug"]
+    if not force:
+        cached = cached_reasoning(slug)
+        if cached:
+            return cached["variants"], None
+
+    settings = get_settings()
+    extra_note = (settings.get("system_note") or "").strip()
+    system = _REASONING_SYSTEM + (f"\nДополнительно: {extra_note}" if extra_note else "")
+    text, error = chat(
+        [
+            {"role": "system", "content": system},
+            {"role": "user", "content": _reasoning_prompt(info)},
+        ],
+        temperature=0.55,
+        max_tokens=max(900, int(settings.get("max_tokens") or 900)),
+    )
+    if error:
+        log_request(user_id, "reasoning", False, f"{slug}: {error}")
+        return [], error
+
+    data = _extract_json(text)
+    raw_variants = data.get("variants") if isinstance(data, dict) else None
+    variants: list[dict[str, Any]] = []
+    if isinstance(raw_variants, (list, tuple)):
+        variants = [
+            variant
+            for index, item in enumerate(raw_variants, start=1)
+            if (variant := _normalize_variant(item, index)) is not None
+        ]
+    if not variants:
+        variants = _variants_from_text(text)
+    if not variants:
+        log_request(user_id, "reasoning", False, f"{slug}: пустой ответ модели")
+        return [], "модель вернула ответ в неожиданном формате"
+
+    payload = json.dumps({"variants": variants}, ensure_ascii=False)
+    _save_explanation(
+        f"{slug}{REASONING_SUFFIX}",
+        info.get("grade"),
+        settings.get("model") or "",
+        payload,
+    )
+    log_request(user_id, "reasoning", True, f"{slug}: {len(variants)} вариантов")
+    return variants, None
+
+
 # ------------------------------------------------------------------ помощник
 _GUIDE_COMMON = """Приложение «Учусь» — школьная платформа (1–11 классы): обучение по темам,
 тренировки с объяснениями, тесты, работы и библиотека.

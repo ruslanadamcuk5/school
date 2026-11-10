@@ -118,6 +118,53 @@ def refresh(slug: str):
     )
 
 
+@bp.get("/ai/reasoning/<slug>")
+@require_actor
+def reasoning(slug: str):
+    """Несколько вариантов объяснения темы для блока «Как можно рассуждать»."""
+    _ensure_enabled()
+    info = _topic_info(slug)
+    cached = ai_service.cached_reasoning(slug)
+    if cached:
+        return jsonify(
+            {
+                "ok": True,
+                "cached": True,
+                "topic": info,
+                "variants": cached["variants"],
+                "model": cached.get("model"),
+                "created_at": cached.get("created_at"),
+            }
+        )
+    if not _allow():
+        fail(429, "too_many", "Слишком много запросов к ИИ. Попробуйте позже.")
+    variants, error = ai_service.reasoning_variants(info, user_id=_actor_id())
+    if error:
+        fail(502, "ai_error", error)
+    return jsonify(
+        {
+            "ok": True,
+            "cached": False,
+            "topic": info,
+            "variants": variants,
+            "model": ai_service.get_settings().get("model"),
+        }
+    )
+
+
+@bp.post("/ai/reasoning/<slug>/refresh")
+@require_actor
+def reasoning_refresh(slug: str):
+    _ensure_enabled()
+    info = _topic_info(slug)
+    if not _allow():
+        fail(429, "too_many", "Слишком много запросов к ИИ. Попробуйте позже.")
+    variants, error = ai_service.reasoning_variants(info, force=True, user_id=_actor_id())
+    if error:
+        fail(502, "ai_error", error)
+    return jsonify({"ok": True, "topic": info, "variants": variants})
+
+
 @bp.post("/ai/assistant")
 @require_actor
 def assistant():

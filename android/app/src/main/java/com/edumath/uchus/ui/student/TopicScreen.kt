@@ -24,10 +24,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -66,6 +68,7 @@ import coil.compose.AsyncImage
 import com.edumath.uchus.core.AppContainer
 import com.edumath.uchus.data.api.BookLinkDto
 import com.edumath.uchus.data.api.MethodDto
+import com.edumath.uchus.data.api.ReasoningVariantDto
 import com.edumath.uchus.data.api.TopicDetailDto
 import com.edumath.uchus.data.api.TopicVideoDto
 import com.edumath.uchus.data.api.apiCall
@@ -99,6 +102,9 @@ fun TopicScreen(
     var explanation by remember { mutableStateOf<String?>(null) }
     var aiBusy by remember { mutableStateOf(false) }
     var aiError by remember { mutableStateOf<String?>(null) }
+    var reasoning by remember { mutableStateOf<List<ReasoningVariantDto>>(emptyList()) }
+    var reasoningBusy by remember { mutableStateOf(false) }
+    var reasoningError by remember { mutableStateOf<String?>(null) }
     var videosEnabled by remember { mutableStateOf(false) }
     var videos by remember { mutableStateOf<List<TopicVideoDto>>(emptyList()) }
     var videosBusy by remember { mutableStateOf(false) }
@@ -114,6 +120,43 @@ fun TopicScreen(
         aiEnabled = runCatching {
             apiCall { container.api.aiStatus() }.ai?.enabled == true
         }.getOrDefault(false)
+    }
+
+    LaunchedEffect(slug, aiEnabled) {
+        if (!aiEnabled) return@LaunchedEffect
+        reasoningBusy = true
+        reasoningError = null
+        runCatching { apiCall { container.api.aiReasoning(slug) } }
+            .onSuccess { data ->
+                reasoning = data.variants
+                if (data.variants.isEmpty()) {
+                    reasoningError = "ИИ не вернул варианты объяснения. Попробуйте позже."
+                }
+            }
+            .onFailure {
+                reasoningError = it.message ?: "Не удалось получить варианты объяснения."
+            }
+        reasoningBusy = false
+    }
+
+    val refreshReasoning: () -> Unit = {
+        if (!reasoningBusy) {
+            scope.launch {
+                reasoningBusy = true
+                reasoningError = null
+                runCatching { apiCall { container.api.aiReasoningRefresh(slug) } }
+                    .onSuccess { data ->
+                        reasoning = data.variants
+                        if (data.variants.isEmpty()) {
+                            reasoningError = "ИИ не вернул варианты объяснения. Попробуйте позже."
+                        }
+                    }
+                    .onFailure {
+                        reasoningError = it.message ?: "Не удалось обновить варианты объяснения."
+                    }
+                reasoningBusy = false
+            }
+        }
     }
 
     LaunchedEffect(slug) {
@@ -231,6 +274,17 @@ fun TopicScreen(
                                     ) { Text("Читать") }
                                 }
                             }
+                        }
+                    }
+
+                    if (aiEnabled) {
+                        item {
+                            AiReasoningCard(
+                                variants = reasoning,
+                                busy = reasoningBusy,
+                                error = reasoningError,
+                                onRefresh = refreshReasoning,
+                            )
                         }
                     }
 
@@ -376,6 +430,154 @@ fun TopicScreen(
 }
 
 @Composable
+private fun AiReasoningCard(
+    variants: List<ReasoningVariantDto>,
+    busy: Boolean,
+    error: String?,
+    onRefresh: () -> Unit,
+) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(
+            Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("✨", fontSize = 20.sp)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "Как можно рассуждать",
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f),
+                )
+                if (variants.isNotEmpty()) Tag("ИИ")
+            }
+            when {
+                busy && variants.isEmpty() -> {
+                    Text(
+                        "ИИ подбирает несколько вариантов объяснения…",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                !error.isNullOrBlank() && variants.isEmpty() -> {
+                    Text(
+                        error,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    OutlinedButton(onClick = onRefresh, enabled = !busy) {
+                        Text("Попробовать снова")
+                    }
+                }
+
+                variants.isEmpty() -> {
+                    Text(
+                        "Для этой темы пока нет вариантов объяснения.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                else -> {
+                    Text(
+                        "Несколько разных подходов к одной теме. Выберите понятный.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    variants.forEachIndexed { index, variant ->
+                        ReasoningVariantCard(index + 1, variant)
+                    }
+                    OutlinedButton(
+                        onClick = onRefresh,
+                        enabled = !busy,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(if (busy) "Обновляем…" else "Другие варианты") }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReasoningVariantCard(number: Int, variant: ReasoningVariantDto) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Row(verticalAlignment = Alignment.Top) {
+            Box(
+                Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    "$number",
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    variant.title ?: "Вариант $number",
+                    fontWeight = FontWeight.SemiBold,
+                )
+                if (!variant.idea.isNullOrBlank()) {
+                    Text(
+                        variant.idea,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        variant.steps.forEachIndexed { index, step ->
+            Row(verticalAlignment = Alignment.Top) {
+                Text(
+                    "${index + 1}.",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(step, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        if (!variant.example.isNullOrBlank()) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f))
+                    .padding(8.dp),
+            ) {
+                Text(
+                    "Пример",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(variant.example, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        if (!variant.tip.isNullOrBlank()) {
+            Text(
+                "💡 ${variant.tip}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
 private fun AiExplainCard(
     explanation: String?,
     busy: Boolean,
@@ -395,7 +597,7 @@ private fun AiExplainCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("🤖", fontSize = 22.sp)
                 Spacer(Modifier.width(8.dp))
-                Text("Объяснение с ИИ", fontWeight = FontWeight.SemiBold)
+                Text("Подробное объяснение с ИИ", fontWeight = FontWeight.SemiBold)
             }
             if (explanation == null) {
                 Text(

@@ -280,7 +280,9 @@ function EducationCard({ role, refreshSession }) {
   }, [data, isStudent]);
 
   const catalogPath = `/orgs/catalog?city_id=${cityId || ""}&school_id=${schoolId || ""}`;
-  const { data: catalog } = useApi(catalogPath, { enabled: Boolean(cityId), ttl: 60_000 });
+  // Города нужны сразу, ещё до выбора города: каталог без city_id
+  // возвращает полный список городов и предметов.
+  const { data: catalog } = useApi(catalogPath, { ttl: 60_000 });
   const cities = catalog?.cities || [];
   const schools = catalog?.schools || [];
   const catalogClasses = catalog?.classes || [];

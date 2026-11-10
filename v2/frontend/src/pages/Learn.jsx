@@ -18,6 +18,7 @@ import {
   Lightbulb,
   Lock,
   Play,
+  RefreshCw,
   Search,
   Sparkles,
   Star,
@@ -56,8 +57,18 @@ export function LearnPage() {
   const [scope, setScope] = useState("my");
   const grade = map?.grade || learner?.grade || 3;
 
-  const subjects = data?.subjects || [];
   const allTopics = data?.topics || [];
+
+  // Предмет показываем только если для класса есть хотя бы одна тема:
+  // пустые разделы не должны попадать в фильтр и в счётчик.
+  const subjects = useMemo(() => {
+    const available = new Set(
+      allTopics
+        .filter((topic) => Number(topic.grade) === Number(grade))
+        .map((topic) => Number(topic.subject_id))
+    );
+    return (data?.subjects || []).filter((item) => available.has(Number(item.id)));
+  }, [allTopics, data?.subjects, grade]);
 
   const visible = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -612,6 +623,136 @@ function ExplainModal({ open, slug, onClose }) {
   );
 }
 
+function ReasoningVariants({ slug }) {
+  const [variants, setVariants] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let alive = true;
+    setVariants([]);
+    setError("");
+    setLoading(true);
+    api.get(`/ai/reasoning/${slug}`)
+      .then((data) => { if (alive) setVariants(data.variants || []); })
+      .catch((err) => { if (alive) setError(err.message || "Не удалось подобрать варианты объяснения"); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [slug]);
+
+  const refresh = async () => {
+    setRefreshing(true);
+    setError("");
+    try {
+      const data = await api.post(`/ai/reasoning/${slug}/refresh`, {});
+      setVariants(data.variants || []);
+    } catch (err) {
+      setError(err.message || "Не удалось обновить варианты объяснения");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="mt-5 space-y-3">
+        <div className="flex items-center gap-2 text-xs font-bold text-iris-300">
+          <Sparkles size={14} className="animate-pulse" /> ИИ подбирает варианты объяснения…
+        </div>
+        <Skeleton className="h-28 w-full" />
+        <Skeleton className="h-28 w-full" />
+      </div>
+    );
+  }
+
+  if (error && variants.length === 0) {
+    return (
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-400/20 bg-amber-400/[0.06] px-4 py-3">
+        <p className="text-xs leading-relaxed text-amber-100/80">{error}. Ниже — способы из учебника.</p>
+        <Button size="sm" variant="ghost" onClick={refresh} loading={refreshing}>Попробовать снова</Button>
+      </div>
+    );
+  }
+
+  if (variants.length === 0) return null;
+
+  return (
+    <div className="mt-5">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Badge tone="iris"><Sparkles size={11} /> ИИ</Badge>
+          <p className="text-[11px] text-mist-500">
+            Несколько разных подходов к одной теме — выберите понятный.
+          </p>
+        </div>
+        <button
+          onClick={refresh}
+          disabled={refreshing}
+          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-mist-500 transition hover:text-white disabled:opacity-50"
+        >
+          <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
+          {refreshing ? "Обновляем…" : "Другие варианты"}
+        </button>
+      </div>
+
+      <div className="space-y-3">
+        {variants.map((variant, index) => (
+          <article
+            key={`${variant.title}-${index}`}
+            className="relative overflow-hidden rounded-2xl border border-white/8 bg-white/[0.025] p-4 sm:p-5"
+          >
+            <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-iris-500/10 blur-2xl" />
+            <div className="relative flex items-start gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-iris-500 to-cyan-400 text-sm font-bold text-white shadow-lg shadow-iris-500/20">
+                {index + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <h4 className="font-display text-[0.98rem] font-semibold leading-snug text-white">{variant.title}</h4>
+                {variant.idea ? (
+                  <p className="mt-1 text-xs leading-relaxed text-mist-400">{variant.idea}</p>
+                ) : null}
+              </div>
+            </div>
+
+            {variant.steps?.length ? (
+              <ol className="relative mt-4 space-y-2">
+                {variant.steps.map((step, stepIndex) => (
+                  <li
+                    key={`${index}-${stepIndex}`}
+                    className="flex items-start gap-2.5 rounded-xl border border-white/5 bg-ink-950/30 px-3 py-2.5"
+                  >
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/8 text-[10px] font-bold text-iris-200">
+                      {stepIndex + 1}
+                    </span>
+                    <p className="text-xs leading-relaxed text-mist-300">{step}</p>
+                  </li>
+                ))}
+              </ol>
+            ) : null}
+
+            {variant.example ? (
+              <div className="mt-3 rounded-xl border border-cyan-400/15 bg-cyan-400/[0.06] px-3.5 py-3">
+                <p className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-200/80">
+                  <Target size={11} /> Пример
+                </p>
+                <p className="text-xs leading-relaxed text-mist-300">{variant.example}</p>
+              </div>
+            ) : null}
+
+            {variant.tip ? (
+              <p className="mt-3 flex items-start gap-2 rounded-xl border border-amber-400/15 bg-amber-400/[0.05] px-3.5 py-2.5 text-xs leading-relaxed text-amber-100/85">
+                <Lightbulb size={14} className="mt-0.5 shrink-0 text-amber-300" />
+                <span>{variant.tip}</span>
+              </p>
+            ) : null}
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function TopicPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -797,10 +938,20 @@ export function TopicPage() {
               <SectionTitle
                 eyebrow="Способы решения"
                 title="Как можно рассуждать"
-                subtitle="Разные приёмы для одной темы. Выберите тот, который понятнее."
+                subtitle={
+                  data.ai_available
+                    ? "ИИ подбирает несколько разных объяснений темы. Выберите то, которое понятнее."
+                    : "Разные приёмы для одной темы. Выберите тот, который понятнее."
+                }
               />
-              <div className="mt-5 space-y-2.5">
-                {methods.length === 0 && (
+              {data.ai_available && <ReasoningVariants slug={slug} />}
+              {methods.length > 0 && (
+                <p className="mb-2 mt-5 text-[10px] font-bold uppercase tracking-[0.16em] text-mist-600">
+                  Способы из учебника
+                </p>
+              )}
+              <div className="mt-4 space-y-2.5">
+                {methods.length === 0 && !data.ai_available && (
                   <EmptyState icon="📘" title="Материалы готовятся" text="Для этой темы пока нет разобранных способов. Откройте текст или начните тренировку." />
                 )}
                 {methods.map((method, index) => (

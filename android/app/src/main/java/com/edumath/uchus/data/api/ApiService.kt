@@ -654,6 +654,12 @@ interface ApiService {
     @POST("ai/explain/{slug}/refresh")
     suspend fun aiExplainRefresh(@Path("slug") slug: String): AiExplainDto
 
+    @GET("ai/reasoning/{slug}")
+    suspend fun aiReasoning(@Path("slug") slug: String): AiReasoningDto
+
+    @POST("ai/reasoning/{slug}/refresh")
+    suspend fun aiReasoningRefresh(@Path("slug") slug: String): AiReasoningDto
+
     @POST("ai/assistant")
     suspend fun aiAsk(@Body body: AiAskRequest): AiAnswerDto
 

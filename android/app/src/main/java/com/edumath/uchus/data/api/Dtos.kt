@@ -1379,6 +1379,23 @@ data class AiExplainDto(
     @SerializedName("created_at") val createdAt: String? = null,
 )
 
+data class ReasoningVariantDto(
+    @SerializedName("title") val title: String? = null,
+    @SerializedName("idea") val idea: String? = null,
+    @SerializedName("steps") val steps: List<String> = emptyList(),
+    @SerializedName("example") val example: String? = null,
+    @SerializedName("tip") val tip: String? = null,
+)
+
+data class AiReasoningDto(
+    @SerializedName("ok") val ok: Boolean = false,
+    @SerializedName("cached") val cached: Boolean = false,
+    @SerializedName("topic") val topic: TopicCardDto? = null,
+    @SerializedName("variants") val variants: List<ReasoningVariantDto> = emptyList(),
+    @SerializedName("model") val model: String? = null,
+    @SerializedName("created_at") val createdAt: String? = null,
+)
+
 data class AiAskRequest(
     @SerializedName("question") val question: String,
     @SerializedName("page") val page: String? = null,
